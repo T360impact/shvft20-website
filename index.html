@@ -6,278 +6,42 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <title>Shvft2.0 | Partnerships, Investment, Delivery</title>
 <meta name="description" content="Shvft2.0 works alongside organisations serving children, young people and communities to build partnerships, secure investment and deliver programmes that last.">
-<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="icon" type="image/png" href="/assets/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Libre+Caslon+Text:ital@1&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --ink: #111a2c;
-    --ink-2: #1a2438;
-    --paper: #fafaf8;
-    --paper-2: #f1f1ee;
-    --slate: #5b6577;
-    --slate-light: #8a94a6;
-    --rule: #dfe1e4;
-    --green: #1fb57a;
-    --purple: #7b4df5;
-    --orange: #f2702e;
-    --journey: linear-gradient(90deg, var(--green), var(--purple) 52%, var(--orange));
-    --marker: linear-gradient(transparent 58%, rgba(31, 181, 122, .28) 58%, rgba(123, 77, 245, .22) 80%, rgba(242, 112, 46, .2) 100%);
-    --display: "Archivo Black", "Arial Black", sans-serif;
-    --label: "Space Grotesk", system-ui, sans-serif;
-    --body: "Inter", system-ui, sans-serif;
-    --serif: "Libre Caslon Text", Georgia, serif;
-    --wrap: 1180px;
-    --gutter: clamp(16px, 4vw, 40px);
-  }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
-  body { margin: 0; background: var(--paper); color: var(--ink); font: 400 17px/1.65 var(--body); -webkit-font-smoothing: antialiased; }
-  img { max-width: 100%; display: block; }
-  a { color: inherit; }
-  h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.08; letter-spacing: -.01em; margin: 0; }
-  h2 { font-size: clamp(2rem, 4.4vw, 3.3rem); }
-  h3 { font-size: 1.2rem; line-height: 1.25; }
-  p { margin: 0 0 1em; }
-  .wrap { max-width: var(--wrap); margin: 0 auto; padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); }
-  .eyebrow { font: 600 .78rem/1 var(--label); letter-spacing: .18em; text-transform: uppercase; color: var(--slate); margin-bottom: 18px; display: block; }
-  .dark .eyebrow { color: var(--slate-light); }
-  .lede { font-size: 1.15rem; color: var(--slate); max-width: 62ch; }
-  .dark .lede { color: #c3c9d4; }
-  .mark { background: var(--marker); padding: 0 .06em; }
-  .grad-text { background: var(--journey); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .ph { background: #fff4c2; color: #6b5300; padding: 0 .25em; border-radius: 3px; font-style: normal; }
-  .dark .ph { background: rgba(255, 244, 194, .14); color: #ffe68a; }
-
-  /* Wordmark */
-  .wordmark { font: 700 1.35rem/1 var(--label); letter-spacing: .02em; text-decoration: none; white-space: nowrap; }
-  .wordmark .two { background: var(--journey); -webkit-background-clip: text; background-clip: text; color: transparent; }
-
-  /* Buttons */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5em; font: 700 .82rem/1 var(--label); letter-spacing: .12em; text-transform: uppercase; text-decoration: none; padding: 16px 26px; border-radius: 999px; border: 2px solid var(--ink); cursor: pointer; transition: transform .15s, background .15s, color .15s; }
-  .btn:hover { transform: translateY(-1px); }
-  .btn-primary { background: var(--ink); color: var(--paper); }
-  .btn-primary:hover { background: var(--ink-2); }
-  .btn-secondary { background: transparent; color: var(--ink); }
-  .btn-secondary:hover { background: var(--ink); color: var(--paper); }
-  .dark .btn-primary { background: var(--paper); color: var(--ink); border-color: var(--paper); }
-  .dark .btn-secondary { color: var(--paper); border-color: rgba(250, 250, 248, .5); }
-  .dark .btn-secondary:hover { background: var(--paper); color: var(--ink); }
-  .btns { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
-
-  /* Header */
-  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--paper); }
-  .site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; background: rgba(250, 250, 248, .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--rule); }
-  .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 24px; }
-  .nav { display: flex; align-items: center; gap: 26px; }
-  .nav a { font: 500 .92rem/1 var(--label); text-decoration: none; color: var(--slate); }
-  .nav a:hover { color: var(--ink); }
-  .header-cta { padding: 12px 18px; font-size: .74rem; }
-  .menu-toggle { display: none; background: none; border: 0; padding: 8px; cursor: pointer; }
-  .menu-toggle span { display: block; width: 22px; height: 2px; background: var(--ink); margin: 5px 0; }
-  @media (max-width: 1060px) {
-    .nav { display: none; position: absolute; top: 68px; left: 0; right: 0; flex-direction: column; align-items: flex-start; gap: 0; background: var(--paper); border-bottom: 1px solid var(--rule); padding: 8px var(--gutter) 20px; }
-    .nav.open { display: flex; }
-    .nav a { padding: 12px 0; font-size: 1.05rem; width: 100%; }
-    .nav .header-cta { margin-top: 10px; width: auto; padding: 14px 22px; color: var(--paper); }
-    .menu-toggle { display: block; }
-  }
-
-  /* Sections */
-  section { padding: clamp(72px, 10vw, 128px) 0; }
-  .dark { background: var(--ink); color: var(--paper); }
-  .alt { background: var(--paper-2); }
-  .section-head { max-width: 760px; margin-bottom: 52px; }
-  .section-head h2 + p { margin-top: 20px; }
-
-  /* Hero */
-  .hero { position: relative; overflow: hidden; padding: clamp(96px, 14vw, 170px) 0 clamp(150px, 20vw, 250px); }
-  .hero h1 { font-size: clamp(2.4rem, 6.2vw, 5.2rem); max-width: 17ch; }
-  .hero .lede { margin-top: 28px; font-size: clamp(1.05rem, 1.6vw, 1.25rem); }
-  .ghost { position: absolute; left: 50%; bottom: -0.16em; transform: translateX(-50%); font: 400 clamp(7rem, 27vw, 24rem)/1 var(--display); white-space: nowrap; background: var(--journey); -webkit-background-clip: text; background-clip: text; color: transparent; opacity: .14; pointer-events: none; user-select: none; }
-
-  /* Intro + differentiators */
-  .intro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 88px); align-items: start; }
-  .intro-grid p { color: var(--slate); font-size: 1.08rem; }
-  .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 88px; border-top: 1px solid var(--rule); }
-  .pillar { padding: 32px 28px 8px 0; }
-  .pillar + .pillar { padding-left: 28px; border-left: 1px solid var(--rule); }
-  .pillar h3 { margin-bottom: 12px; }
-  .pillar p { color: var(--slate); font-size: .97rem; }
-  @media (max-width: 900px) {
-    .intro-grid { grid-template-columns: 1fr; }
-    .pillars { grid-template-columns: 1fr 1fr; }
-    .pillar:nth-child(3) { border-left: 0; padding-left: 0; }
-  }
-  @media (max-width: 560px) {
-    .pillars { grid-template-columns: 1fr; }
-    .pillar + .pillar { border-left: 0; padding-left: 0; border-top: 1px solid var(--rule); }
-  }
-
-  /* Numbers */
-  .numbers-rule { height: 4px; background: var(--journey); border-radius: 4px; margin: 18px 0 44px; }
-  .big-num { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 44px; }
-  .big-num strong { font: 400 clamp(4.6rem, 15vw, 10.5rem)/.86 var(--display); letter-spacing: -.03em; min-width: 4.3ch; }
-  .big-num > span { color: var(--slate); font-size: clamp(1.1rem, 1.8vw, 1.35rem); max-width: 24ch; padding-bottom: .4em; }
-  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-
-  /* Statement block */
-  .statement { display: grid; grid-template-columns: 1.2fr 1fr; gap: 56px; align-items: end; }
-  .statement h2 { font-size: clamp(2.2rem, 5vw, 3.8rem); }
-  @media (max-width: 860px) { .statement { grid-template-columns: 1fr; gap: 24px; } }
-
-  /* About */
-  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 88px); margin-top: 64px; }
-  .about-grid h3 { font-size: 1.5rem; margin-bottom: 16px; }
-  .about-grid p { color: var(--slate); }
-  .mv { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 72px; }
-  .mv div { border-top: 4px solid var(--ink); padding-top: 22px; }
-  .mv p { font-size: 1.15rem; color: var(--ink); margin: 0; }
-  @media (max-width: 760px) { .about-grid, .mv { grid-template-columns: 1fr; } }
-
-  /* Cards (green keyline) */
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-  .card { background: #fff; border: 1px solid var(--rule); border-top: 3px solid var(--green); border-radius: 14px; padding: 30px 28px; display: flex; flex-direction: column; }
-  .card .n { font: 700 .78rem/1 var(--label); letter-spacing: .14em; color: var(--green); margin-bottom: 18px; }
-  .card h3 { margin-bottom: 12px; }
-  .card p { color: var(--slate); font-size: .97rem; }
-  .card .incl { margin-top: auto; padding-top: 18px; border-top: 1px dashed var(--rule); font-size: .88rem; color: var(--slate); }
-  .card .incl b { font: 600 .74rem/1 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); display: block; margin-bottom: 8px; }
-  .values { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); margin-top: 28px; }
-
-  /* How we work */
-  .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
-  .steps li { display: grid; grid-template-columns: 120px 220px 1fr; gap: 24px; padding: 28px 0; border-top: 1px solid rgba(250, 250, 248, .14); align-items: baseline; }
-  .steps .k { font: 700 .78rem/1 var(--label); letter-spacing: .16em; text-transform: uppercase; color: var(--slate-light); }
-  .steps h3 { font-size: 1.6rem; }
-  .steps p { margin: 0; color: #c3c9d4; }
-  .principles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 72px; }
-  .principles h4 { font: 700 1rem/1.3 var(--label); margin: 0 0 10px; }
-  .principles p { color: #c3c9d4; font-size: .94rem; margin: 0; }
-  .principles-title { font-size: 1.6rem; margin-top: 88px; }
-  @media (max-width: 860px) {
-    .steps li { grid-template-columns: 1fr; gap: 8px; }
-    .principles { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 520px) { .principles { grid-template-columns: 1fr; } }
-
-  /* Youth voice + tools */
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 88px); align-items: start; }
-  .split p { color: var(--slate); }
-  .tools { display: grid; gap: 20px; }
-  .tool { border: 1px solid var(--rule); border-radius: 16px; padding: 30px; background: #fff; }
-  .tool h3 { font-size: 1.6rem; margin-bottom: 10px; }
-  .tool p { margin: 0; }
-  @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
-
-  /* Impact */
-  .case { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; background: #fff; margin-top: 8px; }
-  .case > div { padding: 34px 30px; }
-  .case > div + div { border-left: 1px solid var(--rule); }
-  .case h4 { font: 700 .78rem/1 var(--label); letter-spacing: .16em; text-transform: uppercase; margin: 0 0 16px; color: var(--slate); }
-  .case p { margin: 0; color: var(--slate); font-size: .97rem; }
-  .case-title { font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 64px 0 24px; }
-  .wins { display: grid; grid-template-columns: minmax(0, 560px); gap: 20px; margin-top: 20px; }
-  .win { border: 1px solid var(--rule); border-radius: 18px; padding: 34px 30px; background: #fff; }
-  .win strong { display: block; font: 400 clamp(2rem, 4vw, 2.8rem)/1 var(--display); margin: 10px 0 16px; }
-  .win h3 { font-size: 1.1rem; }
-  .win p { color: var(--slate); margin: 0; }
-  .quotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 40px; }
-  .quote { position: relative; padding-left: 26px; margin: 0; }
-  .quote::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 4px; border-radius: 4px; background: linear-gradient(180deg, var(--green), var(--purple), var(--orange)); }
-  .quote p { font: italic 400 1.2rem/1.5 var(--serif); margin: 0 0 14px; }
-  .quote cite { font: 500 .85rem/1.4 var(--label); font-style: normal; color: var(--slate); }
-  @media (max-width: 860px) {
-    .case, .wins, .quotes { grid-template-columns: 1fr; }
-    .case > div + div { border-left: 0; border-top: 1px solid var(--rule); }
-  }
-
-  /* Who we work with */
-  .who { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0 40px; }
-  .who div { padding: 26px 0; border-top: 1px solid var(--rule); }
-  .who h3 { margin-bottom: 10px; }
-  .who p { margin: 0; color: var(--slate); font-size: .97rem; }
-
-  /* Team */
-  .team { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-  .person { display: grid; grid-template-columns: 1fr; gap: 26px; align-items: start; }
-  .photo { aspect-ratio: 4 / 5; border-radius: 14px; background: var(--paper-2); border: 1px dashed var(--slate-light); display: grid; place-items: center; font: 600 .74rem/1 var(--label); letter-spacing: .12em; text-transform: uppercase; color: var(--slate); }
-  .person h3 { font-size: 1.4rem; }
-  .person .role { font: 600 .78rem/1 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--slate); margin: 8px 0 16px; }
-  .person p { color: var(--slate); font-size: .97rem; }
-  @media (max-width: 960px) { .team { grid-template-columns: 1fr; } }
-  @media (max-width: 520px) { .person { grid-template-columns: 1fr; } .photo { max-width: 160px; } }
-
-  /* Resources */
-  .newsletter { margin-top: 48px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding: 30px; border-radius: 18px; background: var(--paper-2); }
-  .newsletter label { font: 700 1.05rem/1.2 var(--label); flex: 1 1 200px; }
-  .newsletter form { display: flex; gap: 10px; flex: 2 1 360px; flex-wrap: wrap; }
-  .newsletter input { flex: 1 1 220px; font: 400 1rem var(--body); padding: 14px 20px; border-radius: 999px; border: 1.5px solid var(--rule); background: #fff; color: var(--ink); }
-  .newsletter input:focus { outline: 2px solid var(--purple); outline-offset: 1px; }
-  .newsletter .msg { flex-basis: 100%; margin: 0; font-size: .92rem; color: var(--slate); }
-
-  /* Closer */
-  .closer { position: relative; overflow: hidden; text-align: center; }
-  .closer::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--journey); }
-  .closer h2 { font-size: clamp(2.3rem, 6vw, 4.6rem); max-width: 16ch; margin: 0 auto; }
-  .closer .lede { margin: 28px auto 0; }
-  .closer .btns { justify-content: center; }
-  .contact-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 36px; margin-top: 52px; font: 500 .98rem/1.4 var(--label); color: #c3c9d4; position: relative; }
-  .contact-list a { text-decoration: none; }
-  .contact-list a:hover { color: var(--paper); }
-  .closer .ghost { opacity: .1; }
-  .closer .wrap { position: relative; padding-bottom: clamp(60px, 10vw, 140px); }
-
-  /* Safeguarding */
-  .policy { max-width: 780px; }
-  .policy h2 { margin-bottom: 36px; }
-  .policy h3 { font-size: 1.3rem; margin: 40px 0 14px; }
-  .policy p { color: var(--slate); }
-
-  /* Footer */
-  .footer-rule { height: 8px; background: var(--journey); }
-  footer { background: var(--ink); color: #c3c9d4; padding: 56px 0 40px; font-size: .92rem; }
-  footer .wrap { display: grid; gap: 22px; }
-  footer .wordmark { color: var(--paper); font-size: 1.6rem; }
-  footer p { margin: 0; }
-  footer nav { display: flex; gap: 24px; font-family: var(--label); }
-  footer nav a { text-decoration: none; }
-  footer nav a:hover { color: var(--paper); }
-
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
-</style>
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
 <header class="site-header">
   <div class="wrap">
-    <a href="#top" class="wordmark" aria-label="Shvft2.0 home">SHVFT<span class="two">2.0</span></a>
+    <a href="/" class="wordmark" aria-label="Shvft2.0 home">SHVFT<span class="two">2.0</span></a>
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
     <nav class="nav" id="nav">
-      <a href="#about">About</a>
-      <a href="#services">Services</a>
-      <a href="#how">How we work</a>
-      <a href="#impact">Impact</a>
-      <a href="#training">Training</a>
-      <a href="#business">For businesses</a>
-      <a href="#contact">Contact</a>
-      <a href="#review" class="btn btn-primary header-cta">Book a readiness review</a>
+      <a href="/about/">About</a>
+      <a href="/services/">Services</a>
+      <a href="/how-we-work/">How we work</a>
+      <a href="/impact/">Impact</a>
+      <a href="/training/">Training</a>
+      <a href="/for-businesses/">For businesses</a>
+      <a href="/contact/">Contact</a>
+      <a href="/contact/" class="btn btn-primary header-cta">Book a readiness review</a>
     </nav>
   </div>
 </header>
 
 <main id="top">
 
-<!-- 1. HOME: HERO -->
+<!-- HERO -->
 <section class="hero dark">
   <div class="wrap">
     <span class="eyebrow">Partnerships · Investment · Delivery</span>
     <h1>Stronger organisations. <span class="grad-text">Lasting</span> change for young people and communities.</h1>
     <p class="lede">We work alongside organisations serving children, young people and communities to build partnerships, secure investment and deliver programmes that make a lasting difference.</p>
     <div class="btns">
-      <a href="#contact" class="btn btn-primary">Talk to us</a>
-      <a href="#services" class="btn btn-secondary">Explore our services</a>
+      <a href="/contact/" class="btn btn-primary">Talk to us</a>
+      <a href="/services/" class="btn btn-secondary">Explore our services</a>
     </div>
   </div>
   <div class="ghost" aria-hidden="true">SHVFT2.0</div>
@@ -323,248 +87,30 @@
     </div>
     <div>
       <p class="lede">Not sure where to start? Our free readiness review is a one-hour conversation that looks at your organisation, your partnerships and the opportunities ahead. You leave with a short written summary of your strengths, the gaps to close and the funding or partnership routes that fit you best, whether or not you choose to work with us.</p>
-      <div class="btns"><a href="#contact" class="btn btn-primary">Book your readiness review</a></div>
+      <div class="btns"><a href="/contact/" class="btn btn-primary">Book your readiness review</a></div>
     </div>
   </div>
 </section>
 
-<!-- 2. ABOUT -->
-<section id="about">
+<!-- WHERE TO NEXT -->
+<section>
   <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">About us</span>
-      <h2>Communities deserve services that last.</h2>
-    </div>
-
-    <div class="about-grid">
-      <div>
-        <h3>Our story</h3>
-        <p>Shvft2.0 was founded on a simple observation: communities deserve services that last. Too often we have seen strong youth and community programmes miss out on investment because nobody had capacity to build the partnership, valued work stall because nobody planned for the second year, and committed organisations struggle because they lacked the structure to sustain themselves.</p>
-      </div>
-      <div>
-        <p style="margin-top: 2.6rem">We set out to change that, bringing together experience from local government, national charities and frontline youth work into one independent partner that stays with organisations from the first conversation to long-term impact.</p>
-      </div>
-    </div>
-
-    <div class="mv">
-      <div><span class="eyebrow">Our mission</span><p>To strengthen the organisations and partnerships that serve children, young people and communities, so they can secure the investment they need, deliver with confidence and sustain their impact for the long term.</p></div>
-      <div><span class="eyebrow">Our vision</span><p>Every community served by organisations that are well led, well connected and built to last.</p></div>
-    </div>
-
-    <span class="eyebrow" style="margin-top: 72px">Our values</span>
-    <div class="cards values">
-      <div class="card"><h3>Young people first.</h3><p>Every decision is tested against the difference it makes to the people our partners serve.</p></div>
-      <div class="card"><h3>Collaboration over competition.</h3><p>We build partnerships where every organisation, large or small, has a fair voice and a clear role.</p></div>
-      <div class="card"><h3>Integrity.</h3><p>We are honest about what is achievable, we never commit partners to what they have not agreed, and we evidence what we claim.</p></div>
-      <div class="card"><h3>Built to last.</h3><p>We plan beyond the grant, so the work continues when the funding cycle ends.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- 3. SERVICES -->
-<section class="alt" id="services">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Services</span>
-      <h2>Ten services, one joined-up journey.</h2>
-      <p class="lede">Ten services that can stand alone or work together as one joined-up journey, shaped around what each organisation and community needs.</p>
+      <span class="eyebrow">Explore</span>
+      <h2>Find out how we can help.</h2>
     </div>
     <div class="cards">
-      <article class="card"><span class="n">01</span><h3>Funding and bids</h3><p>We help organisations find the right opportunities and make a strong, honest case for investment. We test each opportunity before work begins, so effort goes where it can genuinely succeed, and we work with funders directly from the first question to final confirmation.</p><div class="incl"><b>Includes</b>Funding research and tracking, opportunity qualification, bid management, bid writing, budgets and financial design, funder liaison and due diligence support.</div></article>
-      <article class="card"><span class="n">02</span><h3>Consortium and partnerships</h3><p>The biggest opportunities now ask organisations to deliver together. We act as an independent convenor, bringing grassroots groups, established charities, local authorities and businesses into partnerships that are fair, well governed and trusted by funders.</p><div class="incl"><b>Includes</b>Partner identification and assessment, compliance and safeguarding due diligence, consortium agreements, ways of working frameworks, Partnership Consortium Lead role for the life of a grant.</div></article>
-      <article class="card"><span class="n">03</span><h3>Commercial partnerships</h3><p>We help organisations build lasting relationships with business, rooted in shared values and mutual benefit, so they have support they can rely on beyond any single grant.</p><div class="incl"><b>Includes</b>Partnership strategy, corporate introductions, sponsorship and corporate giving, joint programmes, social value partnerships, relationship management.</div></article>
-      <article class="card"><span class="n">04</span><h3>Programme design</h3><p>We work with organisations to shape and strengthen their programmes so they meet the needs of the people they serve and the priorities of those who invest in them.</p><div class="incl"><b>Includes</b>Programme review and redesign, delivery models, cohort and eligibility design, theory of change, risk assessment and risk mapping.</div></article>
-      <article class="card"><span class="n">05</span><h3>Impact reporting and frameworks</h3><p>We help organisations understand and evidence the difference they make. Where several organisations deliver together, we make sure everyone measures in the same way, so the partnership tells one clear story and learns as it goes.</p><div class="incl"><b>Includes</b>Outcomes and impact frameworks, implementation across teams and partners, data collection systems, reporting to funders, boards and communities.</div></article>
-      <article class="card"><span class="n">06</span><h3>Operations</h3><p>We design how a service should run and then help make it happen, so doors open on time, young people are safe and every session counts.</p><div class="incl"><b>Includes</b>Operational design, site readiness, recruiting first staff, workforce coordination, on-the-ground safeguarding and health and safety, registration and referrals, finance tracking, youth voice, out of hours emergency cover.</div></article>
-      <article class="card"><span class="n">07</span><h3>Marketing and brand</h3><p>We help partnerships and organisations find a clear identity and voice, and reach the young people and communities they exist to serve.</p><div class="incl"><b>Includes</b>Brand identity, brand language and messaging, programme launches, outreach campaigns, communications for partners and stakeholders.</div></article>
-      <article class="card"><span class="n">08</span><h3>Capacity building and sustainability</h3><p>We help organisations put lasting foundations in place, so they are not dependent on the next grant to survive.</p><div class="incl"><b>Includes</b>Organisational structure, long-term strategy, contingency planning, team design, fundraising strategy and training, building a business development function.</div></article>
-      <article class="card"><span class="n">09</span><h3>Workforce, leadership and youth work development</h3><p>We invest in the people behind the work, from managers and senior leaders to the youth workers closest to young people.</p><div class="incl"><b>Includes</b>Management and leadership training, leadership coaching, team culture, youth work training and upskilling, safeguarding practice, progression into senior roles.</div></article>
-      <article class="card"><span class="n">10</span><h3>AI skills and adoption</h3><p>AI can give small teams back the time they need for young people and communities, but only if it is used safely, ethically and with confidence. We help organisations understand what AI can do for them, build the skills to use it well, and put the right safeguards in place, especially where young people's information is involved.</p><div class="incl"><b>Includes</b>AI readiness assessments, AI policy and governance, safe and ethical use training, practical skills for bids, reporting, communications and admin, hands-on projects that build AI into everyday workflows, and AI literacy sessions for young people.</div></article>
+      <a class="card card-link" href="/services/"><h3>Services</h3><p>Ten services that can stand alone or work together as one joined-up journey.</p><span class="go">Our services →</span></a>
+      <a class="card card-link" href="/how-we-work/"><h3>How we work</h3><p>One partner from the first conversation to long-term impact.</p><span class="go">How we work →</span></a>
+      <a class="card card-link" href="/impact/"><h3>Our impact</h3><p>More than £3 million brought into youth and community work.</p><span class="go">Our impact →</span></a>
+      <a class="card card-link" href="/training/"><h3>Training and courses</h3><p>Practical, practitioner-led training for the people who make youth and community work happen.</p><span class="go">Training →</span></a>
+      <a class="card card-link" href="/for-businesses/"><h3>For businesses</h3><p>Connect your values with real local impact.</p><span class="go">For businesses →</span></a>
+      <a class="card card-link" href="/about/"><h3>About us</h3><p>Who we are, what we believe and the team behind the work.</p><span class="go">About us →</span></a>
     </div>
   </div>
 </section>
 
-<!-- 4. HOW WE WORK (dark) -->
-<section class="dark" id="how">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">How we work</span>
-      <h2>One partner from the first conversation to long-term impact.</h2>
-      <p class="lede">Nothing falls between separate consultants.</p>
-    </div>
-    <ol class="steps">
-      <li><span class="k">Step 1</span><h3>Listen.</h3><p>We start with your organisation, your community and your ambitions: the difference you want to make, who is already around you, and what is holding you back.</p></li>
-      <li><span class="k">Step 2</span><h3>Qualify.</h3><p>We test every opportunity honestly before work begins, looking at eligibility, the funder's priorities, the wider landscape and your capacity to deliver. A clear no at this stage protects your time and your reputation.</p></li>
-      <li><span class="k">Step 3</span><h3>Build.</h3><p>We bring the right partners together, strengthen their programmes, check every policy and safeguarding document, and agree how the partnership will work and measure its impact.</p></li>
-      <li><span class="k">Step 4</span><h3>Secure.</h3><p>We manage and write the bid, design the budget, and work directly with the funder until investment is confirmed.</p></li>
-      <li><span class="k">Step 5</span><h3>Deliver and sustain.</h3><p>We stay. We lead the partnership, support operations where needed, report on impact, and help build the people, brand and relationships that keep the work going beyond the grant.</p></li>
-    </ol>
-    <h3 class="principles-title">Our principles</h3>
-    <div class="principles">
-      <div><h4>Partners agree before we commit.</h4><p>Nothing is offered to a funder on a partner's behalf until that partner has agreed it.</p></div>
-      <div><h4>Evidence, not inflation.</h4><p>We count young people accurately, use each organisation's own data, and make claims we can stand behind.</p></div>
-      <div><h4>Clear scope and cost.</h4><p>We agree the scope and cost of our work at the outset, so there are no surprises along the way.</p></div>
-      <div><h4>Young people's voices shape the work.</h4><p>We build youth voice into every partnership, from design to delivery.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- 5. YOUTH VOICE + 6. TOOLS -->
-<section id="youth-voice">
-  <div class="wrap split">
-    <div>
-      <span class="eyebrow">Youth voice</span>
-      <h2>Shaped with young people, not for them.</h2>
-    </div>
-    <div>
-      <p>Young people are not an afterthought in our work. They are experts in their own lives, and the best programmes are shaped with them, not for them.</p>
-      <p>Our founder built a London borough's youth council, with a dedicated board for young people with special educational needs and disabilities. We bring that experience to every partnership: helping organisations set up youth councils and advisory boards, involving young people in programme design and bids, and making sure their feedback keeps shaping delivery once the work begins.</p>
-      <p>Through Heard, our youth voice platform, partners can hear from young people continuously, not just at the start of a project.</p>
-    </div>
-  </div>
-  <div class="wrap split" id="tools" style="margin-top: 96px">
-    <div>
-      <span class="eyebrow">Our tools</span>
-      <p class="lede">We have built our own digital tools so the organisations we work with can hear young people clearly and evidence their impact.</p>
-    </div>
-    <div class="tools">
-      <div class="tool"><h3>Heard</h3><p>A platform for capturing the voices of young people, gathering their views, ideas and feedback in ways that are easy for them to use, so their perspectives shape programmes from design to delivery.</p></div>
-      <div class="tool"><h3>T360 Impact</h3><p>An outcome measurement platform that brings recognised measurement tools into one place, helping organisations track progress consistently and report their impact with confidence.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- 7. IMPACT -->
-<section class="alt" id="impact">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Our impact</span>
-      <h2>The shift, <span style="font-family: var(--serif); font-style: italic">measured.</span></h2>
-      <p class="lede">Our team has helped bring more than £3 million of investment into youth and community work, through national charities, local government and partnerships of local organisations.</p>
-    </div>
-
-    <div class="wins">
-      <div class="win"><h3>Local programmes built to last</h3><strong>Around £300k</strong><p>Working within local government, our founder secured around £300,000 for youth and community programmes. Several are still running and sustaining themselves today, because they were designed for the long term from the start.</p></div>
-    </div>
-
-  </div>
-</section>
-
-<!-- 8. TRAINING -->
-<section id="training">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Training and courses</span>
-      <h2>Developing the people who make the work happen.</h2>
-      <p class="lede">Practical, practitioner-led training for the people who make youth and community work happen. Courses can be delivered in-house for your team or as open sessions, and tailored to your organisation or partnership.</p>
-    </div>
-    <div class="cards">
-      <div class="card"><h3>Youth work development</h3><p>Core youth work practice, safeguarding and engagement skills, and upskilling for youth workers moving into lead and senior roles.</p></div>
-      <div class="card"><h3>Leadership and management</h3><p>Programmes for new managers, senior leaders and emerging leaders, building confidence, decision-making and the ability to lead teams through change.</p></div>
-      <div class="card"><h3>Mindset and performance</h3><p>High performance coaching and mindset development for leaders and teams, drawing on our founder's work as an accredited executive coach.</p></div>
-      <div class="card"><h3>Funding and partnership readiness</h3><p>Workshops on building partnerships, making a strong case for investment, working with funders and developing commercial relationships.</p></div>
-      <div class="card"><h3>Youth voice in practice</h3><p>Training for staff and young people on setting up and running youth councils, advisory boards and youth-led research.</p></div>
-      <div class="card"><h3>AI for the youth and community sector</h3><p>From safe everyday use for all staff to practical skills for fundraising, impact reporting and communications, plus strategy and governance sessions for leaders and trustees.</p></div>
-    </div>
-    <div class="btns">
-      <a href="#contact" class="btn btn-primary">See upcoming courses</a>
-      <a href="#contact" class="btn btn-secondary">Request in-house training</a>
-    </div>
-  </div>
-</section>
-
-<!-- 9. WHO WE WORK WITH -->
-<section class="alt" id="who">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Who we work with</span>
-      <h2>Everyone who shapes a community's future.</h2>
-    </div>
-    <div class="who">
-      <div><h3>Lead organisations</h3><p>Foundations, national charities and established providers with the standing to hold major grants, who want an independent partner to build and coordinate the partnership so their own teams can focus on delivery.</p></div>
-      <div><h3>Local authorities and commissioners</h3><p>Councils and public bodies that want a borough partnership built and run well, with one accountable point of contact and reporting they can rely on.</p></div>
-      <div><h3>Funders and foundations</h3><p>Investors who want the organisations they back to be well structured, well led and able to evidence their impact.</p></div>
-      <div><h3>Grassroots and community organisations</h3><p>Smaller groups closest to young people and communities, who want to take part in larger partnerships and build the capacity to grow.</p></div>
-      <div><h3>Businesses</h3><p>Companies that want to invest in their communities through meaningful partnerships that deliver real social value.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- 10. FOR BUSINESSES -->
-<section id="business">
-  <div class="wrap">
-    <div class="split">
-      <div>
-        <span class="eyebrow">For businesses</span>
-        <h2>Connect your values with real local impact.</h2>
-      </div>
-      <div>
-        <p>Many businesses want to make a real difference in the communities where they work, but find it hard to know where to start, which organisations to trust, or how to connect community impact with their own values and goals. We help close that gap.</p>
-        <p>We start with your business: your values, your people, your customers and your objectives. Then we connect you with the local charities and community organisations whose work genuinely fits, and help shape partnerships that create lasting change for young people and communities while reflecting who you are as a business.</p>
-      </div>
-    </div>
-    <div class="cards" style="margin-top: 56px">
-      <div class="card"><h3>Finding the right partners</h3><p>We know the local youth and community sector well, so we can introduce you to trusted organisations that match your purpose and your places.</p></div>
-      <div class="card"><h3>Designing meaningful partnerships</h3><p>From community investment and employee volunteering to mentoring, skills programmes and joint campaigns, we help design partnerships with clear goals on both sides.</p></div>
-      <div class="card"><h3>Telling the story well</h3><p>We help you communicate your community impact authentically to staff, customers and stakeholders, building on our founder's experience of corporate partnerships with a national charity.</p></div>
-      <div class="card"><h3>Evidencing social value</h3><p>We help you measure and report what your partnership achieves, supporting your social value commitments and responsible business reporting.</p></div>
-    </div>
-    <div class="btns"><a href="#contact" class="btn btn-primary">Talk to us about community partnerships</a></div>
-  </div>
-</section>
-
-<!-- 11. TEAM -->
-<section class="alt" id="team">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Our team</span>
-      <h2>Practitioners, not just advisers.</h2>
-    </div>
-    <div class="team">
-      <div class="person">
-        <div>
-          <h3>Lindani Njie</h3>
-          <div class="role">Founder</div>
-          <p>Lindani has spent his career helping young people and communities get the services they deserve. He has helped raise funds for national charities and secured around £300,000 in local authority funding for programmes that still run today.</p>
-          <p>He has managed a London borough's youth hubs and worked across youth services, early help, safeguarding and youth justice, so he understands both what funders expect and what delivery really takes. He has built commercial partnerships between businesses and the organisations they support, and as an accredited executive coach he develops leaders across the public, private and voluntary sectors.</p>
-        </div>
-      </div>
-      <div class="person">
-        <div>
-          <h3>Emmanuel</h3>
-          <div class="role">Bid Writer</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 12. RESOURCES -->
-<section id="resources">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Resources and insights</span>
-      <h2>We share what we learn, <span class="mark">freely</span>.</h2>
-      <p class="lede">Because a stronger sector is better for everyone.</p>
-    </div>
-    <div class="cards">
-      <div class="card"><h3>Funding calendar</h3><p>A regular round-up of open funds, tenders and partnership opportunities for youth and community organisations in London.</p></div>
-      <div class="card"><h3>Guides</h3><p>Practical guides on building a consortium, preparing for a partnership bid, setting up a youth council and measuring impact.</p></div>
-      <div class="card"><h3>Learning from our work</h3><p>Reflections from the partnerships we support, starting with lessons from building a borough-wide youth consortium.</p></div>
-      <div class="card"><h3>Templates and tools</h3><p>Free starting points, from partnership agreement checklists to risk registers and outcome frameworks.</p></div>
-    </div>
-    <div class="newsletter">
-      <label for="email">Sign up for updates</label>
-      <form id="newsletter">
-        <input type="email" id="email" name="email" placeholder="Your email address" required autocomplete="email">
-        <button type="submit" class="btn btn-primary">Subscribe</button>
-        <p class="msg" id="newsletter-msg" role="status" hidden></p>
-      </form>
-    </div>
-  </div>
-</section>
-
-<!-- 13. WORK WITH US (closer) -->
+<!-- WORK WITH US (closer) -->
 <section class="dark closer" id="contact">
   <div class="wrap">
     <span class="eyebrow">Work with us</span>
@@ -579,69 +125,22 @@
   <div class="ghost" aria-hidden="true">SHVFT2.0</div>
 </section>
 
-<!-- 14. SAFEGUARDING AND GOVERNANCE -->
-<section id="governance">
-  <div class="wrap policy">
-    <span class="eyebrow">Governance</span>
-    <h2>Governance and accountability</h2>
-    <p>We are committed to acting with integrity, transparency and fairness. We declare and manage any conflict of interest, keep accurate records, and are open with the organisations, funders and communities we work with about our role and our fees.</p>
-    <h3 id="privacy">Data protection</h3>
-    <p>We handle personal information in line with UK GDPR and the Data Protection Act 2018, collecting only what is needed, keeping it secure and using it only for the purpose it was given. Young people's data, including anything shared through our tools, is treated with particular care.</p>
-    <h3>Equality, diversity and inclusion</h3>
-    <p>We believe every young person deserves the same chance to thrive. We work to remove barriers, reflect the communities we serve, and make sure under-represented voices, including young people with special educational needs and disabilities, are heard and included.</p>
-  </div>
-</section>
-
 </main>
 
 <!-- 15. FOOTER -->
 <div class="footer-rule" aria-hidden="true"></div>
 <footer>
   <div class="wrap">
-    <a href="#top" class="wordmark">SHVFT<span class="two">2.0</span></a>
+    <a href="/" class="wordmark">SHVFT<span class="two">2.0</span></a>
     <p>Lindani, Founder · <a href="mailto:impact@shvft20.com">impact@shvft20.com</a> · <a href="https://www.shvft20.org">www.shvft20.org</a></p>
     <nav aria-label="Footer">
-      <a href="#governance">Governance</a>
-      <a href="#privacy">Privacy</a>
-      <a href="#contact">Contact</a>
+      <a href="/governance/">Governance</a>
+      <a href="/governance/#privacy">Privacy</a>
+      <a href="/contact/">Contact</a>
     </nav>
   </div>
 </footer>
 
-<script>
-  const toggle = document.querySelector('.menu-toggle');
-  const nav = document.getElementById('nav');
-  toggle.addEventListener('click', () => {
-    const open = nav.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', open);
-  });
-  nav.addEventListener('click', e => {
-    if (e.target.tagName === 'A') { nav.classList.remove('open'); toggle.setAttribute('aria-expanded', false); }
-  });
-  // Count the headline figure up from zero the first time it scrolls into view.
-  const counts = document.querySelectorAll('.count');
-  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const io = new IntersectionObserver(entries => entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      io.unobserve(entry.target);
-      const el = entry.target, to = +el.dataset.to, start = performance.now(), duration = 2000;
-      const tick = now => {
-        const t = Math.min((now - start) / duration, 1);
-        el.textContent = t < 1 ? '£' + (to * (1 - Math.pow(1 - t, 3))).toFixed(1) + 'm' : el.dataset.final;
-        if (t < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    }), { threshold: 0.6 });
-    counts.forEach(el => { el.dataset.final = el.textContent; el.textContent = '£0.0m'; io.observe(el); });
-  }
-  // No mailing-list backend yet: confirm locally until sign-up is wired up.
-  document.getElementById('newsletter').addEventListener('submit', e => {
-    e.preventDefault();
-    const msg = document.getElementById('newsletter-msg');
-    msg.textContent = 'Thank you. Sign-up opens at launch; we will be in touch.';
-    msg.hidden = false;
-    e.target.reset();
-  });
-</script>
+<script src="/site.js"></script>
 </body>
 </html>
