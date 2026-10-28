@@ -1,5 +1,5 @@
 // Links to the old single-page sections land on the page that now holds them.
-const moved = { about: '/about/', team: '/about/#team', services: '/services/', who: '/services/#who', how: '/how-we-work/', 'youth-voice': '/how-we-work/#youth-voice', tools: '/how-we-work/#tools', impact: '/impact/', resources: '/impact/#resources', training: '/training/', business: '/for-businesses/', contact: '/contact/', governance: '/governance/', privacy: '/governance/#privacy' };
+const moved = { about: '/about/', team: '/about/#team', services: '/services/', who: '/services/#who', how: '/how-we-work/', 'youth-voice': '/how-we-work/#youth-voice', tools: '/how-we-work/#tools', training: '/training/', business: '/for-businesses/', contact: '/contact/', governance: '/governance/', privacy: '/governance/#privacy' };
 if (location.pathname === '/' && moved[location.hash.slice(1)]) location.replace(moved[location.hash.slice(1)]);
 
 const toggle = document.querySelector('.menu-toggle');
@@ -34,4 +34,43 @@ document.getElementById('newsletter')?.addEventListener('submit', e => {
   msg.textContent = 'Thank you. Sign-up opens at launch; we will be in touch.';
   msg.hidden = false;
   e.target.reset();
+});
+
+const enquiry = document.getElementById('enquiry');
+enquiry?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = document.getElementById('enquiry-msg');
+  const button = enquiry.querySelector('button[type="submit"]');
+  msg.className = 'msg';
+  let firstInvalid = null;
+  enquiry.querySelectorAll('[required]').forEach(field => {
+    const bad = !field.checkValidity();
+    field.setAttribute('aria-invalid', bad);
+    if (bad && !firstInvalid) firstInvalid = field;
+  });
+  if (firstInvalid) {
+    msg.textContent = 'Please add your name, a valid email address and a short message.';
+    msg.classList.add('err');
+    firstInvalid.focus();
+    return;
+  }
+  button.disabled = true;
+  msg.textContent = 'Sending…';
+  try {
+    const res = await fetch(enquiry.action.replace('formsubmit.co/', 'formsubmit.co/ajax/'), {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body: new FormData(enquiry)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || String(data.success) !== 'true') throw new Error(data.message);
+    enquiry.reset();
+    msg.textContent = 'Thank you. Your enquiry has been sent and we will be in touch soon.';
+    msg.classList.add('ok');
+  } catch {
+    msg.textContent = 'Sorry, that did not send. Please email us at impact@shvft20.com.';
+    msg.classList.add('err');
+  } finally {
+    button.disabled = false;
+  }
 });

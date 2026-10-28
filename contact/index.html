@@ -22,7 +22,6 @@
       <a href="/about/">About</a>
       <a href="/services/">Services</a>
       <a href="/how-we-work/">How we work</a>
-      <a href="/impact/">Impact</a>
       <a href="/training/">Training</a>
       <a href="/for-businesses/">For businesses</a>
       <a href="/contact/" aria-current="page">Contact</a>
@@ -39,11 +38,43 @@
     <span class="eyebrow">Work with us</span>
     <h1>Let's talk about the difference you want to make.</h1>
     <p class="lede">Whether you are exploring a major funding opportunity, delivering a programme you have already secured, or building an organisation for the long term, we would welcome a conversation. Tell us about your work and the difference you want to make, and we will explore together how we can help.</p>
-    <div class="btns"><a href="mailto:impact@shvft20.com" class="btn btn-primary">Book a conversation</a></div>
-    <div class="contact-list">
-      <a href="mailto:impact@shvft20.com">impact@shvft20.com</a>
-      <a href="https://www.shvft20.org">www.shvft20.org</a>
-    </div>
+    <form class="enquiry" id="enquiry" action="https://formsubmit.co/impact@shvft20.com" method="POST" novalidate>
+      <input type="hidden" name="_subject" value="New enquiry from shvft20.org">
+      <input type="hidden" name="_template" value="table">
+      <input type="text" name="_honey" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="field">
+        <label for="enq-name">Your name</label>
+        <input type="text" id="enq-name" name="name" required autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="enq-email">Email address</label>
+        <input type="email" id="enq-email" name="email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="enq-org">Organisation <span class="opt">(optional)</span></label>
+        <input type="text" id="enq-org" name="organisation" autocomplete="organization">
+      </div>
+      <div class="field">
+        <label for="enq-topic">What is it about?</label>
+        <select id="enq-topic" name="topic">
+          <option>A free readiness review</option>
+          <option>Funding and partnerships</option>
+          <option>Programme delivery</option>
+          <option>Training and courses</option>
+          <option>Business partnership</option>
+          <option>Something else</option>
+        </select>
+      </div>
+      <div class="field wide">
+        <label for="enq-message">Tell us about your work</label>
+        <textarea id="enq-message" name="message" rows="6" required></textarea>
+      </div>
+      <p class="wide note">We only use your details to reply to your enquiry. See our <a href="/governance/#privacy">data protection statement</a>.</p>
+      <div class="wide actions">
+        <button type="submit" class="btn btn-primary">Send enquiry</button>
+        <p class="msg" id="enquiry-msg" role="status" aria-live="polite"></p>
+      </div>
+    </form>
   </div>
   <div class="ghost" aria-hidden="true">SHVFT2.0</div>
 </section>
@@ -55,7 +86,6 @@
 <footer>
   <div class="wrap">
     <a href="/" class="wordmark">SHVFT<span class="two">2.0</span></a>
-    <p>Lindani, Founder · <a href="mailto:impact@shvft20.com">impact@shvft20.com</a> · <a href="https://www.shvft20.org">www.shvft20.org</a></p>
     <nav aria-label="Footer">
       <a href="/governance/">Governance</a>
       <a href="/governance/#privacy">Privacy</a>
