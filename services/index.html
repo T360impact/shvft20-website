@@ -11,12 +11,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Libre+Caslon+Text:ital@1&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<script>try{if(localStorage.getItem('shvft-easy-read')==='1')document.documentElement.classList.add('easy-read')}catch(e){}</script>
 </head>
 <body>
+<a class="skip-link" href="#top">Skip to content</a>
 
 <header class="site-header">
   <div class="wrap">
     <a href="/" class="wordmark" aria-label="Shvft2.0 home">SHVFT<span class="two">2.0</span></a>
+    <button type="button" class="read-toggle" aria-pressed="false" aria-label="Easy read: clearer, larger text"><span class="aa" aria-hidden="true">Aa</span><span class="read-label">Easy read</span></button>
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
     <nav class="nav" id="nav">
       <a href="/about/">About</a>
@@ -30,26 +33,26 @@
   </div>
 </header>
 
-<main id="top">
+<main id="top" tabindex="-1">
 
 <section class="alt page-top" id="services">
   <div class="wrap">
     <div class="section-head">
       <span class="eyebrow">Services</span>
-      <h1>Ten services, one joined-up journey.</h1>
-      <p class="lede">Ten services that can stand alone or work together as one joined-up journey, shaped around what each organisation and community needs.</p>
+      <h1>Ten services, one <span class="grad-text">joined-up</span> journey.</h1>
+      <p class="lede">Use one service, or several together. Tap "What is included" to see more.</p>
     </div>
-    <div class="cards">
-      <article class="card"><span class="n">01</span><h3>Funding and bids</h3><p>We help organisations find the right opportunities and make a strong, honest case for investment. We test each opportunity before work begins, so effort goes where it can genuinely succeed, and we work with funders directly from the first question to final confirmation.</p><div class="incl"><b>Includes</b>Funding research and tracking, opportunity qualification, bid management, bid writing, budgets and financial design, funder liaison and due diligence support.</div></article>
-      <article class="card"><span class="n">02</span><h3>Consortium and partnerships</h3><p>The biggest opportunities now ask organisations to deliver together. We act as an independent convenor, bringing grassroots groups, established charities, local authorities and businesses into partnerships that are fair, well governed and trusted by funders.</p><div class="incl"><b>Includes</b>Partner identification and assessment, compliance and safeguarding due diligence, consortium agreements, ways of working frameworks, Partnership Consortium Lead role for the life of a grant.</div></article>
-      <article class="card"><span class="n">03</span><h3>Commercial partnerships</h3><p>We help organisations build lasting relationships with business, rooted in shared values and mutual benefit, so they have support they can rely on beyond any single grant.</p><div class="incl"><b>Includes</b>Partnership strategy, corporate introductions, sponsorship and corporate giving, joint programmes, social value partnerships, relationship management.</div></article>
-      <article class="card"><span class="n">04</span><h3>Programme design</h3><p>We work with organisations to shape and strengthen their programmes so they meet the needs of the people they serve and the priorities of those who invest in them.</p><div class="incl"><b>Includes</b>Programme review and redesign, delivery models, cohort and eligibility design, theory of change, risk assessment and risk mapping.</div></article>
-      <article class="card"><span class="n">05</span><h3>Impact reporting and frameworks</h3><p>We help organisations understand and evidence the difference they make. Where several organisations deliver together, we make sure everyone measures in the same way, so the partnership tells one clear story and learns as it goes.</p><div class="incl"><b>Includes</b>Outcomes and impact frameworks, implementation across teams and partners, data collection systems, reporting to funders, boards and communities.</div></article>
-      <article class="card"><span class="n">06</span><h3>Operations</h3><p>We design how a service should run and then help make it happen, so doors open on time, young people are safe and every session counts.</p><div class="incl"><b>Includes</b>Operational design, site readiness, recruiting first staff, workforce coordination, on-the-ground safeguarding and health and safety, registration and referrals, finance tracking, youth voice, out of hours emergency cover.</div></article>
-      <article class="card"><span class="n">07</span><h3>Marketing and brand</h3><p>We help partnerships and organisations find a clear identity and voice, and reach the young people and communities they exist to serve.</p><div class="incl"><b>Includes</b>Brand identity, brand language and messaging, programme launches, outreach campaigns, communications for partners and stakeholders.</div></article>
-      <article class="card"><span class="n">08</span><h3>Capacity building and sustainability</h3><p>We help organisations put lasting foundations in place, so they are not dependent on the next grant to survive.</p><div class="incl"><b>Includes</b>Organisational structure, long-term strategy, contingency planning, team design, fundraising strategy and training, building a business development function.</div></article>
-      <article class="card"><span class="n">09</span><h3>Workforce, leadership and youth work development</h3><p>We invest in the people behind the work, from managers and senior leaders to the youth workers closest to young people.</p><div class="incl"><b>Includes</b>Management and leadership training, leadership coaching, team culture, youth work training and upskilling, safeguarding practice, progression into senior roles.</div></article>
-      <article class="card"><span class="n">10</span><h3>AI skills and adoption</h3><p>AI can give small teams back the time they need for young people and communities, but only if it is used safely, ethically and with confidence. We help organisations understand what AI can do for them, build the skills to use it well, and put the right safeguards in place, especially where young people's information is involved.</p><div class="incl"><b>Includes</b>AI readiness assessments, AI policy and governance, safe and ethical use training, practical skills for bids, reporting, communications and admin, hands-on projects that build AI into everyday workflows, and AI literacy sessions for young people.</div></article>
+    <div class="cards svc-cards">
+      <article class="card svc"><div class="svc-top"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-pound"/></svg></span><span class="n">01</span></div><h3>Funding and bids</h3><p>We find the right funding and help you make a strong, honest case for it.</p><details><summary>What is included</summary><ul><li>Funding research and tracking</li><li>Testing which opportunities are right for you</li><li>Bid management and bid writing</li><li>Budgets and financial design</li><li>Working with funders, including due diligence</li></ul></details></article>
+      <article class="card svc"><div class="svc-top"><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-network"/></svg></span><span class="n">02</span></div><h3>Consortium and partnerships</h3><p>We bring organisations together into fair, well-run partnerships that funders trust.</p><details><summary>What is included</summary><ul><li>Finding and assessing partners</li><li>Compliance and safeguarding checks</li><li>Consortium agreements</li><li>Agreed ways of working</li><li>Leading the consortium for the life of a grant</li></ul></details></article>
+      <article class="card svc"><div class="svc-top"><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-briefcase"/></svg></span><span class="n">03</span></div><h3>Commercial partnerships</h3><p>We help you build lasting relationships with businesses.</p><details><summary>What is included</summary><ul><li>Partnership strategy</li><li>Introductions to businesses</li><li>Sponsorship and corporate giving</li><li>Joint programmes</li><li>Social value partnerships</li><li>Relationship management</li></ul></details></article>
+      <article class="card svc"><div class="svc-top"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-bulb"/></svg></span><span class="n">04</span></div><h3>Programme design</h3><p>We help shape programmes that meet people's needs and funders' priorities.</p><details><summary>What is included</summary><ul><li>Programme review and redesign</li><li>Delivery models</li><li>Who the programme is for, and who is eligible</li><li>Theory of change</li><li>Risk assessment and risk mapping</li></ul></details></article>
+      <article class="card svc"><div class="svc-top"><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-target"/></svg></span><span class="n">05</span></div><h3>Impact reporting</h3><p>We help you measure and show the difference you make, as one partnership.</p><details><summary>What is included</summary><ul><li>Outcomes and impact frameworks</li><li>Rolling them out across teams and partners</li><li>Data collection systems</li><li>Reporting to funders, boards and communities</li></ul></details></article>
+      <article class="card svc"><div class="svc-top"><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-wrench"/></svg></span><span class="n">06</span></div><h3>Operations</h3><p>We design how a service runs, then help make it happen safely.</p><details><summary>What is included</summary><ul><li>Operational design and site readiness</li><li>Recruiting your first staff</li><li>Coordinating the workforce</li><li>Safeguarding and health and safety on the ground</li><li>Registration and referrals</li><li>Finance tracking</li><li>Youth voice</li><li>Out-of-hours emergency cover</li></ul></details></article>
+      <article class="card svc"><div class="svc-top"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-megaphone"/></svg></span><span class="n">07</span></div><h3>Marketing and brand</h3><p>We help you find a clear voice and reach the people you serve.</p><details><summary>What is included</summary><ul><li>Brand identity</li><li>Brand language and messaging</li><li>Programme launches</li><li>Outreach campaigns</li><li>Communications for partners and stakeholders</li></ul></details></article>
+      <article class="card svc"><div class="svc-top"><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-sprout"/></svg></span><span class="n">08</span></div><h3>Capacity and sustainability</h3><p>We help you build foundations, so you do not depend on the next grant.</p><details><summary>What is included</summary><ul><li>Organisational structure</li><li>Long-term strategy</li><li>Contingency planning</li><li>Team design</li><li>Fundraising strategy and training</li><li>Building a business development function</li></ul></details></article>
+      <article class="card svc"><div class="svc-top"><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-cap"/></svg></span><span class="n">09</span></div><h3>Workforce and leadership</h3><p>We develop your people, from youth workers to senior leaders.</p><details><summary>What is included</summary><ul><li>Management and leadership training</li><li>Leadership coaching</li><li>Team culture</li><li>Youth work training</li><li>Safeguarding practice</li><li>Progression into senior roles</li></ul></details></article>
+      <article class="card svc"><div class="svc-top"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-chip"/></svg></span><span class="n">10</span></div><h3>AI skills and adoption</h3><p>We help you use AI safely, to give your team time back.</p><details><summary>What is included</summary><ul><li>AI readiness assessments</li><li>AI policy and governance</li><li>Safe and ethical use training</li><li>AI for bids, reporting, communications and admin</li><li>Hands-on projects in everyday work</li><li>AI literacy sessions for young people</li></ul></details></article>
     </div>
   </div>
 </section>
@@ -60,13 +63,13 @@
       <span class="eyebrow">Who we work with</span>
       <h2>Everyone who shapes a community's future.</h2>
     </div>
-    <div class="who">
-      <div><h3>Lead organisations</h3><p>Foundations, national charities and established providers with the standing to hold major grants, who want an independent partner to build and coordinate the partnership so their own teams can focus on delivery.</p></div>
-      <div><h3>Local authorities and commissioners</h3><p>Councils and public bodies that want a borough partnership built and run well, with one accountable point of contact and reporting they can rely on.</p></div>
-      <div><h3>Funders and foundations</h3><p>Investors who want the organisations they back to be well structured, well led and able to evidence their impact.</p></div>
-      <div><h3>Grassroots and community organisations</h3><p>Smaller groups closest to young people and communities, who want to take part in larger partnerships and build the capacity to grow.</p></div>
-      <div><h3>Businesses</h3><p>Companies that want to invest in their communities through meaningful partnerships that deliver real social value.</p></div>
-    </div>
+    <ul class="feature-list">
+      <li><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-heart"/></svg></span><div><h3>Lead organisations</h3><p>Foundations and charities who want a partner to build and run their partnership.</p></div></li>
+      <li><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-building"/></svg></span><div><h3>Councils and commissioners</h3><p>Public bodies who want one accountable partner and reporting they can rely on.</p></div></li>
+      <li><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-pound"/></svg></span><div><h3>Funders</h3><p>Investors who want the groups they fund to be strong and able to show impact.</p></div></li>
+      <li><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-users"/></svg></span><div><h3>Grassroots groups</h3><p>Smaller groups who want to join bigger partnerships and grow.</p></div></li>
+      <li><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-briefcase"/></svg></span><div><h3>Businesses</h3><p>Companies who want real social value in their communities.</p></div></li>
+    </ul>
   </div>
 </section>
 
@@ -75,7 +78,7 @@
   <div class="wrap">
     <span class="eyebrow">Work with us</span>
     <h2>Let's talk about the difference you want to make.</h2>
-    <p class="lede">Whether you are exploring a major funding opportunity, delivering a programme you have already secured, or building an organisation for the long term, we would welcome a conversation. Tell us about your work and the difference you want to make, and we will explore together how we can help.</p>
+    <p class="lede">Tell us about your work and the difference you want to make. We will explore together how we can help.</p>
     <div class="btns"><a href="/contact/#enquiry" class="btn btn-primary">Book a conversation</a></div>
   </div>
   <div class="ghost" aria-hidden="true">SHVFT2.0</div>

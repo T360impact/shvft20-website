@@ -11,12 +11,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Libre+Caslon+Text:ital@1&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<script>try{if(localStorage.getItem('shvft-easy-read')==='1')document.documentElement.classList.add('easy-read')}catch(e){}</script>
 </head>
 <body>
+<a class="skip-link" href="#top">Skip to content</a>
 
 <header class="site-header">
   <div class="wrap">
     <a href="/" class="wordmark" aria-label="Shvft2.0 home">SHVFT<span class="two">2.0</span></a>
+    <button type="button" class="read-toggle" aria-pressed="false" aria-label="Easy read: clearer, larger text"><span class="aa" aria-hidden="true">Aa</span><span class="read-label">Easy read</span></button>
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
     <nav class="nav" id="nav">
       <a href="/about/">About</a>
@@ -30,52 +33,65 @@
   </div>
 </header>
 
-<main id="top">
+<main id="top" tabindex="-1">
 
 <section class="dark page-top" id="how">
   <div class="wrap">
     <div class="section-head">
       <span class="eyebrow">How we work</span>
-      <h1>One partner from the first conversation to long-term impact.</h1>
-      <p class="lede">Nothing falls between separate consultants.</p>
+      <h1>One partner from the first conversation to <span class="grad-text">long-term</span> impact.</h1>
+      <p class="lede">Five steps. One team the whole way. Nothing falls between separate consultants.</p>
     </div>
-    <ol class="steps">
-      <li><span class="k">Step 1</span><h3>Listen.</h3><p>We start with your organisation, your community and your ambitions: the difference you want to make, who is already around you, and what is holding you back.</p></li>
-      <li><span class="k">Step 2</span><h3>Qualify.</h3><p>We test every opportunity honestly before work begins, looking at eligibility, the funder's priorities, the wider landscape and your capacity to deliver. A clear no at this stage protects your time and your reputation.</p></li>
-      <li><span class="k">Step 3</span><h3>Build.</h3><p>We bring the right partners together, strengthen their programmes, check every policy and safeguarding document, and agree how the partnership will work and measure its impact.</p></li>
-      <li><span class="k">Step 4</span><h3>Secure.</h3><p>We manage and write the bid, design the budget, and work directly with the funder until investment is confirmed.</p></li>
-      <li><span class="k">Step 5</span><h3>Deliver and sustain.</h3><p>We stay. We lead the partnership, support operations where needed, report on impact, and help build the people, brand and relationships that keep the work going beyond the grant.</p></li>
+    <ol class="journey">
+      <li><span class="journey-dot" aria-hidden="true"><svg><use href="/assets/icons.svg#i-chat"/></svg></span><span class="k">Step 1</span><h3>Listen</h3><p>We learn about your organisation, your community and your goals.</p></li>
+      <li><span class="journey-dot" aria-hidden="true"><svg><use href="/assets/icons.svg#i-target"/></svg></span><span class="k">Step 2</span><h3>Qualify</h3><p>We test each opportunity honestly. A clear no saves your time.</p></li>
+      <li><span class="journey-dot" aria-hidden="true"><svg><use href="/assets/icons.svg#i-network"/></svg></span><span class="k">Step 3</span><h3>Build</h3><p>We bring partners together and check every policy, including safeguarding.</p></li>
+      <li><span class="journey-dot" aria-hidden="true"><svg><use href="/assets/icons.svg#i-pound"/></svg></span><span class="k">Step 4</span><h3>Secure</h3><p>We write and manage the bid, and work with the funder until it is confirmed.</p></li>
+      <li><span class="journey-dot" aria-hidden="true"><svg><use href="/assets/icons.svg#i-sprout"/></svg></span><span class="k">Step 5</span><h3>Deliver and sustain</h3><p>We stay. We lead the partnership, report on impact and plan beyond the grant.</p></li>
     </ol>
-    <h3 class="principles-title">Our principles</h3>
-    <div class="principles">
-      <div><h4>Partners agree before we commit.</h4><p>Nothing is offered to a funder on a partner's behalf until that partner has agreed it.</p></div>
-      <div><h4>Evidence, not inflation.</h4><p>We count young people accurately, use each organisation's own data, and make claims we can stand behind.</p></div>
-      <div><h4>Clear scope and cost.</h4><p>We agree the scope and cost of our work at the outset, so there are no surprises along the way.</p></div>
-      <div><h4>Young people's voices shape the work.</h4><p>We build youth voice into every partnership, from design to delivery.</p></div>
+  </div>
+</section>
+
+<section class="alt" id="principles">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Our principles</span>
+      <h2>What you can count on.</h2>
+    </div>
+    <div class="pillars icon-pillars">
+      <div class="pillar"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-link"/></svg></span><h3>Partners agree first</h3><p>Nothing goes to a funder until each partner has agreed it.</p></div>
+      <div class="pillar"><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-target"/></svg></span><h3>Evidence, not inflation</h3><p>We count accurately and use each organisation's own data.</p></div>
+      <div class="pillar"><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-doc"/></svg></span><h3>Clear scope and cost</h3><p>Agreed at the start. No surprises.</p></div>
+      <div class="pillar"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-users"/></svg></span><h3>Young people's voices</h3><p>Built into every partnership, from design to delivery.</p></div>
     </div>
   </div>
 </section>
 
 <section id="youth-voice">
-  <div class="wrap split">
-    <div>
+  <div class="wrap">
+    <div class="section-head">
       <span class="eyebrow">Youth voice</span>
       <h2>Shaped with young people, not for them.</h2>
+      <p class="lede">Young people are experts in their own lives.</p>
     </div>
-    <div>
-      <p>Young people are not an afterthought in our work. They are experts in their own lives, and the best programmes are shaped with them, not for them.</p>
-      <p>Our founder built a London borough's youth council, with a dedicated board for young people with special educational needs and disabilities. We bring that experience to every partnership: helping organisations set up youth councils and advisory boards, involving young people in programme design and bids, and making sure their feedback keeps shaping delivery once the work begins.</p>
-      <p>Through Heard, our youth voice platform, partners can hear from young people continuously, not just at the start of a project.</p>
-    </div>
+    <ul class="feature-list">
+      <li><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-users"/></svg></span><div><h3>Youth councils and boards</h3><p>We help set them up. Our founder built a London borough's youth council, with a board for young people with special educational needs and disabilities (SEND).</p></div></li>
+      <li><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-bulb"/></svg></span><div><h3>Part of design and bids</h3><p>Young people help shape programmes and the bids that fund them.</p></div></li>
+      <li><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-chat"/></svg></span><div><h3>Feedback that keeps going</h3><p>With Fully Heard, partners hear from young people all the way through.</p></div></li>
+    </ul>
   </div>
-  <div class="wrap split" id="tools" style="margin-top: 96px">
+</section>
+
+<section class="alt" id="tools">
+  <div class="wrap split">
     <div>
       <span class="eyebrow">Our tools</span>
-      <p class="lede">We have built our own digital tools so the organisations we work with can hear young people clearly and evidence their impact.</p>
+      <h2>Tools we built for the work.</h2>
+      <p class="lede">Hear young people clearly. Show your impact.</p>
     </div>
     <div class="tools">
-      <a class="tool tool-link" href="https://fullyheard.com" target="_blank" rel="noopener"><span class="tool-brand"><img src="/assets/tools/fully-heard.svg" alt="" width="48" height="48"><h3>Fully Heard</h3></span><p>A platform for capturing the voices of young people, gathering their views, ideas and feedback in ways that are easy for them to use, so their perspectives shape programmes from design to delivery.</p><span class="go">Visit fullyheard.com <span aria-hidden="true">↗</span><span class="sr-only">(opens in a new tab)</span></span></a>
-      <a class="tool tool-link" href="https://www.t360impact.com" target="_blank" rel="noopener"><span class="tool-brand"><img src="/assets/tools/t360.svg" alt="" width="48" height="48"><h3>T360 Impact</h3></span><p>An outcome measurement platform that brings recognised measurement tools into one place, helping organisations track progress consistently and report their impact with confidence.</p><span class="go">Visit t360impact.com <span aria-hidden="true">↗</span><span class="sr-only">(opens in a new tab)</span></span></a>
+      <a class="tool tool-link" href="https://fullyheard.com" target="_blank" rel="noopener"><span class="tool-brand"><img src="/assets/tools/fully-heard.svg" alt="" width="48" height="48"><h3>Fully Heard</h3></span><p>Capture the voices of young people and communities, in ways that are easy for them to use.</p><span class="go">Visit fullyheard.com <span aria-hidden="true">↗</span><span class="sr-only">(opens in a new tab)</span></span></a>
+      <a class="tool tool-link" href="https://www.t360impact.com" target="_blank" rel="noopener"><span class="tool-brand"><img src="/assets/tools/t360.svg" alt="" width="48" height="48"><h3>T360 Impact</h3></span><p>Track outcomes with recognised measurement tools, and report your impact with confidence.</p><span class="go">Visit t360impact.com <span aria-hidden="true">↗</span><span class="sr-only">(opens in a new tab)</span></span></a>
     </div>
   </div>
 </section>
@@ -85,7 +101,7 @@
   <div class="wrap">
     <span class="eyebrow">Work with us</span>
     <h2>Let's talk about the difference you want to make.</h2>
-    <p class="lede">Whether you are exploring a major funding opportunity, delivering a programme you have already secured, or building an organisation for the long term, we would welcome a conversation. Tell us about your work and the difference you want to make, and we will explore together how we can help.</p>
+    <p class="lede">Tell us about your work and the difference you want to make. We will explore together how we can help.</p>
     <div class="btns"><a href="/contact/#enquiry" class="btn btn-primary">Book a conversation</a></div>
   </div>
   <div class="ghost" aria-hidden="true">SHVFT2.0</div>

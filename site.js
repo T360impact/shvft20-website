@@ -11,9 +11,28 @@ toggle.addEventListener('click', () => {
 nav.addEventListener('click', e => {
   if (e.target.tagName === 'A') { nav.classList.remove('open'); toggle.setAttribute('aria-expanded', false); }
 });
+// Easy read: a clearer typeface (Atkinson Hyperlegible), bigger text and more
+// spacing for readers with SEND or reading difficulties. The <head> applies a
+// saved choice before first paint; this keeps the button and the font in step.
+const readToggle = document.querySelector('.read-toggle');
+const setEasyRead = on => {
+  document.documentElement.classList.toggle('easy-read', on);
+  readToggle?.setAttribute('aria-pressed', on);
+  if (on && !document.getElementById('easy-read-font')) {
+    const font = document.createElement('link');
+    font.id = 'easy-read-font';
+    font.rel = 'stylesheet';
+    font.href = 'https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap';
+    document.head.appendChild(font);
+  }
+  try { on ? localStorage.setItem('shvft-easy-read', '1') : localStorage.removeItem('shvft-easy-read'); } catch {}
+};
+setEasyRead(document.documentElement.classList.contains('easy-read'));
+readToggle?.addEventListener('click', () => setEasyRead(!document.documentElement.classList.contains('easy-read')));
+
 // Count the headline figure up from zero the first time it scrolls into view.
 const counts = document.querySelectorAll('.count');
-if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches && !document.documentElement.classList.contains('easy-read')) {
   const io = new IntersectionObserver(entries => entries.forEach(entry => {
     if (!entry.isIntersecting) return;
     io.unobserve(entry.target);
@@ -80,4 +99,12 @@ enquiry?.addEventListener('submit', async e => {
 window.addEventListener('load', () => {
   const target = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
   if (target) target.scrollIntoView();
+});
+
+// Pause and play the moving partner logos (WCAG 2.2.2: moving content can be stopped).
+const marqueeToggle = document.querySelector('.marquee-toggle');
+marqueeToggle?.addEventListener('click', () => {
+  const paused = document.querySelector('.marquee').classList.toggle('paused');
+  marqueeToggle.textContent = paused ? 'Play' : 'Pause';
+  marqueeToggle.setAttribute('aria-label', paused ? 'Play the moving logos' : 'Pause the moving logos');
 });

@@ -11,12 +11,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Libre+Caslon+Text:ital@1&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<script>try{if(localStorage.getItem('shvft-easy-read')==='1')document.documentElement.classList.add('easy-read')}catch(e){}</script>
 </head>
 <body>
+<a class="skip-link" href="#top">Skip to content</a>
 
 <header class="site-header">
   <div class="wrap">
     <a href="/" class="wordmark" aria-label="Shvft2.0 home">SHVFT<span class="two">2.0</span></a>
+    <button type="button" class="read-toggle" aria-pressed="false" aria-label="Easy read: clearer, larger text"><span class="aa" aria-hidden="true">Aa</span><span class="read-label">Easy read</span></button>
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
     <nav class="nav" id="nav">
       <a href="/about/">About</a>
@@ -30,14 +33,14 @@
   </div>
 </header>
 
-<main id="top">
+<main id="top" tabindex="-1">
 
 <!-- WORK WITH US -->
 <section class="dark closer" id="contact">
   <div class="wrap">
     <span class="eyebrow">Work with us</span>
     <h1>Let's talk about the difference you want to make.</h1>
-    <p class="lede">Whether you are exploring a major funding opportunity, delivering a programme you have already secured, or building an organisation for the long term, we would welcome a conversation. Tell us about your work and the difference you want to make, and we will explore together how we can help.</p>
+    <p class="lede">Tell us about your work and the difference you want to make. We will explore together how we can help.</p>
     <!-- Delivers to the .com inbox until shvft20.org has mail (MX) records; then switch to impact@shvft20.org. -->
     <form class="enquiry" id="enquiry" action="https://formsubmit.co/impact@shvft20.com" method="POST" novalidate>
       <input type="hidden" name="_subject" value="New enquiry from shvft20.org">

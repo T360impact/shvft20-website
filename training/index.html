@@ -11,12 +11,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Libre+Caslon+Text:ital@1&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<script>try{if(localStorage.getItem('shvft-easy-read')==='1')document.documentElement.classList.add('easy-read')}catch(e){}</script>
 </head>
 <body>
+<a class="skip-link" href="#top">Skip to content</a>
 
 <header class="site-header">
   <div class="wrap">
     <a href="/" class="wordmark" aria-label="Shvft2.0 home">SHVFT<span class="two">2.0</span></a>
+    <button type="button" class="read-toggle" aria-pressed="false" aria-label="Easy read: clearer, larger text"><span class="aa" aria-hidden="true">Aa</span><span class="read-label">Easy read</span></button>
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
     <nav class="nav" id="nav">
       <a href="/about/">About</a>
@@ -30,22 +33,22 @@
   </div>
 </header>
 
-<main id="top">
+<main id="top" tabindex="-1">
 
 <section class="page-top" id="training">
   <div class="wrap">
     <div class="section-head">
       <span class="eyebrow">Training and courses</span>
-      <h1>Developing the people who make the work happen.</h1>
-      <p class="lede">Practical, practitioner-led training for the people who make youth and community work happen. Courses can be delivered in-house for your team or as open sessions, and tailored to your organisation or partnership.</p>
+      <h1>Developing the people who make the work <span class="grad-text">happen</span>.</h1>
+      <p class="lede">Practical training for people in youth and community work. In-house for your team, or open sessions.</p>
     </div>
-    <div class="cards">
-      <div class="card"><h3>Youth work development</h3><p>Core youth work practice, safeguarding and engagement skills, and upskilling for youth workers moving into lead and senior roles.</p></div>
-      <div class="card"><h3>Leadership and management</h3><p>Programmes for new managers, senior leaders and emerging leaders, building confidence, decision-making and the ability to lead teams through change.</p></div>
-      <div class="card"><h3>Mindset and performance</h3><p>High performance coaching and mindset development for leaders and teams, drawing on our founder's work as an accredited executive coach.</p></div>
-      <div class="card"><h3>Funding and partnership readiness</h3><p>Workshops on building partnerships, making a strong case for investment, working with funders and developing commercial relationships.</p></div>
-      <div class="card"><h3>Youth voice in practice</h3><p>Training for staff and young people on setting up and running youth councils, advisory boards and youth-led research.</p></div>
-      <div class="card"><h3>AI for the youth and community sector</h3><p>From safe everyday use for all staff to practical skills for fundraising, impact reporting and communications, plus strategy and governance sessions for leaders and trustees.</p></div>
+    <div class="cards icon-cards">
+      <div class="card"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-users"/></svg></span><h3>Youth work development</h3><p>Core practice, safeguarding, and skills to move into senior roles.</p></div>
+      <div class="card"><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-compass"/></svg></span><h3>Leadership and management</h3><p>For new and senior leaders: confidence, decisions and leading change.</p></div>
+      <div class="card"><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-bolt"/></svg></span><h3>Mindset and performance</h3><p>Coaching for leaders and teams, from an accredited executive coach.</p></div>
+      <div class="card"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-pound"/></svg></span><h3>Funding and partnership readiness</h3><p>Building partnerships, making the case and working with funders.</p></div>
+      <div class="card"><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-chat"/></svg></span><h3>Youth voice in practice</h3><p>Setting up youth councils, advisory boards and youth-led research.</p></div>
+      <div class="card"><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-chip"/></svg></span><h3>AI for the sector</h3><p>Safe everyday use, plus skills for bids, reporting and governance.</p></div>
     </div>
     <div class="btns">
       <a href="/contact/" class="btn btn-primary">See upcoming courses</a>
@@ -59,7 +62,7 @@
   <div class="wrap">
     <span class="eyebrow">Work with us</span>
     <h2>Let's talk about the difference you want to make.</h2>
-    <p class="lede">Whether you are exploring a major funding opportunity, delivering a programme you have already secured, or building an organisation for the long term, we would welcome a conversation. Tell us about your work and the difference you want to make, and we will explore together how we can help.</p>
+    <p class="lede">Tell us about your work and the difference you want to make. We will explore together how we can help.</p>
     <div class="btns"><a href="/contact/#enquiry" class="btn btn-primary">Book a conversation</a></div>
   </div>
   <div class="ghost" aria-hidden="true">SHVFT2.0</div>

@@ -11,12 +11,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Libre+Caslon+Text:ital@1&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<script>try{if(localStorage.getItem('shvft-easy-read')==='1')document.documentElement.classList.add('easy-read')}catch(e){}</script>
 </head>
 <body>
+<a class="skip-link" href="#top">Skip to content</a>
 
 <header class="site-header">
   <div class="wrap">
     <a href="/" class="wordmark" aria-label="Shvft2.0 home">SHVFT<span class="two">2.0</span></a>
+    <button type="button" class="read-toggle" aria-pressed="false" aria-label="Easy read: clearer, larger text"><span class="aa" aria-hidden="true">Aa</span><span class="read-label">Easy read</span></button>
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
     <nav class="nav" id="nav">
       <a href="/about/" aria-current="page">About</a>
@@ -30,47 +33,47 @@
   </div>
 </header>
 
-<main id="top">
+<main id="top" tabindex="-1">
 
 <section class="page-top" id="about">
   <div class="wrap">
     <div class="section-head">
       <span class="eyebrow">About us</span>
-      <h1>Communities deserve services that last.</h1>
+      <h1>Communities deserve services that <span class="grad-text">last</span>.</h1>
+      <p class="lede">Shvft2.0 started with a simple belief: good work should not stop when a grant ends.</p>
     </div>
-
-    <div class="about-grid">
-      <div>
-        <h3>Our story</h3>
-        <p>Shvft2.0 was founded on a simple observation: communities deserve services that last. Too often we have seen strong youth and community programmes miss out on investment because nobody had capacity to build the partnership, valued work stall because nobody planned for the second year, and committed organisations struggle because they lacked the structure to sustain themselves.</p>
-      </div>
-      <div>
-        <p style="margin-top: 2.6rem">We set out to change that, bringing together experience from local government, national charities and frontline youth work into one independent partner that stays with organisations from the first conversation to long-term impact.</p>
-      </div>
-    </div>
-
-    <div class="mv">
-      <div><span class="eyebrow">Our mission</span><p>To strengthen the organisations and partnerships that serve children, young people and communities, so they can secure the investment they need, deliver with confidence and sustain their impact for the long term.</p></div>
-      <div><span class="eyebrow">Our vision</span><p>Every community served by organisations that are well led, well connected and built to last.</p></div>
-    </div>
-
-    <span class="eyebrow" style="margin-top: 72px">Our values</span>
-    <div class="cards values">
-      <div class="card"><h3>Young people first.</h3><p>Every decision is tested against the difference it makes to the people our partners serve.</p></div>
-      <div class="card"><h3>Collaboration over competition.</h3><p>We build partnerships where every organisation, large or small, has a fair voice and a clear role.</p></div>
-      <div class="card"><h3>Integrity.</h3><p>We are honest about what is achievable, we never commit partners to what they have not agreed, and we evidence what we claim.</p></div>
-      <div class="card"><h3>Built to last.</h3><p>We plan beyond the grant, so the work continues when the funding cycle ends.</p></div>
-    </div>
+    <h2 class="sub-h">Why we started</h2>
+    <ul class="feature-list">
+      <li><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-pound"/></svg></span><div><h3>Funding was missed</h3><p>Strong programmes lost out, because nobody had time to build the partnership.</p></div></li>
+      <li><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-calendar"/></svg></span><div><h3>Good work stalled</h3><p>Projects stopped, because nobody planned for the second year.</p></div></li>
+      <li><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-building"/></svg></span><div><h3>Structure was lacking</h3><p>Committed organisations struggled without the structure to last.</p></div></li>
+    </ul>
+    <p class="answer">So we brought together experience from local government, national charities and frontline youth work, in one independent partner.</p>
   </div>
 </section>
 
+<section class="alt" id="mission">
+  <div class="wrap">
+    <div class="mv icon-mv">
+      <div><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-target"/></svg></span><span class="eyebrow">Our mission</span><p>To strengthen the organisations that serve children, young people and communities, so they win investment, deliver with confidence and last.</p></div>
+      <div><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-compass"/></svg></span><span class="eyebrow">Our vision</span><p>Every community served by organisations that are well led, well connected and built to last.</p></div>
+    </div>
+    <h2 class="sub-h" style="margin-top: 72px">Our values</h2>
+    <div class="cards values icon-cards">
+      <div class="card"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-users"/></svg></span><h3>Young people first</h3><p>We test every decision against the difference it makes to young people.</p></div>
+      <div class="card"><span class="ico p" aria-hidden="true"><svg><use href="/assets/icons.svg#i-link"/></svg></span><h3>Collaboration over competition</h3><p>Every organisation, large or small, has a fair voice and a clear role.</p></div>
+      <div class="card"><span class="ico o" aria-hidden="true"><svg><use href="/assets/icons.svg#i-shield"/></svg></span><h3>Integrity</h3><p>We are honest about what is possible, and we evidence what we claim.</p></div>
+      <div class="card"><span class="ico g" aria-hidden="true"><svg><use href="/assets/icons.svg#i-sprout"/></svg></span><h3>Built to last</h3><p>We plan beyond the grant, so the work carries on.</p></div>
+    </div>
+  </div>
+</section>
 
 <!-- WORK WITH US (closer) -->
 <section class="dark closer" id="contact">
   <div class="wrap">
     <span class="eyebrow">Work with us</span>
     <h2>Let's talk about the difference you want to make.</h2>
-    <p class="lede">Whether you are exploring a major funding opportunity, delivering a programme you have already secured, or building an organisation for the long term, we would welcome a conversation. Tell us about your work and the difference you want to make, and we will explore together how we can help.</p>
+    <p class="lede">Tell us about your work and the difference you want to make. We will explore together how we can help.</p>
     <div class="btns"><a href="/contact/#enquiry" class="btn btn-primary">Book a conversation</a></div>
   </div>
   <div class="ghost" aria-hidden="true">SHVFT2.0</div>

@@ -11,12 +11,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Libre+Caslon+Text:ital@1&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<script>try{if(localStorage.getItem('shvft-easy-read')==='1')document.documentElement.classList.add('easy-read')}catch(e){}</script>
 </head>
 <body>
+<a class="skip-link" href="#top">Skip to content</a>
 
 <header class="site-header">
   <div class="wrap">
     <a href="/" class="wordmark" aria-label="Shvft2.0 home">SHVFT<span class="two">2.0</span></a>
+    <button type="button" class="read-toggle" aria-pressed="false" aria-label="Easy read: clearer, larger text"><span class="aa" aria-hidden="true">Aa</span><span class="read-label">Easy read</span></button>
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
     <nav class="nav" id="nav">
       <a href="/about/">About</a>
@@ -30,19 +33,45 @@
   </div>
 </header>
 
-<main id="top">
+<main id="top" tabindex="-1">
 
 <section class="page-top" id="governance">
   <div class="wrap policy">
     <span class="eyebrow">Governance</span>
     <h1>Governance and accountability</h1>
-    <p>We are committed to acting with integrity, transparency and fairness. We declare and manage any conflict of interest, keep accurate records, and are open with the organisations, funders and communities we work with about our role and our fees.</p>
+    <p class="lede">We act with integrity, transparency and fairness.</p>
+    <ul>
+      <li>We declare and manage any conflict of interest.</li>
+      <li>We keep accurate records.</li>
+      <li>We are open with organisations, funders and communities about our role and our fees.</li>
+    </ul>
+
     <h3 id="privacy">Data protection</h3>
-    <p>We handle personal information in line with UK GDPR and the Data Protection Act 2018, collecting only what is needed, keeping it secure and using it only for the purpose it was given. Young people's data, including anything shared through our tools, is treated with particular care.</p>
+    <p>We follow UK GDPR and the Data Protection Act 2018.</p>
+    <ul>
+      <li>We collect only what we need.</li>
+      <li>We keep it secure.</li>
+      <li>We use it only for the reason you gave it to us.</li>
+      <li>We take extra care with young people's information, including anything shared through our tools.</li>
+    </ul>
+
     <h4 id="readiness-check">Our bid readiness check</h4>
-    <p>When you ask for your full report, we keep your organisation's details, your answers and score, and your name, role, email address and phone number if you give one. We use them to send you your report and to follow up on it, which is in our legitimate interest and yours. We only send you news and offers by email, or call you about how we can help, if you tick the boxes to say we can, and you can change your mind at any time by replying to any email from us or writing to <a href="mailto:impact@shvft20.org">impact@shvft20.org</a>. Your details are stored securely in the UK and EU with our database provider, Supabase, and emails are sent through Brevo. We keep them for two years after our last contact with you, then delete them. You can ask to see, correct or delete them at any time, and you can complain to the Information Commissioner's Office at <a href="https://ico.org.uk/make-a-complaint/">ico.org.uk</a>.</p>
+    <dl class="facts">
+      <dt>What we keep</dt><dd>Your organisation's details, your answers and score, and your name, role and email. Your phone number too, if you give it.</dd>
+      <dt>Why</dt><dd>To send your report and follow up on it. This is in our legitimate interest and yours.</dd>
+      <dt>News and calls</dt><dd>Only if you tick the boxes to say we can. You can change your mind at any time: reply to any email from us, or write to <a href="mailto:impact@shvft20.org">impact@shvft20.org</a>.</dd>
+      <dt>Where</dt><dd>Stored securely in the UK and EU with our database provider, Supabase. Emails are sent through Brevo.</dd>
+      <dt>How long</dt><dd>Two years after our last contact with you. Then we delete them.</dd>
+      <dt>Your rights</dt><dd>Ask to see, correct or delete your details at any time. You can complain to the Information Commissioner's Office at <a href="https://ico.org.uk/make-a-complaint/">ico.org.uk</a>.</dd>
+    </dl>
+
     <h3>Equality, diversity and inclusion</h3>
-    <p>We believe every young person deserves the same chance to thrive. We work to remove barriers, reflect the communities we serve, and make sure under-represented voices, including young people with special educational needs and disabilities, are heard and included.</p>
+    <p>Every young person deserves the same chance to thrive.</p>
+    <ul>
+      <li>We work to remove barriers.</li>
+      <li>We reflect the communities we serve.</li>
+      <li>We make sure under-represented voices are heard, including young people with special educational needs and disabilities.</li>
+    </ul>
   </div>
 </section>
 
@@ -51,7 +80,7 @@
   <div class="wrap">
     <span class="eyebrow">Work with us</span>
     <h2>Let's talk about the difference you want to make.</h2>
-    <p class="lede">Whether you are exploring a major funding opportunity, delivering a programme you have already secured, or building an organisation for the long term, we would welcome a conversation. Tell us about your work and the difference you want to make, and we will explore together how we can help.</p>
+    <p class="lede">Tell us about your work and the difference you want to make. We will explore together how we can help.</p>
     <div class="btns"><a href="/contact/#enquiry" class="btn btn-primary">Book a conversation</a></div>
   </div>
   <div class="ghost" aria-hidden="true">SHVFT2.0</div>
