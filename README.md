@@ -8,7 +8,7 @@ Links use root paths (`/about/`), so preview with a local server rather than ope
 
 ## Bid readiness check
 
-`readiness/` is the free bid readiness check, and `readiness/report/` shows the full report from the private link we email.
+The free bid readiness check sits on the home page (`#readiness`), and `readiness/report/` shows the full report from the private link we email. `readiness/` only forwards old links to `/#readiness`.
 
 - `readiness/framework.js` holds the questions, weights, essential (pass or fail) items, capacity flags and scoring, shared by both pages. It is built from the research report "Charity and CIC bid readiness" (October 2026), kept outside this repo in `Shvft 2.0/reports/`. Change `VERSION` whenever a question or weight changes, and review the questions each October.
 - Submissions go to the `shvft-readiness-submit` Supabase function (in the Refuse the Box project) and are stored in `public.shvft_readiness_submissions`, with the exact permission wording each person agreed to. The function source lives in `Shvft 2.0/supabase/functions/`.

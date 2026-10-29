@@ -13,7 +13,7 @@
   const failMsg = text => {
     root.innerHTML = `<div class="wrap rc-wrap"><span class="eyebrow">Readiness report</span><h1>${esc(text)}</h1>
       <p class="lede">Check you used the whole link from your email, or take the check again.</p>
-      <div class="btns"><a class="btn btn-primary" href="/readiness/">Take the readiness check</a></div></div>`;
+      <div class="btns"><a class="btn btn-primary" href="/#readiness">Take the readiness check</a></div></div>`;
   };
 
   const token = new URLSearchParams(location.search).get('r') || '';

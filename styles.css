@@ -275,7 +275,8 @@ footer nav a:hover { color: var(--paper); }
 .rc-facts strong { font: 700 1rem/1.2 var(--label); }
 .rc-facts span { color: #c3c9d4; font-size: .95rem; }
 @media (max-width: 720px) { .rc-facts { grid-template-columns: 1fr; } }
-.rc-intro h1 { margin-bottom: 24px; max-width: 16ch; }
+.rc-intro { position: relative; overflow: hidden; }
+.rc-intro h2 { margin-bottom: 24px; max-width: 16ch; }
 .rc-intro .btns { position: relative; z-index: 1; align-items: center; }
 .rc-resume { margin: 0; }
 .linklike { background: none; border: 0; padding: 0; font: 500 .95rem var(--label); color: #c3c9d4; text-decoration: underline; cursor: pointer; }

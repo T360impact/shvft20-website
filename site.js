@@ -74,3 +74,10 @@ enquiry?.addEventListener('submit', async e => {
     button.disabled = false;
   }
 });
+
+// Fonts and the count-up can shift the layout after the browser's own jump to
+// a #section, so settle on it again once everything has loaded.
+window.addEventListener('load', () => {
+  const target = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (target) target.scrollIntoView();
+});

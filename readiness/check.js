@@ -8,7 +8,7 @@
   const DRAFT = 'shvft-readiness-draft';
 
   const root = document.getElementById('rc');
-  const intro = document.getElementById('rc-intro');
+  const intro = document.getElementById('readiness');
   if (!root || !R) return;
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
