@@ -68,7 +68,7 @@ enquiry?.addEventListener('submit', async e => {
     msg.textContent = 'Thank you. Your enquiry has been sent and we will be in touch soon.';
     msg.classList.add('ok');
   } catch {
-    msg.textContent = 'Sorry, that did not send. Please email us at impact@shvft20.com.';
+    msg.textContent = 'Sorry, that did not send. Please email us at impact@shvft20.org.';
     msg.classList.add('err');
   } finally {
     button.disabled = false;

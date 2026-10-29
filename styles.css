@@ -84,7 +84,8 @@ section { padding: clamp(72px, 10vw, 128px) 0; }
 .hero { position: relative; overflow: hidden; padding: clamp(96px, 14vw, 170px) 0 clamp(150px, 20vw, 250px); }
 .hero h1 { font-size: clamp(2.4rem, 6.2vw, 5.2rem); max-width: 17ch; }
 .hero .lede { margin-top: 28px; font-size: clamp(1.05rem, 1.6vw, 1.25rem); }
-.ghost { position: absolute; left: 50%; bottom: -0.16em; transform: translateX(-50%); font: 400 clamp(7rem, 27vw, 24rem)/1 var(--display); white-space: nowrap; background: var(--journey); -webkit-background-clip: text; background-clip: text; color: transparent; opacity: .14; pointer-events: none; user-select: none; }
+/* 17vw keeps "SHVFT2.0" (about 5.4em wide in Archivo Black) inside the screen at every width. */
+.ghost { position: absolute; left: 50%; bottom: -0.16em; transform: translateX(-50%); font: 400 min(17vw, 22rem)/1 var(--display); white-space: nowrap; background: var(--journey); -webkit-background-clip: text; background-clip: text; color: transparent; opacity: .14; pointer-events: none; user-select: none; }
 
 /* Intro + differentiators */
 .intro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 88px); align-items: start; }

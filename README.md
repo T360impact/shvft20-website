@@ -12,4 +12,4 @@ The free bid readiness check sits on the home page (`#readiness`), and `readines
 
 - `readiness/framework.js` holds the questions, weights, essential (pass or fail) items, capacity flags and scoring, shared by both pages. It is built from the research report "Charity and CIC bid readiness" (October 2026), kept outside this repo in `Shvft 2.0/reports/`. Change `VERSION` whenever a question or weight changes, and review the questions each October.
 - Submissions go to the `shvft-readiness-submit` Supabase function (in the Refuse the Box project) and are stored in `public.shvft_readiness_submissions`, with the exact permission wording each person agreed to. The function source lives in `Shvft 2.0/supabase/functions/`.
-- Emails need the `SHVFT_SENDER_EMAIL` secret set to a Brevo-verified shvft20.com address; until then submissions are saved but not emailed.
+- Emails need the `SHVFT_SENDER_EMAIL` secret set to a Brevo-verified shvft20.org address; until then submissions are saved but not emailed.
