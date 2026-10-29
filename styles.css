@@ -163,6 +163,15 @@ section { padding: clamp(72px, 10vw, 128px) 0; }
 .tool { border: 1px solid var(--rule); border-radius: 16px; padding: 30px; background: #fff; }
 .tool h3 { font-size: 1.6rem; margin-bottom: 10px; }
 .tool p { margin: 0; }
+.tool-link { display: flex; flex-direction: column; gap: 14px; text-decoration: none; color: inherit; transition: transform .15s, box-shadow .15s; }
+.tool-link:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(17, 26, 44, .08); }
+.tool-link:focus-visible { outline: 2px solid var(--purple); outline-offset: 3px; }
+.tool-link h3 { margin: 0; }
+.tool-link p { color: var(--slate); }
+.tool-brand { display: flex; align-items: center; gap: 14px; }
+.tool-brand img { width: 48px; height: 48px; flex: none; }
+.tool-link .go { margin-top: auto; font: 700 .76rem/1 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+.alt .newsletter { background: #fff; }
 @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
 
 /* Impact */

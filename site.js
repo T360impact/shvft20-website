@@ -1,5 +1,5 @@
 // Links to the old single-page sections land on the page that now holds them.
-const moved = { about: '/about/', team: '/about/#team', services: '/services/', who: '/services/#who', how: '/how-we-work/', 'youth-voice': '/how-we-work/#youth-voice', tools: '/how-we-work/#tools', training: '/training/', business: '/for-businesses/', contact: '/contact/', governance: '/governance/', privacy: '/governance/#privacy' };
+const moved = { about: '/about/', team: '/about/', services: '/services/', who: '/services/#who', how: '/how-we-work/', 'youth-voice': '/how-we-work/#youth-voice', training: '/training/', business: '/for-businesses/', contact: '/contact/', governance: '/governance/', privacy: '/governance/#privacy' };
 if (location.pathname === '/' && moved[location.hash.slice(1)]) location.replace(moved[location.hash.slice(1)]);
 
 const toggle = document.querySelector('.menu-toggle');

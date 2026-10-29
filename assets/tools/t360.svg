@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Browser-tab favicon: the T360 four-pillar ring on a rounded dark tile,
+       matching the installed PWA icon (public/pwa-icon.svg). Stroke is a touch
+       bolder than the app icon so the ring still reads at 16px. Arc colours are
+       the canonical pillar tokens from index.css (dark theme). -->
+  <rect x="16" y="16" width="480" height="480" rx="104" fill="#0D0D0D"/>
+  <g fill="none" stroke-width="72" stroke-linecap="round">
+    <path stroke="#DE7BB2" d="M282.05 108.28 A150 150 0 0 1 403.72 229.95"/>
+    <path stroke="#A37CF4" d="M403.72 282.05 A150 150 0 0 1 282.05 403.72"/>
+    <path stroke="#EACE5E" d="M229.95 403.72 A150 150 0 0 1 108.28 282.05"/>
+    <path stroke="#E59A72" d="M108.28 229.95 A150 150 0 0 1 229.95 108.28"/>
+  </g>
+</svg>
