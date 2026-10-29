@@ -63,8 +63,8 @@
 
   function profileStep() {
     return `<div class="rc-head"><span class="eyebrow">About your organisation</span>
-      <h2>Tell us who you are.</h2>
-      <p class="lede">This shapes the questions you see and lets us compare your size with the bids you are aiming for.</p></div>
+      <h2>Your organisation.</h2>
+      <p class="lede">Your answers tailor the questions and let us compare your capacity with the bids you are targeting.</p></div>
       <form class="rc-form rc-grid" id="rc-step" novalidate>${R.profile.map(fieldHtml).join('')}
       ${nav(false, 'Start the questions')}</form>`;
   }
@@ -190,7 +190,7 @@
       const unanswered = [...form.querySelectorAll('fieldset.rc-q')].filter(fs => !fs.querySelector('input:checked'));
       unanswered.forEach(fs => fs.classList.add('is-missing'));
       if (unanswered.length) {
-        msg.textContent = unanswered.length === 1 ? 'Please answer the highlighted question. “Not sure” is fine.' : `Please answer the ${unanswered.length} highlighted questions. “Not sure” is fine.`;
+        msg.textContent = unanswered.length === 1 ? 'Please answer the highlighted question. “Not sure” is an acceptable answer.' : `Please answer the ${unanswered.length} highlighted questions. “Not sure” is an acceptable answer.`;
         unanswered[0].querySelector('input')?.focus();
         return;
       }
