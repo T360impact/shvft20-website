@@ -414,21 +414,22 @@ section.partners { padding: 48px 0 52px; border-bottom: 1px solid var(--rule); }
 .marquee-toggle { padding: 6px 12px; border: 1.5px solid var(--rule); border-radius: 999px; background: #fff; color: var(--ink); font: 600 .78rem/1 var(--label); cursor: pointer; }
 .marquee { display: flex; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
 .logo-row { list-style: none; margin: 0; padding: 0; }
-.marquee-track { flex: none; display: flex; gap: 16px; padding-right: 16px; animation: marquee 34s linear infinite; }
+/* One set of six logos is wider than a 1920px screen, so a logo never shows twice at once. Duration keeps the speed at about 38px a second. */
+.marquee-track { --gap: 120px; flex: none; display: flex; gap: var(--gap); padding-right: var(--gap); animation: marquee 50s linear infinite; }
 .marquee:hover .marquee-track, .marquee:focus-within .marquee-track, .marquee.paused .marquee-track { animation-play-state: paused; }
 @keyframes marquee { to { transform: translateX(-100%); } }
 .logo-row li { flex: none; width: 200px; display: grid; place-items: center; height: 96px; padding: 14px 18px; box-sizing: border-box; border: 1px solid var(--rule); border-radius: 10px; background: #fff; }
 .logo-row li.on-dark { background: #000; border-color: #000; }
 .logo-row img { display: block; max-width: 100%; max-height: 60px; width: auto; height: auto; object-fit: contain; }
-@media (max-width: 560px) { .logo-row li { width: 150px; height: 80px; } .logo-row img { max-height: 48px; } }
+@media (max-width: 560px) { .logo-row li { width: 150px; height: 80px; } .logo-row img { max-height: 48px; } .marquee-track { --gap: 56px; animation-duration: 32s; } }
 @media (prefers-reduced-motion: reduce) {
   .marquee { -webkit-mask-image: none; mask-image: none; }
-  .marquee-track { animation: none; flex-wrap: wrap; justify-content: center; flex: 1; padding: 0 var(--gutter); }
+  .marquee-track { --gap: 16px; animation: none; flex-wrap: wrap; justify-content: center; flex: 1; padding: 0 var(--gutter); }
   .marquee-track[aria-hidden] { display: none; }
   .marquee-toggle { display: none; }
 }
 .easy-read .marquee { -webkit-mask-image: none; mask-image: none; }
-.easy-read .marquee-track { flex-wrap: wrap; justify-content: center; flex: 1; padding: 0 var(--gutter); }
+.easy-read .marquee-track { --gap: 16px; flex-wrap: wrap; justify-content: center; flex: 1; padding: 0 var(--gutter); }
 .easy-read .marquee-track[aria-hidden], .easy-read .marquee-toggle { display: none; }
 
 /* Skip link and keyboard focus, for everyone */
