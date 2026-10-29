@@ -18,6 +18,6 @@ The free bid readiness check sits on the home page (`#readiness`), and `readines
 
 - Icons live in `assets/icons.svg` (line icons in currentColor). Use `<svg><use href="/assets/icons.svg#i-name"/></svg>` inside `<span class="ico g|p|o">`.
 - The brand gradient is kept for headline accent words (`.grad-text`) and the "2.0" in the wordmark only.
-- Easy read (the "Aa" button in every header) switches to Atkinson Hyperlegible, larger text, more spacing, a cream background and no motion. A line in each page's `<head>` applies the saved choice before first paint; keep it when adding pages.
+- Easy read (the "Aa" button in every header) switches to Atkinson Hyperlegible, larger text, more spacing and no motion (same page colours). A line in each page's `<head>` applies the saved choice before first paint; keep it when adding pages.
 - Keep sentences short (aim for under 15 words) and use lists rather than long paragraphs.
 - Partner logos live in `assets/partners/`; the strip scrolls sideways with a Pause button and stays still for reduced motion and Easy read.

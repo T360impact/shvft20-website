@@ -455,7 +455,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
 /* Easy read mode: larger, clearer, calmer */
 html.easy-read { font-size: 112.5%; }
 .easy-read {
-  --paper: #fdf9ee; --paper-2: #f5efdf; --slate: #2f3644; --slate-light: #cfd5de;
+  --slate: #2f3644; --slate-light: #cfd5de;
   --display: "Atkinson Hyperlegible", Verdana, sans-serif; --label: "Atkinson Hyperlegible", Verdana, sans-serif;
   --body: "Atkinson Hyperlegible", Verdana, sans-serif; --serif: "Atkinson Hyperlegible", Verdana, sans-serif;
 }
