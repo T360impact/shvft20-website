@@ -181,19 +181,13 @@ section { padding: clamp(72px, 10vw, 128px) 0; }
 .case h4 { font: 700 .78rem/1 var(--label); letter-spacing: .16em; text-transform: uppercase; margin: 0 0 16px; color: var(--slate); }
 .case p { margin: 0; color: var(--slate); font-size: .97rem; }
 .case-title { font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 64px 0 24px; }
-.wins { display: grid; grid-template-columns: minmax(0, 560px); gap: 20px; margin-top: 20px; }
-.big-num + .wins { margin-top: 56px; }
-.win { border: 1px solid var(--rule); border-radius: 18px; padding: 34px 30px; background: #fff; }
-.win strong { display: block; font: 400 clamp(2rem, 4vw, 2.8rem)/1 var(--display); margin: 10px 0 16px; }
-.win h3 { font-size: 1.1rem; }
-.win p { color: var(--slate); margin: 0; }
 .quotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 40px; }
 .quote { position: relative; padding-left: 26px; margin: 0; }
 .quote::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 4px; border-radius: 4px; background: linear-gradient(180deg, var(--green), var(--purple), var(--orange)); }
 .quote p { font: italic 400 1.2rem/1.5 var(--serif); margin: 0 0 14px; }
 .quote cite { font: 500 .85rem/1.4 var(--label); font-style: normal; color: var(--slate); }
 @media (max-width: 860px) {
-  .case, .wins, .quotes { grid-template-columns: 1fr; }
+  .case, .quotes { grid-template-columns: 1fr; }
   .case > div + div { border-left: 0; border-top: 1px solid var(--rule); }
 }
 
