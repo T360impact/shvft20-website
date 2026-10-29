@@ -141,10 +141,12 @@
       </form></div>`;
   }
 
-  function sentStep(email, token) {
-    return `<div class="rc-done"><span class="eyebrow">Report on its way</span>
-      <h2>Check your inbox.</h2>
-      <p class="lede">We have sent your full report to <strong>${esc(email)}</strong>. If it has not arrived in a few minutes, check your junk folder.</p>
+  function sentStep(email, token, emailed) {
+    return `<div class="rc-done"><span class="eyebrow">${emailed ? 'Report on its way' : 'Report ready'}</span>
+      <h2>${emailed ? 'Check your inbox.' : 'Your full report is ready.'}</h2>
+      <p class="lede">${emailed
+        ? `We have sent your full report to <strong>${esc(email)}</strong>. If it has not arrived in a few minutes, check your junk folder.`
+        : 'Open it below and bookmark the page, as the link is private to you. We will also be in touch by email.'}</p>
       <div class="btns">${token ? `<a class="btn btn-primary" href="/readiness/report/?r=${encodeURIComponent(token)}">Open my report now</a>` : ''}
       <a class="btn btn-secondary" href="/contact/#enquiry">Talk to us about your results</a></div></div>`;
   }
@@ -239,7 +241,7 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'That did not send. Could you try once more?');
       clearDraft();
-      root.querySelector('.rc-wrap').innerHTML = progress() + sentStep(contact.email, data.report_token);
+      root.querySelector('.rc-wrap').innerHTML = progress() + sentStep(contact.email, data.report_token, data.emailed === true);
       focusTop();
     } catch (err) {
       msg.className = 'rc-msg err';
