@@ -1,0 +1,10 @@
+{
+  "name": "Shvft2.0 Consortium Portal",
+  "short_name": "Portal",
+  "start_url": "/portal/",
+  "scope": "/portal/",
+  "display": "standalone",
+  "background_color": "#fafaf8",
+  "theme_color": "#111a2c",
+  "icons": [{ "src": "/assets/icon.png", "sizes": "1000x1000", "type": "image/png", "purpose": "any" }]
+}
