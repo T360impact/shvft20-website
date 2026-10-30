@@ -19,6 +19,10 @@ const ENTITY = {
   yp_links: 'a register link', sessions: 'a session', attendance: 'attendance', outcome_measures: 'the outcome framework',
   outcomes: 'an outcome', returns: 'a return',
 };
+// Extra roles a person can hold on top of their main one.
+const EXTRA = { org_admin: 'Org admin', finance: 'Finance', operations: 'Operations', reporting: 'Reporting',
+  safeguarding: 'Safeguarding contact', bid_contributor: 'Bid contributor', hub_worker: 'Hub worker' };
+
 const ACTION = { insert: 'added', update: 'changed', delete: 'removed', view: 'viewed' };
 
 function linkBox(link, who) {
@@ -33,6 +37,8 @@ export default async function team(ctx, el) {
     db.from('memberships').select('id, role, active, organisation_id, user_id, created_at, deactivated_at').eq('consortium_id', c.id).then(must),
     db.from('audit_log').select('*').eq('consortium_id', c.id).order('created_at', { ascending: false }).limit(100).then(must),
   ]);
+  const extras = members.length ? must(await db.from('membership_roles').select('membership_id, role').in('membership_id', members.map((m) => m.id))) : [];
+  const has = (m, r) => extras.some((x) => x.membership_id === m.id && x.role === r);
   const ids = [...new Set([...members.map((m) => m.user_id), ...audit.map((a) => a.actor).filter(Boolean)])];
   const profiles = ids.length ? must(await db.from('profiles').select('id, full_name, email').in('id', ids)) : [];
   const who = (id) => profiles.find((p) => p.id === id);
@@ -47,7 +53,9 @@ export default async function team(ctx, el) {
           <thead><tr><th>Person</th><th>Organisation and role</th><th></th></tr></thead>
           <tbody>${members.map((m) => html`<tr class="${m.active ? '' : 'muted'}">
             <td><strong>${who(m.user_id)?.full_name || '–'}</strong><br><span class="small muted">${who(m.user_id)?.email || ''}</span></td>
-            <td>${ctx.org(m.organisation_id)?.name}<br><span class="small muted">${ROLE_LABEL[m.role]}${m.active ? '' : ` · removed ${fmtDateTime(m.deactivated_at)}`}</span></td>
+            <td>${ctx.org(m.organisation_id)?.name}<br><span class="small muted">${ROLE_LABEL[m.role]}${m.active ? '' : ` · removed ${fmtDateTime(m.deactivated_at)}`}</span>
+              ${m.active ? html`<details style="margin-top:6px"><summary class="small">Also: ${Object.keys(EXTRA).filter((r) => has(m, r)).map((r) => EXTRA[r]).join(', ') || 'no other roles'}</summary>
+                <div class="checks" style="margin-top:6px">${Object.entries(EXTRA).map(([r, label]) => html`<label class="check small"><input type="checkbox" data-role="${r}" data-membership="${m.id}" ${has(m, r) ? 'checked' : ''}> ${label}</label>`)}</div></details>` : ''}</td>
             <td class="nowrap">${m.user_id === ctx.user.id ? html`<span class="small muted">You</span>` : m.active
               ? html`<button class="linkbtn small" data-reset="${who(m.user_id)?.email || ''}">Reset link</button><br><button class="linkbtn small" data-off="${m.id}">Remove access</button>`
               : html`<button class="linkbtn small" data-on="${m.id}">Restore</button>`}</td></tr>`)}</tbody></table></div>
@@ -98,6 +106,12 @@ export default async function team(ctx, el) {
   $$('[data-off]').forEach((b) => b.addEventListener('click', () => act(b, async () => {
     must(await db.from('memberships').update({ active: false, deactivated_at: new Date().toISOString() }).eq('id', b.dataset.off));
     toast('Access removed.'); team(ctx, el);
+  })));
+  $$('[data-role]').forEach((box) => box.addEventListener('change', () => act(null, async () => {
+    const row = { membership_id: box.dataset.membership, role: box.dataset.role };
+    if (box.checked) must(await db.from('membership_roles').insert(row));
+    else must(await db.from('membership_roles').delete().match(row));
+    toast(box.checked ? `${EXTRA[row.role]} added.` : `${EXTRA[row.role]} removed.`);
   })));
   $$('[data-on]').forEach((b) => b.addEventListener('click', () => act(b, async () => {
     must(await db.from('memberships').update({ active: true, deactivated_at: null }).eq('id', b.dataset.on));

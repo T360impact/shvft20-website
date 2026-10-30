@@ -37,6 +37,7 @@ export default async function bid(ctx, el, [itemId]) {
   const mine = items.filter((i) => i.organisation_id === ctx.orgId);
   const left = daysUntil(c.bid_deadline);
   const open = c.stage === 'bid';
+  const decidable = ['bid', 'submitted'].includes(c.stage);
   const owners = ctx.orgs.filter((o) => ['lead', 'accountable_body', 'delivery_partner'].includes(o.kind));
 
   const itemTable = (rows, showOrg) => html`<div class="table-wrap"><table>
@@ -103,7 +104,9 @@ export default async function bid(ctx, el, [itemId]) {
       </section></div>` : ''}
 
     ${ctx.manages ? html`<section class="panel" style="margin-top:20px"><h2>Outcome</h2>
-      ${open ? html`<p class="muted small">If the bid is won, this workspace becomes the consortium: every partner, login, document and commitment carries across. If it's lost, everything stays on file.</p>
+      ${open ? html`<div class="banner info" style="margin-bottom:14px">When the application has gone in, mark the bid as submitted. That needs every partner to have confirmed their targets and budget under Targets and budget.
+        <div class="btns" style="margin-top:10px"><button class="btn small" type="button" id="submitted">Mark as submitted</button></div></div>` : ''}
+      ${decidable ? html`<p class="muted small">If the bid is won, this workspace becomes the consortium: every partner, login, document and commitment carries across. If it's lost, everything stays on file.</p>
         <form class="form" id="won" style="margin-top:12px"><div class="fields">
           <label class="f">Programme starts<input type="date" name="start" required></label>
           <label class="f">Programme ends<input type="date" name="end" required></label></div>
@@ -151,6 +154,9 @@ export default async function bid(ctx, el, [itemId]) {
   });
   $('#lost')?.addEventListener('click', (e) => act(e.currentTarget, async () => {
     must(await db.rpc('close_bid', { p_consortium: c.id, p_outcome: 'lost' })); toast('Marked as not won. Everything stays on file.'); await ctx.reload();
+  }));
+  $('#submitted')?.addEventListener('click', (e) => act(e.currentTarget, async () => {
+    must(await db.rpc('mark_bid_submitted', { p_consortium: c.id })); toast('Marked as submitted.'); await ctx.reload();
   }));
   $('#reopen-bid')?.addEventListener('click', (e) => act(e.currentTarget, async () => {
     must(await db.rpc('close_bid', { p_consortium: c.id, p_outcome: 'bid' })); await ctx.reload();

@@ -12,6 +12,7 @@ import team from './views/team.js';
 import admin from './views/admin.js';
 import bid from './views/bid.js';
 import library from './views/library.js';
+import targets from './views/targets.js';
 
 const app = $('#app');
 
@@ -28,6 +29,7 @@ const VIEWS = {
   dashboard: { label: 'Dashboard', view: dashboard, roles: 'all' },
   hub: { label: 'Consortium', view: hub, roles: 'all' },
   agreements: { label: 'Agreements', view: agreements, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
+  targets: { label: 'Targets and budget', view: targets, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance'] },
   sessions: { label: 'Sessions', view: sessions, roles: PD_ROLES },
   register: { label: 'Young people', view: register, roles: PD_ROLES },
   returns: { label: 'Returns', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
@@ -38,14 +40,14 @@ const VIEWS = {
 // organisation to record against.
 // A bid workspace only has the bid pages; a live consortium keeps its bid
 // as a record for the lead and accountable body.
-const BID_VIEWS = ['bid', 'hub', 'agreements', 'team'];
+const BID_VIEWS = ['bid', 'targets', 'hub', 'agreements', 'team'];
 const allowed = (key, ctx) => {
   const v = VIEWS[key];
   if (!v) return false;
   const stage = ctx.consortium.stage;
   if (stage !== 'live' && !BID_VIEWS.includes(key)) return false;
   if (stage === 'live' && key === 'bid' && !(ctx.seesAll && ctx.consortium.bid_deadline)) return false;
-  return v.roles === 'all' || v.roles.includes(ctx.role) || (ctx.isAdmin && v.roles !== PD_ROLES);
+  return v.roles === 'all' || v.roles.includes(ctx.role) || ctx.extraRoles.some((r) => v.roles.includes(r)) || (ctx.isAdmin && v.roles !== PD_ROLES);
 };
 const homeView = (ctx) => (ctx.consortium.stage === 'live' ? 'dashboard' : allowed('bid', ctx) ? 'bid' : 'hub');
 // Shvft2.0 staff: administrators and anyone leading a consortium.
@@ -210,10 +212,13 @@ async function loadCtx(consortiumId) {
   ]);
   const m = state.memberships.find((x) => x.consortium_id === consortiumId);
   const isAdmin = !!state.profile.is_platform_admin;
+  // Roles held on top of the main one (finance, org admin, ...).
+  const extraRoles = m ? must(await db.from('membership_roles').select('role').eq('membership_id', m.id)).map((r) => r.role) : [];
   state.ctx = {
     consortium, orgs, sites, isAdmin,
     user: state.user, profile: state.profile,
     role: m?.role || (isAdmin ? 'platform_admin' : null),
+    extraRoles,
     orgId: m?.organisation_id || null,
     orgName: m?.organisations?.name || '',
     seesAll: isAdmin || ['lead', 'accountable_body'].includes(m?.role),

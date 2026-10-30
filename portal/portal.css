@@ -103,7 +103,26 @@ th.num { text-align: right; }
 .rag-grey, .pill-draft, .pill-requested, .pill-closed { background: var(--paper-2); color: var(--slate); }
 .pill-submitted, .pill-issued, .pill-bid { background: var(--info-bg); color: var(--info-fg); }
 .pill-returned, .pill-lost { background: var(--warn-bg); color: var(--warn-fg); }
-.pill-live { background: var(--ok-bg); color: var(--ok-fg); }
+.pill-live, .pill-confirmed, .pill-accepted, .pill-edited { background: var(--ok-bg); color: var(--ok-fg); }
+.pill-running, .pill-needs_review, .pill-proposed { background: var(--info-bg); color: var(--info-fg); }
+.pill-failed, .pill-rejected { background: var(--bad-bg); color: var(--bad-fg); }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.checklist > li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+.checklist .mark { font-weight: 700; }
+.checklist .ok .mark { color: var(--ok-fg); }
+.checklist .bad .mark { color: var(--bad-fg); }
+.checklist ul { margin: 4px 0 0; padding-left: 18px; list-style: disc; color: var(--bad-fg); font-size: .85rem; }
+.item-row td { vertical-align: middle; }
+.item-row.rejected { opacity: .55; }
+.item-row input, .item-row select { min-height: 36px; padding: 6px 8px; font-size: .88rem; }
+.item-row input[type=number] { width: 110px; }
+.item-row input.year { width: 64px; }
+.item-row input[name=label] { min-width: 200px; }
+.item-row select { min-width: 150px; }
+.ref { font-size: .8rem; color: var(--slate); max-width: 340px; }
+.warn-text { color: var(--warn-fg); font-size: .8rem; }
+.group-head td { background: var(--paper-2); font: 700 .8rem/1.3 var(--label); letter-spacing: .04em; }
+.diff-added { color: var(--ok-fg); } .diff-changed { color: var(--warn-fg); } .diff-removed { color: var(--bad-fg); }
 .pill-mandatory { background: var(--ink); color: var(--paper); }
 .meter { display: block; height: 10px; border-radius: 5px; background: var(--paper-2); overflow: hidden; margin-top: 10px; }
 .meter > span { display: block; height: 100%; background: var(--green-ink); border-radius: 5px; }

@@ -28,10 +28,12 @@ export const KIND_LABEL = {
 
 export const MEASURE_LABEL = {
   reached: 'Young people reached',
+  targeted: 'Targeted young people',
   targeted_pct: 'Targeted share (%)',
   sessions: 'Sessions delivered',
   attendances: 'Attendances',
   outcomes: 'Outcomes achieved',
+  other: 'Other',
 };
 
 // Roles that handle young people's personal data, and so need two-step sign-in.
@@ -142,6 +144,8 @@ export const statusPill = (s) => html`<span class="pill pill-${s}">${{
   issued: 'Awaiting partner', partner_signed: 'Awaiting countersignature', countersigned: 'Signed',
   requested: 'Requested', returned: 'Returned',
   bid: 'Bid in progress', live: 'Live', lost: 'Not won', closed: 'Closed',
+  running: 'Reading documents', needs_review: 'Needs review', confirmed: 'Confirmed', failed: 'Failed',
+  proposed: 'To review', accepted: 'Accepted', edited: 'Edited', rejected: 'Rejected',
 }[s] || s}</span>`;
 
 export const daysUntil = (d) => (d ? Math.round((new Date(`${d}T12:00:00`) - new Date(`${today()}T12:00:00`)) / 864e5) : null);
