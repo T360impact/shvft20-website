@@ -56,7 +56,7 @@ p { margin: 0 0 1em; }
 /* Header */
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--paper); }
 .site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; background: rgba(250, 250, 248, .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--rule); }
-.site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 20px; }
+.site-header .wrap { max-width: 1320px; display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 20px; }
 .nav { margin-left: auto; gap: 20px; }
 .nav a { white-space: nowrap; }
 .nav { display: flex; align-items: center; gap: 26px; }
@@ -65,13 +65,21 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .nav a[aria-current="page"]:not(.btn) { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; text-decoration-color: var(--green); }
 .header-cta { padding: 12px 16px; font-size: .72rem; }
 .nav a.header-cta, .nav a.header-cta:hover { color: var(--paper); }
+/* Partner portal: a quieter outline button paired with the main call to action. */
+.header-portal { padding: 10px 14px; font-size: .72rem; border-width: 1.5px; }
+.nav a.header-portal { color: var(--ink); margin-right: -14px; }
+.nav a.header-portal:hover { color: var(--paper); }
+/* The menu says "Partner sign in"; the desktop bar has room for "Sign in" only. */
+.header-portal .portal-short { display: none; }
+@media (min-width: 1200px) { .header-portal .portal-long { display: none; } .header-portal .portal-short { display: inline; } }
 .menu-toggle { display: none; background: none; border: 0; padding: 8px; cursor: pointer; }
 .menu-toggle span { display: block; width: 22px; height: 2px; background: var(--ink); margin: 5px 0; }
-@media (max-width: 1060px) {
+@media (max-width: 1199px) {
   .nav { display: none; position: absolute; top: 68px; left: 0; right: 0; flex-direction: column; align-items: flex-start; gap: 0; background: var(--paper); border-bottom: 1px solid var(--rule); padding: 8px var(--gutter) 20px; }
   .nav.open { display: flex; }
   .nav a { padding: 12px 0; font-size: 1.05rem; width: 100%; }
   .nav .header-cta { margin-top: 10px; width: auto; padding: 14px 22px; color: var(--paper); }
+  .nav a.header-portal { margin: 10px 0 0; width: auto; padding: 14px 22px; }
   .menu-toggle { display: block; }
 }
 
@@ -444,8 +452,8 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
 .read-toggle .aa { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--paper-2); font: 700 .9rem/1 var(--label); }
 .read-toggle[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .read-toggle[aria-pressed="true"] .aa { background: var(--paper); color: var(--ink); }
-@media (max-width: 1199px) { .read-label { display: none; } .read-toggle { padding: 0 5px; } }
-@media (max-width: 1060px) { .read-toggle { order: 1; margin-left: auto; } .menu-toggle { order: 2; } }
+@media (max-width: 1439px) { .read-label { display: none; } .read-toggle { padding: 0 5px; } }
+@media (max-width: 1199px) { .read-toggle { order: 1; margin-left: auto; } .menu-toggle { order: 2; } }
 
 /* Easy read mode: larger, clearer, calmer */
 html.easy-read { font-size: 112.5%; }
@@ -466,6 +474,21 @@ html.easy-read { font-size: 112.5%; }
 .easy-read p, .easy-read li { max-width: 62ch; }
 .easy-read .dark .lede, .easy-read .dark p, .easy-read .dark li { color: #eef0f4; }
 .easy-read .site-header { background: var(--paper); backdrop-filter: none; }
+/* Easy read's larger text needs more room, so its header switches to the
+   menu button until 1440px and keeps the switch as just "Aa". */
+.easy-read .read-label { display: none; }
+.easy-read .read-toggle { padding: 0 5px; }
+@media (max-width: 1439px) {
+  .easy-read .nav { display: none; position: absolute; top: 68px; left: 0; right: 0; flex-direction: column; align-items: flex-start; gap: 0; background: var(--paper); border-bottom: 1px solid var(--rule); padding: 8px var(--gutter) 20px; }
+  .easy-read .nav.open { display: flex; }
+  .easy-read .nav a { padding: 12px 0; font-size: 1.05rem; width: 100%; }
+  .easy-read .nav .header-cta { margin-top: 10px; width: auto; padding: 14px 22px; color: var(--paper); }
+  .easy-read .nav a.header-portal { margin: 10px 0 0; width: auto; padding: 14px 22px; }
+  .easy-read .header-portal .portal-long { display: inline; }
+  .easy-read .header-portal .portal-short { display: none; }
+  .easy-read .menu-toggle { display: block; order: 2; }
+  .easy-read .read-toggle { order: 1; margin-left: auto; }
+}
 .easy-read *, .easy-read *::before, .easy-read *::after { animation: none !important; transition: none !important; }
 .easy-read .shift-path { stroke-dashoffset: 0 !important; }
 .easy-read .shift-node { opacity: 1 !important; }
