@@ -100,8 +100,19 @@ th.num { text-align: right; }
 .rag-green, .pill-approved, .pill-countersigned { background: var(--ok-bg); color: var(--ok-fg); }
 .rag-amber, .pill-changes_requested, .pill-partner_signed { background: var(--warn-bg); color: var(--warn-fg); }
 .rag-red { background: var(--bad-bg); color: var(--bad-fg); }
-.rag-grey, .pill-draft { background: var(--paper-2); color: var(--slate); }
-.pill-submitted, .pill-issued { background: var(--info-bg); color: var(--info-fg); }
+.rag-grey, .pill-draft, .pill-requested, .pill-closed { background: var(--paper-2); color: var(--slate); }
+.pill-submitted, .pill-issued, .pill-bid { background: var(--info-bg); color: var(--info-fg); }
+.pill-returned, .pill-lost { background: var(--warn-bg); color: var(--warn-fg); }
+.pill-live { background: var(--ok-bg); color: var(--ok-fg); }
+.pill-mandatory { background: var(--ink); color: var(--paper); }
+.meter { display: block; height: 10px; border-radius: 5px; background: var(--paper-2); overflow: hidden; margin-top: 10px; }
+.meter > span { display: block; height: 100%; background: var(--green-ink); border-radius: 5px; }
+tr.blocking td:first-child { box-shadow: inset 3px 0 0 var(--bad-fg); }
+.history { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.history li { border-left: 2px solid var(--rule); padding-left: 12px; }
+.quick-picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick-picks button { border: 1.5px solid var(--rule); background: var(--surface); border-radius: 999px; padding: 6px 10px; font: 500 .8rem/1.2 var(--body); cursor: pointer; text-align: left; }
+.quick-picks button:hover { border-color: var(--ink); }
 .pill-demo { background: var(--warn-bg); color: var(--warn-fg); }
 
 /* Buttons and forms */

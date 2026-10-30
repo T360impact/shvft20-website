@@ -1,7 +1,7 @@
 // Consortium Portal: sign-in, two-step verification, the page shell and the
 // router. Each screen lives in views/ and receives a context describing the
 // consortium and the signed-in person's role in it.
-import { db, html, render, raw, $, formData, toast, errorText, act, must, ROLE_LABEL, PD_ROLES } from './lib.js';
+import { db, html, render, raw, $, formData, toast, errorText, act, must, fmtDate, statusPill, daysUntil, ROLE_LABEL, PD_ROLES } from './lib.js';
 import hub from './views/hub.js';
 import agreements from './views/agreements.js';
 import register from './views/register.js';
@@ -10,6 +10,8 @@ import returns from './views/returns.js';
 import dashboard from './views/dashboard.js';
 import team from './views/team.js';
 import admin from './views/admin.js';
+import bid from './views/bid.js';
+import library from './views/library.js';
 
 const app = $('#app');
 
@@ -22,6 +24,7 @@ const linkError = /[#&]error_description=([^&]+)/.exec(startHash)?.[1];
 const state = { user: null, profile: null, memberships: [], ctx: null, ready: false };
 
 const VIEWS = {
+  bid: { label: 'Bid readiness', view: bid, roles: ['lead', 'accountable_body', 'partner_manager'] },
   dashboard: { label: 'Dashboard', view: dashboard, roles: 'all' },
   hub: { label: 'Consortium', view: hub, roles: 'all' },
   agreements: { label: 'Agreements', view: agreements, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
@@ -33,10 +36,20 @@ const VIEWS = {
 
 // Administrators see every page except the delivery ones, which need an
 // organisation to record against.
+// A bid workspace only has the bid pages; a live consortium keeps its bid
+// as a record for the lead and accountable body.
+const BID_VIEWS = ['bid', 'hub', 'agreements', 'team'];
 const allowed = (key, ctx) => {
   const v = VIEWS[key];
-  return v && (v.roles === 'all' || v.roles.includes(ctx.role) || (ctx.isAdmin && v.roles !== PD_ROLES));
+  if (!v) return false;
+  const stage = ctx.consortium.stage;
+  if (stage !== 'live' && !BID_VIEWS.includes(key)) return false;
+  if (stage === 'live' && key === 'bid' && !(ctx.seesAll && ctx.consortium.bid_deadline)) return false;
+  return v.roles === 'all' || v.roles.includes(ctx.role) || (ctx.isAdmin && v.roles !== PD_ROLES);
 };
+const homeView = (ctx) => (ctx.consortium.stage === 'live' ? 'dashboard' : allowed('bid', ctx) ? 'bid' : 'hub');
+// Shvft2.0 staff: administrators and anyone leading a consortium.
+const isConvenor = () => !!state.profile?.is_platform_admin || state.memberships.some((m) => m.role === 'lead');
 
 // ---------------------------------------------------------------- sign-in
 
@@ -172,7 +185,7 @@ async function boot(skipLink = false) {
   state.user = session.user;
   state.profile = must(await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle()) || {};
   state.memberships = must(await db.from('memberships')
-    .select('id, role, consortium_id, organisation_id, consortia(name), organisations(name)')
+    .select('id, role, consortium_id, organisation_id, consortia(name, stage, bid_deadline), organisations(name)')
     .eq('user_id', session.user.id).eq('active', true));
 
   const needsMfa = state.profile.is_platform_admin || state.memberships.some((m) => PD_ROLES.includes(m.role));
@@ -216,13 +229,14 @@ async function loadCtx(consortiumId) {
 function shell(ctx, active) {
   const nav = ctx
     ? Object.entries(VIEWS).filter(([k]) => allowed(k, ctx) && (k !== 'team' || ctx.manages))
-      .map(([k, v]) => html`<li><a href="#/c/${ctx.consortium.id}/${k}" ${raw(active === k ? 'aria-current="page"' : '')}>${v.label}</a></li>`)
+      .map(([k, v]) => html`<li><a href="#/c/${ctx.consortium.id}/${k}" ${raw(active === k ? 'aria-current="page"' : '')}>${k === 'hub' && ctx.consortium.stage !== 'live' ? 'Workspace' : v.label}</a></li>`)
     : [];
   render(app, html`
     <header class="bar"><div class="bar-in">
       <a class="wordmark" href="#/">SHVFT<span class="two">2.0</span><small>Portal</small></a>
       <span class="bar-c">${ctx ? `${ctx.consortium.name}${ctx.orgName ? ` · ${ctx.orgName}` : ''}` : ''}</span>
       <div class="bar-user">
+        ${isConvenor() ? html`<a href="#/library">Library</a>` : ''}
         ${state.profile.is_platform_admin ? html`<a href="#/admin">Admin</a>` : ''}
         <a href="#/account">Account</a>
         <button type="button" id="signout">Sign out</button>
@@ -237,19 +251,34 @@ function shell(ctx, active) {
 
 async function home() {
   const main = shell(null);
-  let list = state.memberships.map((m) => ({ id: m.consortium_id, name: m.consortia?.name, role: m.role, org: m.organisations?.name }));
+  let list = state.memberships.map((m) => ({ id: m.consortium_id, name: m.consortia?.name, stage: m.consortia?.stage, deadline: m.consortia?.bid_deadline, role: m.role, org: m.organisations?.name }));
   if (state.profile.is_platform_admin) {
-    const all = must(await db.from('consortia').select('id, name').order('name'));
-    for (const c of all) if (!list.some((l) => l.id === c.id)) list.push({ id: c.id, name: c.name, role: 'platform_admin' });
+    const all = must(await db.from('consortia').select('id, name, stage, bid_deadline').order('name'));
+    for (const c of all) if (!list.some((l) => l.id === c.id)) list.push({ id: c.id, name: c.name, stage: c.stage, deadline: c.bid_deadline, role: 'platform_admin' });
   }
-  if (list.length === 1) { location.replace(`#/c/${list[0].id}/dashboard`); return; }
+  // Reminders: open bid items assigned to the user's organisations that are
+  // due within a week or overdue.
+  const myOrgs = state.memberships.map((m) => m.organisation_id);
+  const soon = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  const tasks = myOrgs.length ? must(await db.from('bid_items').select('id, consortium_id, name, due_on, status, consortia(name, stage)')
+    .in('organisation_id', myOrgs).in('status', ['requested', 'returned']).lte('due_on', soon).order('due_on')).filter((t) => t.consortia?.stage === 'bid') : [];
+  if (list.length === 1 && !tasks.length) { location.replace(`#/c/${list[0].id}/${list[0].stage === 'live' ? 'dashboard' : 'bid'}`); return; }
+  const card = (c) => html`<a class="panel" href="#/c/${c.id}/${c.stage === 'live' ? 'dashboard' : 'bid'}" style="text-decoration:none">
+    <h2>${c.name}</h2><p style="margin-top:8px">${statusPill(c.stage)}${c.stage === 'bid' && c.deadline ? html` <span class="small muted">Deadline ${fmtDate(c.deadline)}</span>` : ''}</p>
+    <p class="muted small" style="margin-top:6px">${ROLE_LABEL[c.role]}${c.org ? ` · ${c.org}` : ''}</p></a>`;
+  const bids = list.filter((c) => c.stage !== 'live');
+  const live = list.filter((c) => c.stage === 'live');
   render(main, html`
-    <div class="page-head"><div><span class="eyebrow">Welcome</span><h1>Your consortia</h1></div></div>
-    ${list.length ? html`<div class="grid2">${list.map((c) => html`
-      <a class="panel" href="#/c/${c.id}/dashboard" style="text-decoration:none">
-        <h2>${c.name}</h2><p class="muted small" style="margin-top:6px">${ROLE_LABEL[c.role]}${c.org ? ` · ${c.org}` : ''}</p>
-      </a>`)}</div>`
-    : html`<div class="panel"><p>You're not part of a consortium yet. Your consortium lead adds you, and you'll see it here.</p></div>`}`);
+    <div class="page-head"><div><span class="eyebrow">Welcome</span><h1>${state.profile.full_name ? `Hello, ${state.profile.full_name.split(' ')[0]}` : 'Your workspaces'}</h1></div></div>
+    ${tasks.length ? html`<section class="panel" style="margin-bottom:20px"><h2>Due soon</h2>
+      <div class="table-wrap"><table><tbody>${tasks.map((t) => {
+        const n = daysUntil(t.due_on);
+        return html`<tr><td><a href="#/c/${t.consortium_id}/bid/${t.id}">${t.name}</a><br><span class="small muted">${t.consortia?.name}</span></td>
+          <td>${statusPill(t.status)}</td><td class="small nowrap">${n < 0 ? html`<span class="rag rag-red">${-n} day${n === -1 ? '' : 's'} overdue</span>` : n === 0 ? 'Due today' : `Due in ${n} day${n === 1 ? '' : 's'}`}</td></tr>`;
+      })}</tbody></table></div></section>` : ''}
+    ${live.length ? html`<h2 style="margin-bottom:12px">Consortia</h2><div class="grid2">${live.map(card)}</div>` : ''}
+    ${bids.length ? html`<h2 style="margin:24px 0 12px">Bids</h2><div class="grid2">${bids.map(card)}</div>` : ''}
+    ${!list.length ? html`<div class="panel"><p>You're not part of a bid or consortium yet. Your lead adds you, and you'll see it here.</p></div>` : ''}`);
 }
 
 function account() {
@@ -292,11 +321,12 @@ async function route() {
     if (!parts.length) return await home();
     if (parts[0] === 'account') return account();
     if (parts[0] === 'admin' && state.profile.is_platform_admin) return await admin(shell(null));
+    if (parts[0] === 'library' && isConvenor()) return await library(shell(null), parts.slice(1));
     if (parts[0] === 'c' && parts[1]) {
       const ctx = await loadCtx(parts[1]);
       if (!ctx) { render(shell(null), html`<div class="panel">That consortium isn't available to you.</div>`); return; }
-      const key = parts[2] || 'dashboard';
-      if (!allowed(key, ctx)) { location.replace(`#/c/${ctx.consortium.id}/dashboard`); return; }
+      const key = parts[2] || homeView(ctx);
+      if (!allowed(key, ctx)) { location.replace(`#/c/${ctx.consortium.id}/${homeView(ctx)}`); return; }
       const main = shell(ctx, key);
       render(main, html`<p class="loading">Loading…</p>`);
       await VIEWS[key].view(ctx, main, parts.slice(3));

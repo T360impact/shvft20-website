@@ -4,25 +4,28 @@ import { db, html, render, $, $$, formData, toast, act, must, fmtDate, fmtMoney,
 
 export default async function hub(ctx, el) {
   const c = ctx.consortium;
-  const [dates, measures] = await Promise.all([
+  const isBid = c.stage !== 'live';
+  const [dates, measures, partners] = await Promise.all([
     db.from('key_dates').select('*').eq('consortium_id', c.id).order('due_on').then(must),
     db.from('outcome_measures').select('*').eq('consortium_id', c.id).order('code').then(must),
+    ctx.manages ? db.from('partners').select('id, name').order('name').then(must) : [],
   ]);
   const byKind = (k) => ctx.orgs.filter((o) => o.kind === k).map((o) => o.name).join(', ') || '–';
   const upcoming = dates.filter((d) => d.due_on >= today());
   const past = dates.filter((d) => d.due_on < today());
 
   render(el, html`
-    <div class="page-head"><div><span class="eyebrow">Consortium</span><h1>${c.name}</h1>
+    <div class="page-head"><div><span class="eyebrow">${isBid ? 'Bid workspace' : 'Consortium'}</span><h1>${c.name}</h1>
       ${c.description ? html`<p class="muted">${c.description}</p>` : ''}</div></div>
-    ${!c.allow_real_records ? html`<div class="banner warn" style="margin-bottom:20px"><strong>Demo mode.</strong> Use made-up young people only until the data protection impact assessment and data processing agreements are signed.</div>` : ''}
+    ${!c.allow_real_records && !isBid ? html`<div class="banner warn" style="margin-bottom:20px"><strong>Demo mode.</strong> Use made-up young people only until the data protection impact assessment and data processing agreements are signed.</div>` : ''}
     <div class="grid2">
       <section class="panel"><h2>Overview</h2>
         <dl class="facts">
           <dt>Funder</dt><dd>${c.funder || '–'}</dd>
           <dt>Programme</dt><dd>${c.programme || '–'}</dd>
-          ${ctx.role !== 'youth_voice' ? html`<dt>Grant value</dt><dd>${fmtMoney(c.grant_value) || '–'}</dd>` : ''}
-          <dt>Runs</dt><dd>${fmtDate(c.start_date)} to ${fmtDate(c.end_date)}</dd>
+          ${ctx.role !== 'youth_voice' ? html`<dt>${isBid ? 'Bid value' : 'Grant value'}</dt><dd>${fmtMoney(c.grant_value) || '–'}</dd>` : ''}
+          ${c.bid_deadline ? html`<dt>Bid deadline</dt><dd>${fmtDate(c.bid_deadline)}</dd>` : ''}
+          ${c.start_date ? html`<dt>Runs</dt><dd>${fmtDate(c.start_date)} to ${fmtDate(c.end_date)}</dd>` : ''}
           <dt>Lead</dt><dd>${byKind('lead')}</dd>
           <dt>Accountable body</dt><dd>${byKind('accountable_body')}</dd>
           <dt>Delivery partners</dt><dd>${byKind('delivery_partner')}</dd>
@@ -61,6 +64,9 @@ export default async function hub(ctx, el) {
             <label class="f">Name<input name="name" required></label>
             <label class="f">Role<select name="kind" required>${Object.entries(KIND_LABEL).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
             <label class="f">Budget (£)<input type="number" name="budget" min="0" step="1"></label>
+            <label class="f">Partner library record<span class="hint">Links this organisation's approved documents across bids.</span><select name="partner_id">
+              <option value="">Not linked</option><option value="new">Create a new record</option>
+              ${partners.map((p) => html`<option value="${p.id}">${p.name}</option>`)}</select></label>
           </div>
           <div class="fields">
             <label class="f">Contact name<input name="contact_name"></label>
@@ -119,13 +125,15 @@ export default async function hub(ctx, el) {
           <label class="f">Grant value (£)<input type="number" name="grant_value" value="${c.grant_value ?? ''}" min="0"></label>
         </div>
         <div class="fields">
-          <label class="f">Starts<input type="date" name="start_date" value="${c.start_date}" required></label>
-          <label class="f">Ends<input type="date" name="end_date" value="${c.end_date}" required></label>
+          ${isBid ? html`<label class="f">Bid deadline<input type="date" name="bid_deadline" value="${c.bid_deadline || ''}"></label>` : ''}
+          <label class="f">Starts<input type="date" name="start_date" value="${c.start_date || ''}" ${isBid ? '' : 'required'}></label>
+          <label class="f">Ends<input type="date" name="end_date" value="${c.end_date || ''}" ${isBid ? '' : 'required'}></label>
           <label class="f">Youngest age<input type="number" name="min_age" value="${c.min_age}" min="0" max="30" required></label>
           <label class="f">Oldest age<input type="number" name="max_age" value="${c.max_age}" min="0" max="30" required></label>
           <label class="f">Targeted share (%)<input type="number" name="targeted_share_target" value="${c.targeted_share_target ?? ''}" min="0" max="100" step="0.1"></label>
         </div>
         <label class="f">Summary<textarea name="description">${c.description || ''}</textarea></label>
+        ${isBid ? html`<label class="f">Eligibility rules<span class="hint">The funder's hard rules. Shown at the top of bid readiness.</span><textarea name="eligibility_rules">${c.eligibility_rules || ''}</textarea></label>` : ''}
         <label class="f">Funder's requirements<textarea name="funder_requirements">${c.funder_requirements || ''}</textarea></label>
         <label class="f">Delivery model<textarea name="delivery_model">${c.delivery_model || ''}</textarea></label>
         <label class="f">Who counts as targeted<span class="hint">One per line. These become the options when a young person is registered.</span>
@@ -146,7 +154,7 @@ export default async function hub(ctx, el) {
   const orgForm = $('#org-form');
   $$('[data-edit-org]').forEach((b) => b.addEventListener('click', () => {
     const o = ctx.org(b.dataset.editOrg);
-    for (const k of ['id', 'name', 'kind', 'budget', 'contact_name', 'contact_email', 'contact_phone']) orgForm.elements[k].value = o[k] ?? '';
+    for (const k of ['id', 'name', 'kind', 'budget', 'contact_name', 'contact_email', 'contact_phone', 'partner_id']) orgForm.elements[k].value = o[k] ?? '';
     $('#org-summary').textContent = `Edit ${o.name}`;
     $('#org-box').open = true;
     orgForm.elements.name.focus();
@@ -155,6 +163,7 @@ export default async function hub(ctx, el) {
     e.preventDefault();
     act(e.submitter, async () => {
       const { id, ...row } = formData(orgForm);
+      if (row.partner_id === 'new') row.partner_id = must(await db.from('partners').insert({ name: row.name }).select('id').single()).id;
       if (id) must(await db.from('organisations').update(row).eq('id', id));
       else must(await db.from('organisations').insert({ ...row, consortium_id: c.id }));
       toast('Organisation saved.');

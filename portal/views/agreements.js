@@ -1,9 +1,9 @@
 // Agreements and commitments: the grant and consortium agreements, each
 // partner's schedule (signed by the partner, countersigned by the accountable
 // body) and the targets promised to the funder.
-import { db, html, render, $, $$, formData, toast, act, must, fmtDate, fmtDateTime, fmtMoney, fmtNum, statusPill, MEASURE_LABEL } from '../lib.js';
+import { db, html, render, $, $$, formData, toast, act, must, fmtDate, fmtDateTime, fmtMoney, fmtNum, statusPill, uploadFile, openFile, MEASURE_LABEL } from '../lib.js';
 
-const DOC_KIND = { grant_agreement: 'Grant agreement', consortium_agreement: 'Consortium agreement', partner_schedule: 'Partner schedule', policy: 'Policy', other: 'Other' };
+const DOC_KIND = { application_form: 'Application form', grant_agreement: 'Grant agreement', consortium_agreement: 'Consortium agreement', partner_schedule: 'Partner schedule', policy: 'Policy', other: 'Other' };
 
 export default async function agreements(ctx, el) {
   const c = ctx.consortium;
@@ -94,18 +94,7 @@ export default async function agreements(ctx, el) {
 
   const again = () => agreements(ctx, el);
 
-  // Open the tab during the click so pop-up blockers allow it, then point
-  // it at a link that works for one minute.
-  $$('[data-open]').forEach((b) => b.addEventListener('click', () => {
-    const tab = window.open('', '_blank');
-    if (tab) tab.opener = null;
-    act(b, async () => {
-      try {
-        const { signedUrl } = must(await db.storage.from('documents').createSignedUrl(b.dataset.open, 60));
-        if (tab) tab.location = signedUrl; else location.href = signedUrl;
-      } catch (e) { tab?.close(); throw e; }
-    });
-  }));
+  $$('[data-open]').forEach((b) => b.addEventListener('click', () => openFile(b, 'documents', b.dataset.open)));
 
   $$('form.sign').forEach((f) => f.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -121,9 +110,7 @@ export default async function agreements(ctx, el) {
       act(e.submitter, async () => {
         const row = formData(e.target);
         const file = e.target.elements.file.files[0];
-        const safe = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
-        const path = `${c.id}/${row.organisation_id || 'shared'}/${crypto.randomUUID()}-${safe}`;
-        must(await db.storage.from('documents').upload(path, file, { contentType: file.type || undefined }));
+        const path = await uploadFile('documents', `${c.id}/${row.organisation_id || 'shared'}`, file);
         must(await db.from('documents').insert({
           consortium_id: c.id, organisation_id: row.organisation_id, kind: row.kind, title: row.title,
           storage_path: path, file_name: file.name, uploaded_by: ctx.user.id,

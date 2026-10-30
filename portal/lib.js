@@ -140,4 +140,29 @@ export const rag = (r) => html`<span class="rag rag-${r || 'grey'}">${{ green: '
 export const statusPill = (s) => html`<span class="pill pill-${s}">${{
   draft: 'Draft', submitted: 'Submitted', changes_requested: 'Changes requested', approved: 'Approved',
   issued: 'Awaiting partner', partner_signed: 'Awaiting countersignature', countersigned: 'Signed',
+  requested: 'Requested', returned: 'Returned',
+  bid: 'Bid in progress', live: 'Live', lost: 'Not won', closed: 'Closed',
 }[s] || s}</span>`;
+
+export const daysUntil = (d) => (d ? Math.round((new Date(`${d}T12:00:00`) - new Date(`${today()}T12:00:00`)) / 864e5) : null);
+
+// Upload a file to private storage under a folder, keeping a readable name.
+export async function uploadFile(bucket, folder, file) {
+  const safe = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
+  const path = `${folder}/${crypto.randomUUID()}-${safe}`;
+  must(await db.storage.from(bucket).upload(path, file, { contentType: file.type || undefined }));
+  return path;
+}
+
+// Open a private file in a new tab. The tab opens during the click so
+// pop-up blockers allow it, then points at a link that works for a minute.
+export function openFile(button, bucket, path) {
+  const tab = window.open('', '_blank');
+  if (tab) tab.opener = null;
+  act(button, async () => {
+    try {
+      const { signedUrl } = must(await db.storage.from(bucket).createSignedUrl(path, 60));
+      if (tab) tab.location = signedUrl; else location.href = signedUrl;
+    } catch (e) { tab?.close(); throw e; }
+  });
+}
