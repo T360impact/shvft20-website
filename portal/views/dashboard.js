@@ -1,14 +1,51 @@
 // Live dashboard: progress against every commitment to the funder, by
 // partner, site and year, plus a quarterly view to copy into the funder's
 // return. Figures come from consortium_progress(), which returns counts only.
-import { db, html, render, $, must, fmtNum, fmtDate, rag, statusPill, fmtMonth, downloadCsv, MEASURE_LABEL } from '../lib.js';
+import { db, html, render, $, must, fmtNum, fmtDate, fmtMoney, rag, statusPill, fmtMonth, downloadCsv, MEASURE_LABEL } from '../lib.js';
+
+const KIND = { output: 'Output', outcome: 'Outcome' };
+
+// Outputs and outcomes linked to each organisation, as the programme
+// documents (or the lead) connect them, with each organisation's budget.
+function byOrganisation(ctx, p, budgets) {
+  const orgs = ctx.orgs.filter((o) => ['lead', 'accountable_body', 'delivery_partner'].includes(o.kind));
+  const lines = p.commitments.filter((x) => x.kind);
+  const linkedTo = (o) => lines.filter((x) => (x.links || []).includes(o.id));
+  const rows = orgs.map((o) => ({ o, outputs: linkedTo(o).filter((x) => x.kind === 'output').length, outcomes: linkedTo(o).filter((x) => x.kind === 'outcome').length, budget: budgets[o.id] }));
+  const max = Math.max(1, ...rows.map((r) => r.outputs + r.outcomes));
+  const anyLinks = rows.some((r) => r.outputs + r.outcomes);
+  if (!lines.length) return '';
+  return html`<section class="panel" style="margin-top:20px"><header><h2>Outputs and outcomes by organisation</h2>
+      <span class="muted small">Links come from the documents, or are added by the lead</span></header>
+    ${anyLinks ? html`<div class="org-bars">${rows.map((r) => html`<div class="org-bar">
+        <span class="name">${r.o.name}</span>
+        <span class="track" role="img" aria-label="${r.outputs} outputs and ${r.outcomes} outcomes">
+          <span class="seg-output" style="width:${(100 * r.outputs) / max}%"></span><span class="seg-outcome" style="width:${(100 * r.outcomes) / max}%"></span></span>
+        <span class="vals">${r.outputs} output${r.outputs === 1 ? '' : 's'} · ${r.outcomes} outcome${r.outcomes === 1 ? '' : 's'}${r.budget != null ? ` · ${fmtMoney(r.budget)}` : ''}</span>
+      </div>`)}</div>
+      <div class="legend"><span><i style="background:var(--ink)"></i>Outputs</span><span><i style="background:var(--green-ink)"></i>Outcomes</span>${Object.keys(budgets).length ? html`<span>£ = budget allocated</span>` : ''}</div>
+      <details style="margin-top:16px"><summary class="small"><strong>See which output or outcome each organisation is linked to</strong></summary>
+        <div class="table-wrap" style="margin-top:10px"><table class="matrix">
+          <thead><tr><th>Output or outcome</th><th class="num">Target</th>${orgs.map((o) => html`<th class="org">${o.name}</th>`)}</tr></thead>
+          <tbody>${lines.map((x) => html`<tr><td class="lbl"><strong>${x.label}</strong><br><span class="small muted">${[KIND[x.kind], x.section, x.period === 'lifetime' ? 'Project lifetime' : `Year ${x.year}`].filter(Boolean).join(' · ')}</span></td>
+            <td class="num">${fmtNum(x.target)}${x.unit === '%' ? '%' : ''}</td>
+            ${orgs.map((o) => html`<td class="dot">${(x.links || []).includes(o.id) ? html`<span aria-label="linked">●</span>` : ''}</td>`)}</tr>`)}</tbody>
+        </table></div></details>`
+    : html`<p class="empty">No outputs or outcomes are linked to an organisation yet. When you review documents under Targets and budget, tick the organisations each line belongs to.</p>`}
+  </section>`;
+}
 
 export default async function dashboard(ctx, el) {
   const c = ctx.consortium;
-  const p = must(await db.rpc('consortium_progress', { p_consortium: c.id }));
+  const [p, alloc] = await Promise.all([
+    db.rpc('consortium_progress', { p_consortium: c.id }).then(must),
+    ctx.role === 'youth_voice' ? [] : db.from('allocations').select('organisation_id, amount').eq('consortium_id', c.id).is('superseded_by', null).is('retired_at', null).then(must),
+  ]);
+  const budgets = {};
+  for (const a of alloc) if (a.organisation_id) budgets[a.organisation_id] = (budgets[a.organisation_id] || 0) + Number(a.amount);
   const t = p.totals;
-  const years = [...new Set(p.commitments.map((x) => x.year))];
-  const pct = (m) => (m.measure === 'targeted_pct' ? '%' : '');
+  const periods = [...new Set(p.commitments.map((x) => (x.period === 'lifetime' ? 'lifetime' : x.year)))];
+  const pct = (m) => (m.unit === '%' || m.measure === 'targeted_pct' ? '%' : '');
 
   render(el, html`
     <div class="page-head"><div><span class="eyebrow">Live dashboard</span><h1>Are we on track?</h1>
@@ -23,20 +60,23 @@ export default async function dashboard(ctx, el) {
       <div class="stat"><b>${fmtNum(t.outcomes)}</b><span>Outcomes</span></div>
     </div>
 
-    ${years.length ? years.map((y) => {
-      const rows = p.commitments.filter((x) => x.year === y);
-      return html`<section class="panel" style="margin-top:20px"><header><h2>Year ${y}</h2>
+    ${byOrganisation(ctx, p, budgets)}
+
+    ${periods.length ? periods.map((y) => {
+      const rows = p.commitments.filter((x) => (y === 'lifetime' ? x.period === 'lifetime' : x.period !== 'lifetime' && x.year === y));
+      return html`<section class="panel" style="margin-top:20px"><header><h2>${y === 'lifetime' ? 'Project lifetime' : `Year ${y}`}</h2>
         <span class="muted small">${fmtDate(rows[0].year_start)} to ${fmtDate(rows[0].year_end)} · ${Math.round(rows[0].elapsed * 100)}% through</span></header>
         <div class="table-wrap"><table>
           <thead><tr><th>Commitment</th><th>Who</th><th class="num">Target</th><th class="num">Due by now</th><th class="num">Actual</th><th>Progress</th><th>Rating</th></tr></thead>
           <tbody>${rows.map((x) => {
             const share = x.target ? Math.min(100, Math.round((x.actual / x.target) * 100)) : 0;
-            return html`<tr><td><strong>${x.label}</strong>${!MEASURE_LABEL[x.measure].startsWith(x.label) ? html`<br><span class="muted small">${MEASURE_LABEL[x.measure]}</span>` : ''}</td>
+            const tracked = x.measure !== 'other' && x.measure !== 'outcomes';
+            return html`<tr><td><strong>${x.label}</strong><br><span class="muted small">${[KIND[x.kind], x.section, tracked ? `tracked as ${MEASURE_LABEL[x.measure].toLowerCase()}` : 'not tracked automatically yet'].filter(Boolean).join(' · ')}</span></td>
               <td>${x.organisation || 'Whole consortium'}${x.site ? html`<br><span class="muted small">${x.site}</span>` : ''}</td>
-              <td class="num">${fmtNum(x.target)}${pct(x)}</td><td class="num">${fmtNum(x.expected)}${pct(x)}</td>
-              <td class="num"><strong>${fmtNum(x.actual)}${pct(x)}</strong></td>
-              <td><span class="bar-track" title="${share}% of the year's target"><span class="bar-fill" style="width:${share}%"></span></span></td>
-              <td>${rag(x.rag)}</td></tr>`;
+              <td class="num">${fmtNum(x.target)}${pct(x)}</td><td class="num">${tracked ? `${fmtNum(x.expected)}${pct(x)}` : '–'}</td>
+              <td class="num"><strong>${tracked ? `${fmtNum(x.actual)}${pct(x)}` : '–'}</strong></td>
+              <td>${tracked ? html`<span class="bar-track" title="${share}% of the target"><span class="bar-fill" style="width:${share}%"></span></span>` : ''}</td>
+              <td>${tracked ? rag(x.rag) : html`<span class="rag rag-grey">Not tracked</span>`}</td></tr>`;
           })}</tbody></table></div></section>`;
     }) : html`<section class="panel" style="margin-top:20px"><p class="empty">No commitments set yet.${ctx.manages ? ' Add them under Agreements.' : ''}</p></section>`}
 
@@ -63,7 +103,8 @@ export default async function dashboard(ctx, el) {
 
   const name = c.name.replace(/[^\w ]+/g, '');
   $('#x-commit')?.addEventListener('click', () => downloadCsv(`${name} targets.csv`, p.commitments.map((x) => ({
-    Year: x.year, Commitment: x.label, Measure: MEASURE_LABEL[x.measure], Who: x.organisation || 'Whole consortium', Site: x.site || '',
+    Period: x.period === 'lifetime' ? 'Project lifetime' : `Year ${x.year}`, Type: KIND[x.kind] || '', Section: x.section || '', Commitment: x.label, 'Tracked as': MEASURE_LABEL[x.measure],
+    'Linked organisations': (x.links || []).map((id) => ctx.org(id)?.name).filter(Boolean).join('; '), Who: x.organisation || 'Whole consortium', Site: x.site || '',
     Target: x.target, 'Due by now': x.expected, Actual: x.actual, Rating: x.rag,
   }))));
   $('#x-quarters')?.addEventListener('click', () => downloadCsv(`${name} quarters.csv`, p.quarters.map((q) => ({
