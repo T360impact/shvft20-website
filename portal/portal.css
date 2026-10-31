@@ -1259,3 +1259,10 @@ ul.lw-nd { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1
 .lw-long { max-width: 80ch; }
 .lw-diffline del { color: var(--red-text); } .lw-diffline ins { color: var(--green-text); text-decoration: none; font-weight: 600; }
 .lw-src { font-size: 12px; }
+
+/* Add risk: further actions, each allocated to an owner with a due date. */
+.act-rows { list-style: none; margin: 0 0 var(--s3); padding: 0; display: grid; gap: var(--s3); }
+.act-row { display: grid; gap: var(--s2); padding: var(--s3); border: 1px solid var(--border); border-radius: 10px; background: var(--surface-muted); }
+.act-row .fields { grid-template-columns: 1fr 1fr; gap: var(--s2); }
+.act-row .fields > label:first-child { grid-column: 1 / -1; }
+.act-row [data-act-rm] { justify-self: start; }

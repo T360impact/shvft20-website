@@ -257,7 +257,20 @@ function uploadDialog(ctx, done) {
   });
 }
 
-function riskForm(ctx, { admin, settings: s, cats, all }, risk, done) {
+// One further action in the Add risk form: what, who owns it (an
+// organisation, and optionally a person in it), and when it is due.
+function actionRow(ctx, members, personName) {
+  const orgs = ctx.orgs.filter((o) => o.kind !== 'funder' && o.kind !== 'youth_voice');
+  return html`<li class="act-row">
+    <label class="f">Action<input name="act_desc" maxlength="1000" placeholder="What will be done"></label>
+    <div class="fields">
+      <label class="f">Owner<select name="act_org"><option value="">Not allocated</option>${orgs.map((o) => html`<option value="${o.id}">${o.name}</option>`)}</select></label>
+      <label class="f">Person<select name="act_person"><option value="">Anyone there</option>${members.map((mm) => html`<option value="${mm.user_id}" data-org="${mm.organisation_id}">${personName(mm.user_id) || 'Unnamed'}</option>`)}</select></label>
+      <label class="f">Due<input type="date" name="act_due"></label></div>
+    <button type="button" class="linkbtn small" data-act-rm>Remove this action</button></li>`;
+}
+
+function riskForm(ctx, { admin, settings: s, cats, all, members = [], personName = () => '' }, risk, done) {
   const m = s.scale_max;
   const opts = (v) => Array.from({ length: m }, (_, i) => html`<option value="${i + 1}" ${v === i + 1 ? 'selected' : ''}>${i + 1}</option>`);
   const d = openDrawer(risk ? `Edit ${risk.ref}` : admin ? 'Add a risk' : 'Propose a risk', html`<form class="form" id="risk-form">
@@ -270,12 +283,30 @@ function riskForm(ctx, { admin, settings: s, cats, all }, risk, done) {
     <div class="fields"><label class="f">Likelihood<select name="likelihood">${opts(risk?.likelihood)}</select></label>
       <label class="f">Severity<select name="severity">${opts(risk?.severity)}</select></label></div>
     <label class="f">Controls in place<textarea name="controls" rows="3">${risk?.controls || ''}</textarea></label>
-    ${!risk ? html`<label class="f">Further action<span class="hint">One per line.</span><textarea name="actions" rows="2"></textarea></label>` : ''}
+    ${!risk && admin ? html`<fieldset><legend>Further action</legend>
+      <p class="small muted">Allocate each action to an organisation, and a person in it if you know who. Owners see it on their risks, and it is flagged once it passes its due date.</p>
+      <ol class="act-rows" id="act-rows">${actionRow(ctx, members, personName)}</ol>
+      <button type="button" class="btn secondary small" id="act-add">${raw(icon('add', 16))}Add another action</button></fieldset>` : ''}
+    ${!risk && !admin ? html`<label class="f">Further action<span class="hint">One per line. The lead allocates owners and dates.</span><textarea name="actions" rows="2"></textarea></label>` : ''}
     ${admin ? html`<div class="fields"><label class="f">After action: likelihood<select name="rl"><option value="">–</option>${opts(risk?.residual_likelihood)}</select></label>
       <label class="f">After action: severity<select name="rs"><option value="">–</option>${opts(risk?.residual_severity)}</select></label></div>
       <label class="f">Who can see it<select name="visibility"><option value="consortium" ${risk?.visibility !== 'lead_only' ? 'selected' : ''}>Everyone in the consortium</option>
         <option value="lead_only" ${risk?.visibility === 'lead_only' ? 'selected' : ''}>Lead only</option></select></label>` : ''}
     <div class="btns"><button class="btn">${risk ? 'Save' : admin ? 'Add risk' : 'Send to the lead'}</button></div></form>`);
+  // Action rows: people narrowed to the chosen organisation; add and remove rows.
+  const bindRow = (li) => {
+    const org = $('[name=act_org]', li); const person = $('[name=act_person]', li);
+    const filter = () => $$('option[data-org]', person).forEach((o) => { o.hidden = !!org.value && o.dataset.org !== org.value; });
+    org.addEventListener('change', () => { filter(); if (person.selectedOptions[0]?.hidden) person.value = ''; });
+    person.addEventListener('change', () => { const o = person.selectedOptions[0]; if (o?.dataset.org && !org.value) { org.value = o.dataset.org; filter(); } });
+    $('[data-act-rm]', li).addEventListener('click', () => { if ($$('.act-row', d).length > 1) li.remove(); else $$('input, select', li).forEach((x) => { x.value = ''; }); });
+    filter();
+  };
+  $$('.act-row', d).forEach(bindRow);
+  $('#act-add', d)?.addEventListener('click', () => {
+    const tmp = document.createElement('ol'); render(tmp, actionRow(ctx, members, personName));
+    const li = tmp.firstElementChild; $('#act-rows', d).append(li); bindRow(li); $('[name=act_desc]', li).focus();
+  });
   $('#risk-form', d).addEventListener('submit', (e) => {
     e.preventDefault();
     act(e.submitter, async () => {
@@ -283,6 +314,9 @@ function riskForm(ctx, { admin, settings: s, cats, all }, risk, done) {
       const row = { category_id: f.category_id.value || null, title: f.title.value.trim(), hazard: f.hazard.value.trim(), who_at_risk: f.who_at_risk.value.trim() || null,
         likelihood: Number(f.likelihood.value), severity: Number(f.severity.value), controls: f.controls.value.trim() || null };
       const lines = f.actions ? f.actions.value.split('\n').map((x) => x.trim()).filter(Boolean) : [];
+      const acts = $$('.act-row', d).map((li) => ({ description: $('[name=act_desc]', li).value.trim(), owner_organisation_id: $('[name=act_org]', li).value || null,
+        owner_profile_id: $('[name=act_person]', li).value || null, due_date: $('[name=act_due]', li).value || null }));
+      if (acts.some((a) => !a.description && (a.owner_organisation_id || a.owner_profile_id || a.due_date))) throw new Error('Describe each action you have allocated, or remove it.');
       if (!admin) {
         must(await db.rpc('propose_risk', { p_consortium: ctx.consortium.id, p_payload: { ...row, further_actions: lines } }));
         d.close(); toast('Sent to the lead.'); return done();
@@ -296,7 +330,8 @@ function riskForm(ctx, { admin, settings: s, cats, all }, risk, done) {
         const code = cats.find((k) => k.id === row.category_id)?.code || 'R';
         const n = Math.max(0, ...all.filter((r) => new RegExp(`^${code}\\d+$`).test(r.ref)).map((r) => Number(r.ref.slice(code.length)))) + 1;
         const made = must(await db.from('risks').insert({ ...row, consortium_id: ctx.consortium.id, ref: `${code}${n}` }).select('id').single());
-        if (lines.length) must(await db.from('risk_actions').insert(lines.map((description, i) => ({ risk_id: made.id, consortium_id: ctx.consortium.id, description, position: i + 1 }))));
+        const toAdd = acts.filter((a) => a.description);
+        if (toAdd.length) must(await db.from('risk_actions').insert(toAdd.map((a, i) => ({ risk_id: made.id, consortium_id: ctx.consortium.id, position: i + 1, ...a }))));
       }
       d.close(); toast(risk ? 'Saved.' : 'Risk added.'); return done();
     });
