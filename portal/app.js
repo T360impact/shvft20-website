@@ -5,8 +5,9 @@ import { db, html, render, raw, $, formData, toast, errorText, act, must, icon, 
 import homePage from './views/home.js';
 import hub from './views/hub.js';
 import agreements from './views/agreements.js';
-import register from './views/register.js';
-import sessions from './views/sessions.js';
+import uploads from './views/uploads.js';
+import profile from './views/profile.js';
+import compliance from './views/compliance.js';
 import returns from './views/returns.js';
 import risks from './views/risks.js';
 import dashboard from './views/dashboard.js';
@@ -17,6 +18,8 @@ import library from './views/library.js';
 import targets from './views/targets.js';
 import progress from './views/progress.js';
 import lead from './views/lead.js';
+import myOrg, { programme, master } from './views/mine.js';
+import { unreadCount, openNotifications, notifIcon } from './views/notifications.js';
 
 const app = $('#app');
 
@@ -26,23 +29,29 @@ const startHash = location.hash;
 const linkType = /[#&]type=(invite|recovery)/.exec(startHash)?.[1] || null;
 const linkError = /[#&]error_description=([^&]+)/.exec(startHash)?.[1];
 
-const state = { user: null, profile: null, memberships: [], ctx: null, ready: false };
+const state = { user: null, profile: null, memberships: [], ctx: null, ready: false, unread: 0, prefs: null };
 
 // Light unless the person has chosen dark in Account; the device setting is ignored.
 const applyTheme = (t) => { document.documentElement.dataset.theme = t === 'dark' ? 'dark' : 'light'; };
 
-const TAB_ORDER = ['dashboard', 'sessions', 'progress', 'returns', 'bid', 'targets', 'hub'];
+const TAB_ORDER = ['mine', 'programme', 'master', 'dashboard', 'uploads', 'progress', 'returns', 'bid', 'targets', 'hub'];
 
 // Each page belongs to a module, which sets its icon and accent colour.
 const VIEWS = {
+  // The three dashboard tiers: a partner's own, the lead organisation's, and Shvft2.0's master view.
+  master: { label: 'Master view', short: 'Master', icon: 'governance', mod: 'brand', view: master, roles: ['lead'] },
+  programme: { label: 'The programme', short: 'Programme', icon: 'finance', mod: 'finance', view: programme, roles: ['accountable_body'] },
+  mine: { label: 'My organisation', short: 'Mine', icon: 'home', mod: 'brand', view: myOrg, roles: ['accountable_body', 'partner_manager', 'hub_worker', 'org_admin', 'finance', 'reporting'] },
   bid: { label: 'Bid readiness', short: 'Bid', icon: 'bids', mod: 'bids', view: bid, roles: ['lead', 'accountable_body', 'partner_manager'] },
   dashboard: { label: 'Dashboard', short: 'Dashboard', icon: 'dashboard', mod: 'brand', view: dashboard, roles: 'all' },
   hub: { label: 'Summary', short: 'Summary', icon: 'partners', mod: 'governance', view: hub, roles: 'all' },
   agreements: { label: 'Agreements', short: 'Agreements', icon: 'governance', mod: 'governance', view: agreements, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
   targets: { label: 'Targets and budget', short: 'Budget', icon: 'finance', mod: 'finance', view: targets, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance'] },
   progress: { label: 'Progress', short: 'Progress', icon: 'outcomes', mod: 'delivery', view: progress, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
-  sessions: { label: 'Sessions', short: 'Check in', icon: 'sessions', mod: 'delivery', view: sessions, roles: PD_ROLES },
-  register: { label: 'Young people', short: 'People', icon: 'youngPeople', mod: 'delivery', view: register, roles: PD_ROLES },
+  // Weekly aggregate figures: the portal holds no individual young person's details.
+  uploads: { label: 'Weekly figures', short: 'Weekly', icon: 'spreadsheet', mod: 'delivery', view: uploads, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
+  profile: { label: 'Our profile', short: 'Profile', icon: 'partners', mod: 'governance', view: profile, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance', 'reporting', 'hub_worker'] },
+  compliance: { label: 'Compliance', short: 'Compliance', icon: 'compliance', mod: 'compliance', view: compliance, roles: ['lead', 'accountable_body'] },
   returns: { label: 'Returns', short: 'Returns', icon: 'returns', mod: 'compliance', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
   risks: { label: 'Risks', short: 'Risks', icon: 'safeguarding', mod: 'compliance', view: risks, roles: ['lead', 'accountable_body', 'partner_manager', 'hub_worker'] },
   team: { label: 'People', short: 'Team', icon: 'people', mod: 'governance', view: team, roles: ['lead'] },
@@ -59,12 +68,18 @@ const allowed = (key, ctx) => {
   const v = VIEWS[key];
   if (!v) return false;
   if (key === 'lw') return !!(ctx.lw?.roles?.length || ctx.staffSelf);
+  // My organisation needs an organisation to show.
+  if ((key === 'mine' || key === 'profile') && !ctx.orgId && !ctx.isAdmin) return false;
   const stage = ctx.consortium.stage;
   if (stage !== 'live' && !BID_VIEWS.includes(key)) return false;
   if (stage === 'live' && key === 'bid' && !(ctx.seesAll && ctx.consortium.bid_deadline)) return false;
   return v.roles === 'all' || v.roles.includes(ctx.role) || ctx.extraRoles.some((r) => v.roles.includes(r)) || (ctx.isAdmin && v.roles !== PD_ROLES);
 };
-const homeView = (ctx) => (ctx.consortium.stage === 'live' ? 'dashboard' : allowed('bid', ctx) ? 'bid' : 'hub');
+// A live workspace opens on each person's own tier: the master view for the
+// consortium lead, the programme for the lead organisation, their own
+// organisation for a partner, and the dashboard for everyone else.
+const homeView = (ctx) => (ctx.consortium.stage !== 'live' ? (allowed('bid', ctx) ? 'bid' : 'hub')
+  : ['master', 'programme', 'mine'].find((k) => allowed(k, ctx) && (k !== 'master' || ctx.manages)) || 'dashboard');
 // Shvft2.0 staff: administrators and anyone leading a consortium.
 const isConvenor = () => !!state.profile?.is_platform_admin || state.memberships.some((m) => m.role === 'lead');
 
@@ -271,7 +286,8 @@ function shell(ctx, active) {
   const link = ([k, v], short) => html`<a href="#/c/${navCtx.consortium.id}/${k}" class="m-${v.mod}" ${raw(active === k ? 'aria-current="page"' : '')}>
     ${raw(icon(v.icon, 20))}<span>${short ? v.short : v.label}</span></a>`;
   const homeLink = () => html`<a href="#/" class="m-brand" ${raw(active === 'home' ? 'aria-current="page"' : '')}>${raw(icon('home', 20))}<span>Home</span></a>`;
-  const extras = html`${isConvenor() ? html`<a href="#/library">${raw(icon('library', 20))}<span>Library</span></a>` : ''}
+  const extras = html`<button type="button" data-notifs>${notifIcon(state.unread)}</button>
+    ${isConvenor() ? html`<a href="#/library">${raw(icon('library', 20))}<span>Library</span></a>` : ''}
     ${state.profile.is_platform_admin ? html`<a href="#/admin">${raw(icon('admin', 20))}<span>Admin</span></a>` : ''}
     <a href="#/account">${raw(icon('people', 20))}<span>Account</span></a>`;
   const where = navCtx ? html`<strong>${navCtx.consortium.name}</strong>${navCtx.orgName}` : '';
@@ -300,6 +316,10 @@ function shell(ctx, active) {
         <li><button type="button" class="row" data-close-sheet>${raw(icon('close', 20))}<span>Close</span></button></li></ul></dialog>
     </div>`);
   document.querySelectorAll('[data-signout]').forEach((b) => b.addEventListener('click', signOut));
+  // Notifications: the count refreshes as each page opens.
+  const paintCount = () => { document.querySelectorAll('[data-notifs]').forEach((b) => render(b, notifIcon(state.unread))); };
+  document.querySelectorAll('[data-notifs]').forEach((b) => b.addEventListener('click', () => openNotifications(async () => { state.unread = await unreadCount(); paintCount(); })));
+  unreadCount().then((n) => { state.unread = n; paintCount(); }).catch(() => {});
   const sheet = $('#more-sheet');
   $('#more').addEventListener('click', () => sheet.showModal());
   sheet.addEventListener('click', (e) => { if (e.target === sheet || e.target.closest('a, [data-close-sheet]')) sheet.close(); });
@@ -311,7 +331,8 @@ async function home() {
   await homePage(main, state);
 }
 
-function account() {
+async function account() {
+  state.prefs = must(await db.from('notification_prefs').select('*').eq('user_id', state.user.id).maybeSingle());
   const main = shell(null, 'account');
   render(main, html`
     <div class="page-head"><div><span class="eyebrow">Account</span><h1>${state.profile.full_name || state.user.email}</h1>
@@ -327,6 +348,10 @@ function account() {
           <label class="check"><input type="radio" name="theme" value="light" ${state.profile.theme !== 'dark' ? 'checked' : ''}> Light</label>
           <label class="check"><input type="radio" name="theme" value="dark" ${state.profile.theme === 'dark' ? 'checked' : ''}> Dark</label></div></fieldset>
           <p class="small muted">Saved to your account, so it follows you to any device.</p></form></div>
+      <div class="panel"><h2>Email notifications</h2>
+        <form class="form" id="np"><fieldset><legend>Send me portal notices by email</legend><div class="checks">
+          ${[['immediate', 'As they happen'], ['daily', 'A daily digest at 7am'], ['weekly', 'A weekly digest on Mondays'], ['off', 'Never (portal only)']].map(([v, t]) => html`<label class="check"><input type="radio" name="mode" value="${v}" ${(state.prefs?.email_mode || 'immediate') === v ? 'checked' : ''}> ${t}</label>`)}</div></fieldset>
+          <p class="small muted">Returns due or sent back, payments, actions and risks assigned to you, documents expiring, and reminders from the consortium lead.</p></form></div>
       <div class="panel"><h2>Your name</h2>
         <form class="form" id="nm">
           <label class="f">Full name<input name="full_name" value="${state.profile.full_name || ''}" required></label>
@@ -337,6 +362,10 @@ function account() {
     e.preventDefault();
     act(e.submitter, async () => { must(await db.auth.updateUser({ password: formData(e.target).password })); e.target.reset(); toast('Password changed.'); });
   });
+  $('#np').addEventListener('change', (e) => act(null, async () => {
+    must(await db.from('notification_prefs').upsert({ user_id: state.user.id, email_mode: e.target.value, updated_at: new Date().toISOString() }));
+    toast('Saved.');
+  }));
   $('#theme').addEventListener('change', (e) => act(null, async () => {
     const theme = e.target.value;
     must(await db.from('profiles').update({ theme }).eq('id', state.user.id));
@@ -361,7 +390,7 @@ async function route() {
   window.scrollTo(0, 0);
   try {
     if (!parts.length) return await home();
-    if (parts[0] === 'account') return account();
+    if (parts[0] === 'account') return await account();
     if (parts[0] === 'admin' && state.profile.is_platform_admin) return await admin(shell(null));
     if (parts[0] === 'library' && isConvenor()) return await library(shell(null), parts.slice(1));
     if (parts[0] === 'c' && parts[1]) {

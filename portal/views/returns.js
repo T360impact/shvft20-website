@@ -1,7 +1,12 @@
-// Monthly partner returns: drafted by the partner, numbers filled from the
-// register on submission, reviewed by the lead with a red, amber or green
-// rating. Every step is stamped with who and when.
-import { db, html, raw, render, $, formData, toast, act, must, icon, pill, fmtMonth, fmtDateTime, fmtNum, rag, statusPill, emptyState, downloadCsv } from '../lib.js';
+// Monthly partner returns: where each month's figures are entered. Every
+// target the organisation reports on is a line with its source: weekly lines
+// fill from the confirmed weekly uploads and are read only, manual lines are
+// typed in, evidence lines need a file. Weeks of the month with no upload show. Submitting needs every yearly output; the consortium
+// lead reviews with a red, amber or green rating. Figures count on the
+// dashboard and Progress charts only once the return is approved.
+import { db, html, raw, render, $, $$, formData, toast, act, must, icon, pill, fmtMonth, fmtDate, fmtDateTime, fmtNum, rag, statusPill, emptyState, downloadCsv, sectionGroup, uploadFile, openFile } from '../lib.js';
+
+const SOURCE = { weekly_upload: 'From the weekly uploads', return_manual: 'Typed in', evidence_upload: 'Figure with evidence' };
 import { chart, hbars } from '../charts.js';
 
 // The steps of a return, each with its icon.
@@ -63,7 +68,8 @@ async function detail(ctx, el, id) {
   const r = must(await db.from('returns').select('*').eq('id', id).maybeSingle());
   if (!r) { render(el, html`<div class="panel">That return isn't available to you.</div>`); return; }
   const editable = r.organisation_id === ctx.orgId && ['draft', 'changes_requested'].includes(r.status) && ctx.role !== 'funder_observer';
-  const [counts, targets] = await Promise.all([
+  const [rd, counts, targets] = await Promise.all([
+    db.rpc('return_detail', { p_return: id }).then(must),
     editable ? db.rpc('return_preview', { p_return: id }).then(must) : {
       reached: r.reached_count, targeted: r.targeted_count, sessions: r.sessions_count, attendances: r.attendances_count, outcomes: r.outcomes_count,
     },
@@ -86,6 +92,28 @@ async function detail(ctx, el, id) {
   const withTarget = rows.filter((x) => x.marker != null);
   const met = withTarget.filter((x) => x.tone === 'green').length;
   const step = stepOf(r.status);
+  const lines = rd.lines;
+  const missing = lines.filter((l) => l.missing);
+  const sections = [...new Set(lines.map((l) => l.section || 'Targets'))];
+  const lineRow = (l) => html`<tr data-line="${l.commitment_id}" data-src="${l.data_source}">
+    <td><strong>${l.label}</strong><br><span class="small muted">${SOURCE[l.data_source]}${l.own ? '' : ' · shared target'}${l.kind === 'outcome' ? ' · outcome, optional' : ''}</span></td>
+    <td class="num">${l.data_source === 'weekly_upload' ? html`<span class="t360-val">${l.value == null ? '–' : fmtNum(l.value)}</span>`
+      : editable ? html`<input name="v" inputmode="decimal" value="${l.value ?? ''}" aria-label="${l.label}">` : fmtNum(l.value)}</td>
+    <td>${l.data_source === 'evidence_upload' ? (editable ? html`<input type="file" name="ev" aria-label="Evidence for ${l.label}">${l.evidence_path ? html`<br><button type="button" class="linkbtn small" data-ev="${l.evidence_path}">Evidence attached</button>` : ''}`
+        : l.evidence_path ? html`<button type="button" class="linkbtn small" data-ev="${l.evidence_path}">Evidence</button>` : '–')
+      : editable && l.data_source !== 'weekly_upload' ? html`<input name="n" value="${l.note ?? ''}" maxlength="500" aria-label="Note for ${l.label}">` : (l.note || '')}</td>
+    <td>${l.missing ? pill('amber', 'Missing') : l.value != null ? pill('green', 'Done', 'approved') : ''}</td></tr>`;
+  const figures = html`<section class="panel m-compliance"><header><h2>${raw(icon('targets', 20))}Figures for ${fmtMonth(r.period_month)}</h2>
+      <span class="small muted">${lines.length} line${lines.length === 1 ? '' : 's'} · due ${fmtDate(rd.due_date)}</span></header>
+    ${(rd.missing_weeks || []).length ? html`<div class="lead-banner"><span><strong>${rd.missing_weeks.length} week${rd.missing_weeks.length === 1 ? '' : 's'} with no weekly upload:</strong>
+      ${rd.missing_weeks.map((w) => `week of ${fmtDate(w)}`).join(' · ')}. <a href="#/c/${c.id}/uploads">Upload the weekly figures</a> and the lines below fill in.</span></div>` : ''}
+    ${missing.length ? html`<div class="lead-banner"><span><strong>${missing.length} figure${missing.length === 1 ? '' : 's'} still missing.</strong> ${missing.slice(0, 3).map((l) => l.label).join(' · ')}${missing.length > 3 ? '…' : ''}</span></div>` : ''}
+    ${lines.length ? html`<form id="figs">${sections.map((sec, i) => { const ls = lines.filter((l) => (l.section || 'Targets') === sec); return sectionGroup({ title: sec,
+      meta: `${ls.length} line${ls.length === 1 ? '' : 's'} · ${ls.filter((l) => l.missing).length} missing`, open: i === 0 || ls.some((l) => l.missing),
+      body: html`<div class="table-wrap"><table class="entry"><thead><tr><th>Target</th><th class="num">${fmtMonth(r.period_month)}</th><th>Note or evidence</th><th></th></tr></thead><tbody>${ls.map(lineRow)}</tbody></table></div>` }); })}
+      ${editable ? html`<p class="small muted" style="margin-top:10px">Weekly lines fill from the confirmed weekly uploads and can't be typed over. Put 0 if there's nothing to report for a line. Figures count once the consortium lead approves the return.</p>
+        <div class="btns" style="margin-top:12px"><button class="btn secondary">Save figures</button></div>` : ''}</form>`
+      : html`<p class="muted small">No targets for ${ctx.org(r.organisation_id)?.name} this month.</p>`}</section>`;
 
   render(el, html`
     <p class="small" style="margin-bottom:16px"><a href="#/c/${c.id}/returns">← All returns</a></p>
@@ -94,6 +122,7 @@ async function detail(ctx, el, id) {
     <ol class="stepper" aria-label="Return steps">${STEPS.map(([ic, label], i) => html`<li class="${i < step ? 'done' : i === step ? 'current' : ''}" ${raw(i === step ? 'aria-current="step"' : '')}>
       <span class="dot">${raw(icon(i < step ? 'check' : ic, 20))}</span>${label}</li>`)}</ol>
     ${r.status === 'changes_requested' && r.review_note ? html`<div class="banner warn" style="margin-bottom:24px">${raw(icon('returned', 20))}<span><strong>Changes requested:</strong> ${r.review_note}</span></div>` : ''}
+    ${figures}
     <section class="panel m-compliance"><header><h2>${raw(icon('attendance', 20))}Numbers for the month</h2>${editable ? html`<span class="small muted">Live from the register, fixed when you submit</span>` : ''}</header>
       ${chart(withTarget.length ? `${met} of ${withTarget.length} measure${withTarget.length === 1 ? '' : 's'} at or above the monthly target.` : `${ctx.org(r.organisation_id)?.name} has no monthly targets of its own, so these are counts.`,
         withTarget.length ? 'This month against a twelfth of the yearly target. The tick is the monthly target.' : '', hbars(rows))}
@@ -126,14 +155,28 @@ async function detail(ctx, el, id) {
         <div class="btns"><button class="btn" name="decision" value="approved">Approve</button><button class="btn secondary" name="decision" value="changes_requested">Ask for changes</button></div>
       </form></section>` : ''}`);
 
+  $$('[data-ev]', el).forEach((b) => b.addEventListener('click', () => openFile(b, 'documents', b.dataset.ev)));
+  const saveFigures = async () => {
+    const rows = [];
+    for (const tr of $$('#figs tr[data-line]', el)) {
+      if (tr.dataset.src === 'weekly_upload') continue;
+      const v = tr.querySelector('[name=v]')?.value.trim() ?? '';
+      const file = tr.querySelector('[name=ev]')?.files?.[0];
+      const evidence = file ? await uploadFile('documents', `${c.id}/evidence/${r.organisation_id}`, file) : '';
+      rows.push({ commitment_id: tr.dataset.line, value: v, note: tr.querySelector('[name=n]')?.value || '', evidence_path: evidence });
+    }
+    return must(await db.rpc('save_return_lines', { p_return: id, p_lines: rows }));
+  };
+  $('#figs')?.addEventListener('submit', (e) => { e.preventDefault(); act(e.submitter, async () => { const n = await saveFigures(); toast(`${n} figure${n === 1 ? '' : 's'} saved.`); detail(ctx, el, id); }); });
   $('#ret')?.addEventListener('submit', (e) => {
     e.preventDefault();
     act(e.submitter, async () => {
       const { safeguarding_concerns, safeguarding_refs, risks, narrative } = formData(e.target);
+      if ($('#figs', el)) await saveFigures();
       must(await db.from('returns').update({ safeguarding_concerns, safeguarding_refs, risks, narrative }).eq('id', id));
       if (e.submitter.name === 'submit') {
         must(await db.rpc('submit_return', { p_return: id }));
-        toast('Submitted to the lead.');
+        toast('Submitted to the consortium lead.');
       } else toast('Draft saved.');
       detail(ctx, el, id);
     });

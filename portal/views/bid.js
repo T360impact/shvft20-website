@@ -97,7 +97,7 @@ export default async function bid(ctx, el, [itemId]) {
         ${templates.length ? html`<form class="form" id="apply"><div class="fields">
           <label class="f">Template<select name="template" required>${templates.map((t) => html`<option value="${t.id}">${t.name}</option>`)}</select></label>
           <label class="f">One-off items go to<select name="owner" required>${owners.map((o) => html`<option value="${o.id}" ${o.kind === 'lead' ? 'selected' : ''}>${o.name}</option>`)}</select></label></div>
-          <details class="learn"><summary>${raw(icon('info', 16))}Learn more</summary><p>Per-partner items go to every delivery partner and the accountable body. Anything already approved and in date in the library is reused.</p></details>
+          <details class="learn"><summary>${raw(icon('info', 16))}Learn more</summary><p>Per-partner items go to every delivery partner and the lead organisation. Anything already approved and in date in the library is reused.</p></details>
           <div class="btns"><button class="btn">${raw(icon('add', 18))}Add checklist</button></div></form>`
         : emptyState('library', 'No templates yet.', html`<a class="btn secondary" href="#/library">${raw(icon('library', 18))}Library</a>`, 'bids')}
       </section>

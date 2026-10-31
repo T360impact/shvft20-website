@@ -199,7 +199,7 @@ export async function outputs(ctx, el) {
   const years = [...new Set(rows.map((o) => o.year))].sort();
   const yr = ui(ctx)._oy || years[0] || 1;
   render(el, rows.length ? html`<div class="lw-toolbar">${years.length > 1 ? segControl('oy', years.map((y) => [y, `Year ${y}`]), yr) : html`<span></span>`}
-      <span class="muted small">Achieved comes from the portal's targets each output is linked to, or a figure entered by hand. T360 isn't connected yet.</span></div>
+      <span class="muted small">Achieved comes from the portal's targets each output is linked to, or a figure entered by hand. Weekly uploads fill the linked targets.</span></div>
     <div class="lw-cards">${rows.filter((o) => o.year === Number(yr)).map((o) => html`<button type="button" class="lw-card lw-output" data-out="${o.id}"><strong>${o.name}</strong>
       <span class="lw-out-figs"><b>${fmtNum(o.achieved ?? 0)}</b><span class="muted small">of ${fmtNum(o.target)} · ${fmtNum(o.planned)} expected by now</span></span>
       <span class="bar-track"><span class="bar-fill" style="width:${Math.min(100, o.target ? ((o.achieved || 0) / o.target) * 100 : 0)}%"></span></span>

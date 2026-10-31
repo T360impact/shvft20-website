@@ -72,10 +72,12 @@ export default async function risks(ctx, el, [sub, id]) {
       <p style="margin-top:8px">${liveMark()}</p>
       <p class="meta-line">${`Likelihood × severity, 1 to ${m} each`} · ${bands.map((b, i) => `${b.name} ${b.min_score}${bands[i + 1] ? `–${bands[i + 1].min_score - 1}` : '+'}`).join(', ')} · reviewed every ${s.review_frequency_months} months${reg.review_due ? ` · next review ${fmtDate(reg.review_due)}` : ''}</p></div>
     <div class="btns">${admin ? html`<button class="btn secondary" id="upload">${raw(icon('upload', 16))}Upload new version</button>
-      <button class="btn" id="add">${raw(icon('add', 16))}Add risk</button>` : html`<button class="btn secondary" id="add">${raw(icon('add', 16))}Propose a risk</button>`}</div></div>`;
+      <button class="btn" id="add">${raw(icon('add', 16))}Add risk</button>` : html`${reg.can_raise ? html`<button class="btn" id="add">${raw(icon('add', 16))}Add a risk</button>` : ''}`}</div></div>`;
 
   const banners = () => {
     const out = [];
+    const waiting = all.filter((r) => r.review_status === 'awaiting_review');
+    if (reg.can_review && waiting.length) out.push(html`<div class="lead-banner"><span><strong>${waiting.length} new risk${waiting.length === 1 ? '' : 's'} awaiting your review.</strong> ${waiting.slice(0, 3).map((r) => r.title).join(' · ')}</span><button class="btn secondary" data-pick="${waiting[0].id}">Review</button></div>`);
     if (admin && reg.import?.status === 'needs_review') out.push(html`<div class="lead-banner"><span><strong>A register reading is ready to review.</strong> Nothing goes live until you confirm it.</span><a class="btn secondary" href="#/c/${c.id}/risks/import/${reg.import.id}">Review</a></div>`);
     if (admin && reg.import?.status === 'running') out.push(html`<div class="lead-banner"><span><strong>Reading the register.</strong> This usually takes one to three minutes.</span><button class="btn secondary" id="refresh">Refresh</button></div>`);
     if (admin && reg.import?.status === 'failed') out.push(html`<div class="lead-banner"><span><strong>The register couldn't be read.</strong> ${reg.import.error || ''}</span></div>`);
@@ -157,7 +159,7 @@ export default async function risks(ctx, el, [sub, id]) {
 
   const riskRows = (rows) => html`<ul class="risk-list">${rows.map((r) => html`<li><button type="button" class="risk-row ${r.id === selected ? 'sel' : ''}" data-pick="${r.id}">
         <span class="rr-ref">${r.ref}</span>
-        <span class="rr-main"><strong>${r.title}</strong><span class="muted small">${r.actions[0]?.description || 'No further action'}</span></span>
+        <span class="rr-main"><strong>${r.title}</strong><span class="muted small">${r.review_status === 'awaiting_review' ? html`<span class="pill tone-amber">Awaiting review</span> ` : r.review_status === 'rejected' ? html`<span class="pill tone-red">Not added</span> ` : ''}${r.visibility === 'sensitive' ? html`<span class="pill tone-grey">Sensitive</span> ` : ''}${r.actions[0]?.description || 'No further action'}</span></span>
         <span class="rr-scores">${scorePill(r.inherent_score, r.band)}<span class="muted" aria-hidden="true">→</span>${scorePill(r.residual_score, r.residual_band)}</span>
         <span class="rr-owner">${ownerOf(r) ? html`<span class="avatar-sm" title="${ownerOf(r)}">${initials(ownerOf(r))}</span>` : html`<span class="muted small">Unassigned</span>`}</span></button></li>`)}</ul>`;
   // One theme: its risks, closed ones at the end. All themes: a short
@@ -179,7 +181,10 @@ export default async function risks(ctx, el, [sub, id]) {
     if (!r) return html`<p class="muted">Select a risk to see its detail.</p>`;
     const k = catOf(r);
     return html`<div class="rd-head"><span class="eyebrow">${r.ref}${k ? ` · ${k.name}` : ''}</span><h2>${r.title}</h2>
-        <p class="muted small">${STATUS[r.status]}${r.visibility === 'lead_only' ? ' · lead only' : ''}${r.version > 1 ? ` · version ${r.version}` : ''}</p></div>
+        <p class="muted small">${STATUS[r.status]}${r.visibility === 'lead_only' ? ' · lead only' : r.visibility === 'sensitive' ? ' · sensitive' : ''}${r.version > 1 ? ` · version ${r.version}` : ''}${r.raised_org ? ` · raised by ${ctx.org(r.raised_org)?.name || 'a partner'}` : ''}</p></div>
+      ${r.review_status === 'awaiting_review' ? html`<div class="lead-banner"><span><strong>Awaiting review.</strong> ${reg.can_review ? 'Accept it onto the register, or say why not.' : 'The consortium lead will review it.'}</span>
+        ${reg.can_review ? html`<span class="btns"><button class="btn small" id="rv-accept">Accept</button><button class="btn secondary small" id="rv-reject">Don't add</button></span>` : ''}</div>` : ''}
+      ${r.review_status === 'rejected' ? html`<div class="lead-banner"><span><strong>Not added to the register.</strong> ${r.review_note || ''}</span></div>` : ''}
       <p>${r.hazard}</p>
       ${r.who_at_risk ? html`<p class="small"><strong>Who is at risk:</strong> ${r.who_at_risk}</p>` : ''}
       <div class="score-tiles">${tile('Before action', r.inherent_score, r.likelihood, r.severity, r.band)}${tile('After action', r.residual_score, r.residual_likelihood, r.residual_severity, r.residual_band)}</div>
@@ -244,6 +249,13 @@ export default async function risks(ctx, el, [sub, id]) {
     $('#refresh', el)?.addEventListener('click', redraw);
     $('#upload', el)?.addEventListener('click', () => uploadDialog(ctx, redraw));
     $('#add', el)?.addEventListener('click', () => riskForm(ctx, { admin, settings: s, cats, all, people, members, personName }, null, redraw));
+    $('#rv-accept', el)?.addEventListener('click', (e) => act(e.target, async () => { must(await db.rpc('review_risk', { p_risk: selected, p_accept: true })); toast('On the register.'); await redraw(); }));
+    $('#rv-reject', el)?.addEventListener('click', () => {
+      const d = openDrawer('Don\'t add this risk', html`<form class="form" id="rj-form"><label class="f">Why it isn't going on the register<textarea name="note" rows="3" required></textarea></label>
+        <p class="small muted">The person who raised it sees this.</p><div class="btns"><button class="btn">Don't add</button></div></form>`);
+      $('#rj-form', d).addEventListener('submit', (ev) => { ev.preventDefault(); act(ev.submitter, async () => {
+        must(await db.rpc('review_risk', { p_risk: selected, p_accept: false, p_note: ev.target.note.value })); d.close(); await redraw(); }); });
+    });
     $('#edit-risk', el)?.addEventListener('click', () => riskForm(ctx, { admin, settings: s, cats, all, people, members, personName }, all.find((r) => r.id === selected), redraw));
     $('#assign', el)?.addEventListener('click', () => assignDialog(ctx, unowned, members, personName, redraw));
     $('#assign-one', el)?.addEventListener('click', () => assignDialog(ctx, [all.find((r) => r.id === selected)], members, personName, redraw));
@@ -310,9 +322,11 @@ function actionRow(ctx, members, personName) {
 function riskForm(ctx, { admin, settings: s, cats, all, members = [], personName = () => '' }, risk, done) {
   const m = s.scale_max;
   const opts = (v) => Array.from({ length: m }, (_, i) => html`<option value="${i + 1}" ${v === i + 1 ? 'selected' : ''}>${i + 1}</option>`);
-  const d = openDrawer(risk ? `Edit ${risk.ref}` : admin ? 'Add a risk' : 'Propose a risk', html`<form class="form" id="risk-form">
-    ${!admin ? html`<p class="small muted">The lead reviews your proposal before it joins the register.</p>` : ''}
+  const d = openDrawer(risk ? `Edit ${risk.ref}` : 'Add a risk', html`<form class="form" id="risk-form">
+    ${!admin ? html`<p class="small muted">It shows on the register straight away, marked "Awaiting review", and the consortium lead reviews it.</p>` : ''}
     <p class="small muted">Describe the risk without naming any young person. Medical, allergy and safeguarding case details stay in your own records.</p>
+    <div class="banner warn" id="sg-prompt" hidden role="status"><strong>Is this about a particular young person?</strong> A concern about one young person is a safeguarding matter, not a risk.
+      Follow your organisation's safeguarding procedure and tell your designated safeguarding lead now, then record it as a safeguarding concern in your monthly return (<a href="#/c/${ctx.consortium.id}/returns">open returns</a>).</div>
     <label class="f">Category<select name="category_id">${cats.map((k) => html`<option value="${k.id}" ${risk?.category_id === k.id ? 'selected' : ''}>${k.code}. ${k.name}</option>`)}<option value="">No category</option></select></label>
     <label class="f">Title<span class="hint">Up to 60 characters.</span><input name="title" maxlength="60" required value="${risk?.title || ''}"></label>
     <label class="f">Hazard and how harm could occur<textarea name="hazard" rows="3" required>${risk?.hazard || ''}</textarea></label>
@@ -324,12 +338,20 @@ function riskForm(ctx, { admin, settings: s, cats, all, members = [], personName
       <p class="small muted">Allocate each action to an organisation, and a person in it if you know who. Owners see it on their risks, and it is flagged once it passes its due date.</p>
       <ol class="act-rows" id="act-rows">${actionRow(ctx, members, personName)}</ol>
       <button type="button" class="btn secondary small" id="act-add">${raw(icon('add', 16))}Add another action</button></fieldset>` : ''}
-    ${!risk && !admin ? html`<label class="f">Further action<span class="hint">One per line. The lead allocates owners and dates.</span><textarea name="actions" rows="2"></textarea></label>` : ''}
+    ${!risk && !admin ? html`<label class="f">Further action<span class="hint">One per line. The consortium lead allocates owners and dates.</span><textarea name="actions" rows="2"></textarea></label>
+      <label class="f">Who can see it<select name="visibility"><option value="consortium">Everyone in the consortium</option>
+        <option value="sensitive">Sensitive: only me, the consortium lead and the lead organisation</option></select></label>` : ''}
     ${admin ? html`<div class="fields"><label class="f">After action: likelihood<select name="rl"><option value="">–</option>${opts(risk?.residual_likelihood)}</select></label>
       <label class="f">After action: severity<select name="rs"><option value="">–</option>${opts(risk?.residual_severity)}</select></label></div>
-      <label class="f">Who can see it<select name="visibility"><option value="consortium" ${risk?.visibility !== 'lead_only' ? 'selected' : ''}>Everyone in the consortium</option>
-        <option value="lead_only" ${risk?.visibility === 'lead_only' ? 'selected' : ''}>Lead only</option></select></label>` : ''}
-    <div class="btns"><button class="btn">${risk ? 'Save' : admin ? 'Add risk' : 'Send to the lead'}</button></div></form>`);
+      <label class="f">Who can see it<select name="visibility"><option value="consortium" ${!risk || risk.visibility === 'consortium' ? 'selected' : ''}>Everyone in the consortium</option>
+        <option value="sensitive" ${risk?.visibility === 'sensitive' ? 'selected' : ''}>Sensitive: the raiser, the consortium lead and the lead organisation</option>
+        <option value="lead_only" ${risk?.visibility === 'lead_only' ? 'selected' : ''}>Consortium lead and lead organisation only</option></select></label>` : ''}
+    <div class="btns"><button class="btn">${risk ? 'Save' : 'Add risk'}</button></div></form>`);
+  // A safeguarding prompt when the text reads as being about one young person.
+  const oneYP = /\b(a|one|this|the) (young person|child|boy|girl|participant|member|yp)\b|\b(he|she|his|her)\b.{0,40}\b(disclos|abuse|harm|self[- ]harm|exploit|missing|groom|assault|neglect|threat)/i;
+  $$('#risk-form textarea, #risk-form input[name=title], #risk-form input[name=who_at_risk]', d).forEach((x) => x.addEventListener('input', () => {
+    $('#sg-prompt', d).hidden = !$$('#risk-form textarea, #risk-form input[name=title], #risk-form input[name=who_at_risk]', d).some((y) => oneYP.test(y.value));
+  }));
   // Action rows: people narrowed to the chosen organisation; add and remove rows.
   const bindRow = (li) => {
     const org = $('[name=act_org]', li); const person = $('[name=act_person]', li);
@@ -355,8 +377,8 @@ function riskForm(ctx, { admin, settings: s, cats, all, members = [], personName
         owner_profile_id: $('[name=act_person]', li).value || null, due_date: $('[name=act_due]', li).value || null }));
       if (acts.some((a) => !a.description && (a.owner_organisation_id || a.owner_profile_id || a.due_date))) throw new Error('Describe each action you have allocated, or remove it.');
       if (!admin) {
-        must(await db.rpc('propose_risk', { p_consortium: ctx.consortium.id, p_payload: { ...row, further_actions: lines } }));
-        d.close(); toast('Sent to the lead.'); return done();
+        must(await db.rpc('raise_risk', { p_consortium: ctx.consortium.id, p_risk: { ...row, visibility: f.visibility.value }, p_actions: lines }));
+        d.close(); toast('Added. It shows as awaiting review until the consortium lead looks at it.'); return done();
       }
       Object.assign(row, { residual_likelihood: f.rl.value ? Number(f.rl.value) : null, residual_severity: f.rs.value ? Number(f.rs.value) : null, visibility: f.visibility.value });
       if ((row.residual_likelihood == null) !== (row.residual_severity == null)) throw new Error('Give both an after-action likelihood and severity, or neither.');
@@ -364,9 +386,7 @@ function riskForm(ctx, { admin, settings: s, cats, all, members = [], personName
         if (row.residual_likelihood == null) { delete row.residual_likelihood; delete row.residual_severity; }
         must(await db.from('risks').update(row).eq('id', risk.id));
       } else {
-        const code = cats.find((k) => k.id === row.category_id)?.code || 'R';
-        const n = Math.max(0, ...all.filter((r) => new RegExp(`^${code}\\d+$`).test(r.ref)).map((r) => Number(r.ref.slice(code.length)))) + 1;
-        const made = must(await db.from('risks').insert({ ...row, consortium_id: ctx.consortium.id, ref: `${code}${n}` }).select('id').single());
+        const made = must(await db.from('risks').insert({ ...row, consortium_id: ctx.consortium.id }).select('id').single());
         const toAdd = acts.filter((a) => a.description);
         if (toAdd.length) must(await db.from('risk_actions').insert(toAdd.map((a, i) => ({ risk_id: made.id, consortium_id: ctx.consortium.id, position: i + 1, ...a }))));
       }

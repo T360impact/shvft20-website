@@ -76,7 +76,7 @@ async function weekly(ctx, el, nav, refresh) {
               <h4>Food and materials</h4><p class="small">${h.log?.food_materials || html`<span class="muted">Not logged.</span>`}</p>
               ${h.log?.next_needs ? html`<h4>Needs</h4><p class="small">${h.log.next_needs}</p>` : ''}</div></div></section>`; }) : emptyState('sites', 'No hubs yet.')}
       <section class="lw-mhub"><h3>Referral pathways in progress</h3>${m.referrals.length ? html`<p class="small">${m.referrals.map((r) => `${r.service} (${r.status.replace('_', ' ')})`).join(' · ')}</p>` : html`<p class="muted small">All confirmed, or none set up.</p>`}
-        <p class="small muted">T360 data: not connected yet. Figures above come from the portal's own sessions and attendance.</p></section>
+        <p class="small muted">Figures above come from each hub site's confirmed weekly uploads.</p></section>
       <section class="lw-mhub"><h3>Open actions</h3>${actionsBlock(ctx, m.actions)}${actionForm(ctx, 'operations')}</section>
     </article>`);
   $('#m-date', el).addEventListener('change', (e) => { ui(ctx)._mdate = e.target.value || today(); weekly(ctx, el, nav, refresh); });

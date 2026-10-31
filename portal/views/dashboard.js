@@ -107,6 +107,8 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     db.rpc('dashboard_layout', { p_consortium: c.id }).then(must),
     db.rpc('consortium_summary', { p_consortium: c.id }).then(must),
   ]);
+  // Risks raised and still awaiting the consortium lead's review (sensitive ones only to those allowed).
+  x.risks_awaiting = funder ? [] : ((await db.from('risks').select('id, title, visibility').eq('consortium_id', c.id).eq('review_status', 'awaiting_review').order('created_at', { ascending: false }).limit(5)).data || []);
   const budgets = {};
   for (const a of alloc) if (a.organisation_id) budgets[a.organisation_id] = (budgets[a.organisation_id] || 0) + Number(a.amount);
 
@@ -336,6 +338,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
       ...(ret.awaiting_review ? [{ ic: 'submitted', text: html`<a href="#/c/${c.id}/returns">${ret.awaiting_review} return${ret.awaiting_review === 1 ? '' : 's'} awaiting your review</a>`, tone: 'blue' }] : []),
       ...(x.compliance || []).map((d) => ({ ic: 'expiry', text: html`<strong>${d.organisation}</strong>: ${d.title} expires ${fmtDate(d.expires_on)}`, tone: 'amber' })),
       ...(x.risks || []).map((r) => ({ ic: 'safeguarding', text: html`<strong>${r.organisation}</strong> flagged a risk in ${fmtMonth(r.period)}: ${r.text}`, tone: 'red' })),
+      ...(x.risks_awaiting || []).map((r) => ({ ic: 'safeguarding', text: html`<a href="#/c/${c.id}/risks">${r.title}</a> ${pill('amber', 'Awaiting review')}${r.visibility === 'sensitive' ? html` ${pill('grey', 'Sensitive')}` : ''}`, tone: 'amber' })),
       ...(x.risk_actions?.overdue ? [{ ic: 'overdue', text: html`<a href="#/c/${c.id}/risks">${x.risk_actions.overdue} risk action${x.risk_actions.overdue === 1 ? ' is' : 's are'} overdue</a>`, tone: 'red' }] : []),
     ];
     const stories = x.stories || [];

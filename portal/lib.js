@@ -12,8 +12,8 @@ export const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 export const ROLE_LABEL = {
   platform_admin: 'Platform administrator',
-  lead: 'Partnership consortium lead',
-  accountable_body: 'Accountable body',
+  lead: 'Consortium lead (Shvft2.0)',
+  accountable_body: 'Lead organisation (accountable body)',
   partner_manager: 'Delivery partner manager',
   hub_worker: 'Hub or session worker',
   funder_observer: 'Funder observer',

@@ -55,9 +55,9 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
   const [commits, entries, uploads, everyone] = await Promise.all([
     db.from('commitments').select('*, commitment_organisations(organisation_id)').eq('consortium_id', c.id)
       .is('superseded_by', null).is('retired_at', null).or(`organisation_id.is.null,organisation_id.eq.${org.id}`).then(must),
-    db.from('progress_entries').select('*').eq('consortium_id', c.id).eq('organisation_id', org.id).then(must),
+    db.from('progress_counted').select('*').eq('consortium_id', c.id).eq('organisation_id', org.id).then(must),
     db.from('progress_uploads').select('*').eq('consortium_id', c.id).eq('organisation_id', org.id).order('created_at', { ascending: false }).limit(12).then(must),
-    ctx.manages ? db.from('progress_entries').select('organisation_id, period_month').eq('consortium_id', c.id).then(must) : [],
+    ctx.manages ? db.from('progress_counted').select('organisation_id, period_month').eq('consortium_id', c.id).then(must) : [],
   ]);
 
   // The lines this organisation can report for this month, with what it has
@@ -114,7 +114,7 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
 
   render(el, html`
     <div class="page-head"><div><span class="eyebrow">Progress</span><h1>What ${org.name} delivered</h1>
-      <p class="muted">Report each month's figures against the targets. Type them in below, or download the spreadsheet, fill it in and upload it. Either way the portal checks every figure, keeps the record, and the dashboard adds them up.</p>
+      <p class="muted">Progress against the targets from confirmed weekly uploads and approved returns. Figures are entered in each month's return; you can also download the spreadsheet for a month, fill it in and upload it here, and it goes into that month's return.</p>
       <p style="margin-top:8px">${liveMark()}</p></div></div>
 
     <section class="panel"><form class="form" id="pick"><div class="fields">
@@ -159,18 +159,9 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
     ${!commits.length ? html`<section class="panel" style="margin-top:20px"><p>There are no confirmed targets to report against yet. Once the lead confirms the targets under Targets and budget, they appear here.</p></section>`
     : !rows.length ? html`<section class="panel" style="margin-top:20px"><p>No targets fall in ${monthName}.</p></section>`
     : html`<section class="panel" style="margin-top:20px">
-      <header><h2>${monthName}</h2>${anyLinked ? html`<label class="check small"><input type="checkbox" id="only-linked"> Only lines linked to ${org.name}</label>` : ''}</header>
-      <form id="entry"><p class="muted small" style="margin-bottom:12px">Open a section to enter its figures. <button type="button" class="linkbtn small" id="open-all">Open all</button></p>
-        ${groups.map((g, i) => {
-          const gr = rows.filter((r) => group(r) === g);
-          return sectionGroup({ title: g, open: i === 0, meta: `${gr.length} line${gr.length === 1 ? '' : 's'} · ${gr.filter((r) => r.now).length} filled for ${monthName}`,
-            body: html`<div class="table-wrap"><table class="entry">
-              <thead><tr><th>Output or outcome</th><th class="num">Target</th><th class="num">Reported before</th><th class="num">${monthName}</th><th>Note</th></tr></thead>
-              <tbody>${gr.map(row)}</tbody></table></div>` });
-        })}
-      <div id="errors"></div>
-      <p class="small muted" style="margin-top:10px">Leave a figure empty if there's nothing to report. Emptying a figure you saved before removes it.${rows.some((r) => r.locked) ? ' Percentages are reported by the consortium lead.' : ''}</p>
-      <div class="btns" style="margin-top:14px"><button class="btn">Save ${monthName}</button></div></form></section>`}
+      <header><h2>Figures for ${monthName}</h2></header>
+      <p>Figures are now entered in each month's return, where weekly lines fill from the confirmed weekly uploads and the consortium lead reviews them. The charts here count figures from confirmed weekly uploads and approved returns.</p>
+      ${ctx.orgId === org.id || ctx.manages ? html`<div class="btns" style="margin-top:12px"><button class="btn" type="button" id="open-return">Open ${org.name}'s ${monthName} return</button></div>` : ''}</section>`}
 
 
     ${uploads.length ? html`<section class="panel" style="margin-top:20px">${sectionGroup({ title: `Spreadsheets ${org.name} uploaded`, meta: `${uploads.length} file${uploads.length === 1 ? '' : 's'} · latest ${fmtDateTime(uploads[0].created_at)}`, body: html`
@@ -179,6 +170,11 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
         <td>${fmtMonth(u.period_month)}</td><td class="num">${u.rows_saved}</td><td class="small">${fmtDateTime(u.created_at)}</td></tr>`)}</tbody></table></div>` })}</section>` : ''}`);
 
   const again = () => progress(ctx, el, [org.id, month]);
+  $('#open-return')?.addEventListener('click', (e) => act(e.currentTarget, async () => {
+    const found = must(await db.from('returns').select('id').eq('organisation_id', org.id).eq('period_month', `${month}-01`).maybeSingle());
+    const id = found?.id || must(await db.from('returns').insert({ consortium_id: c.id, organisation_id: org.id, period_month: `${month}-01` }).select('id').single()).id;
+    location.hash = `#/c/${c.id}/returns/${id}`;
+  }));
   $('#pick').addEventListener('change', (e) => go(e.currentTarget.elements.org?.value || org.id, e.currentTarget.elements.month.value));
   $('#only-linked')?.addEventListener('change', (e) => $$('table.entry').forEach((t) => t.classList.toggle('linked-only', e.target.checked)));
   $('#open-all')?.addEventListener('click', (e) => {

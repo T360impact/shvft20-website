@@ -1354,3 +1354,35 @@ ul.lw-nd { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1
   .lw-todo .lw-row { flex-direction: row; flex-wrap: wrap; }
   .lw-todo .lw-row-tags { flex-basis: 100%; justify-content: flex-start; }
 }
+
+/* ---------------------------------------------------------- dashboard tiers */
+/* Notifications: a count beside the bell, and a dot on each unread notice. */
+.notif-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px;
+  background: var(--red); color: #fff; font-size: 11px; font-weight: 700; line-height: 1; }
+.notif-list .lw-row.unread { background: var(--blue-tint); }
+.notif-list .lw-row.unread strong { color: var(--text); }
+.notif-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--blue); align-self: center; }
+/* Small labelled chips: assurance items, risk bands. */
+.doc-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; margin: 0 6px 6px 0; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface-muted); font-size: 13px; text-transform: capitalize; }
+/* The lead organisation's returns grid: one cell a month per partner. */
+.rgrid th:not(:first-child), .rgrid td.rcell { text-align: center; width: 52px; }
+.rcell { font-weight: 700; font-size: 13px; }
+.rcell.approved { background: var(--green-tint); color: var(--green-text); }
+.rcell.submitted { background: var(--blue-tint); color: var(--blue-text); }
+.rcell.changes_requested { background: var(--amber-tint); color: var(--amber-text); }
+.rcell.draft { background: var(--surface-muted); color: var(--text-2); }
+.rcell.none { background: var(--red-tint); }
+/* "View as": a read-only preview inside a framed box. */
+.lead-banner.viewas { background: var(--amber-tint); color: var(--amber-text); }
+.viewas-frame { margin-top: var(--s5); padding: var(--s5); border: 2px dashed var(--amber); border-radius: 16px; background: var(--surface-muted); }
+.viewas-frame a[aria-disabled] { pointer-events: none; color: var(--text-2); text-decoration: none; }
+.viewas-frame :disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 640px) { .viewas-frame { padding: var(--s3); } }
+/* Organisation profiles: logo, completeness ring. */
+.org-head { display: flex; align-items: center; gap: var(--s4); min-width: 0; }
+.org-logo { width: 64px; height: 64px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); padding: 6px; }
+.ring-box { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ring { color: var(--text); flex: none; }
+.ring-cell { display: inline-flex; vertical-align: middle; }
+.ring-cell .ring text { font-size: 8.5px; }

@@ -95,7 +95,7 @@ export default async function agreements(ctx, el) {
             })}</div>`;
           })}` : html`<p class="empty">No commitments yet.</p>`}</section>
 
-      ${ctx.role !== 'funder_observer' ? html`<section class="dcard half"><header class="dcard-head"><h2>Partner schedules</h2><p>Each partner's targets, sites, days and budget. The partner signs, then the accountable body countersigns.</p></header>
+      ${ctx.role !== 'funder_observer' ? html`<section class="dcard half"><header class="dcard-head"><h2>Partner schedules</h2><p>Each partner's targets, sites, days and budget. The partner signs, then the lead organisation countersigns.</p></header>
         ${schedules.length ? schedules.map((s) => sectionGroup({ title: ctx.org(s.organisation_id)?.name || 'Partner', meta: s.title, aside: statusPill(s.status), open: waiting(s), body: schedBody(s) }))
         : html`<p class="empty">No schedules yet.</p>`}</section>` : ''}
 
