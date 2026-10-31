@@ -1386,3 +1386,27 @@ ul.lw-nd { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1
 .ring { color: var(--text); flex: none; }
 .ring-cell { display: inline-flex; vertical-align: middle; }
 .ring-cell .ring text { font-size: 8.5px; }
+
+/* Reporting: what's missing, the review screen, sources and the gap matrix */
+.gap-row .lw-row-main strong { font-weight: 500; }
+.gap-row .lw-row-tags { flex-wrap: wrap; justify-content: flex-end; }
+.rv-row { border: 1px solid var(--card-line); border-radius: var(--radius-ctl); padding: var(--s3); margin-top: var(--s3); background: var(--surface); }
+.rv-row.low { border-color: var(--amber); background: var(--amber-tint); }
+.rv-opts { display: grid; gap: var(--s2); margin-top: var(--s2); }
+.rv-opt { display: flex; gap: var(--s2); align-items: flex-start; padding: var(--s2); border-radius: var(--radius-ctl); background: var(--surface-muted); }
+.rv-opt.low { box-shadow: inset 3px 0 0 var(--amber); }
+.rv-opt input[type=radio] { margin-top: 3px; flex: none; }
+.rv-opt > span { min-width: 0; overflow-wrap: anywhere; }
+.rv-num { width: 9em; margin-left: var(--s2); }
+.src-quote { margin: var(--s3) 0; padding: var(--s2) var(--s3); border-left: 3px solid var(--navy); background: var(--surface-muted); font-style: italic; overflow-wrap: anywhere; }
+.src-text { white-space: pre-wrap; font-size: 14px; line-height: 1.6; max-height: 55vh; overflow: auto; padding: var(--s3); border: 1px solid var(--border); border-radius: var(--radius-ctl); }
+.src-text mark, .src-table td.hit { background: var(--amber-tint); color: var(--amber-text); outline: 2px solid var(--amber); border-radius: 3px; }
+.src-table td { border: 1px solid var(--border); padding: 4px 8px; font-size: 13px; white-space: nowrap; }
+.gap-matrix th[scope=row] { text-align: left; white-space: nowrap; }
+.gap-matrix .gm-head { vertical-align: bottom; min-width: 64px; max-width: 120px; font-size: 12px; font-weight: 500; line-height: 1.25; white-space: normal; }
+.gap-matrix td { text-align: center; }
+.gm-cell { width: 36px; height: 32px; border: 0; border-radius: 8px; font-weight: 700; cursor: pointer; }
+.gm-cell.tone-green { background: var(--green-tint); color: var(--green-text); }
+.gm-cell.tone-amber { background: var(--amber-tint); color: var(--amber-text); }
+.gm-cell.tone-red { background: var(--red-tint); color: var(--red-text); }
+.gm-cell:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }

@@ -1,13 +1,17 @@
 // Monthly partner returns: where each month's figures are entered. Every
 // target the organisation reports on is a line with its source: weekly lines
 // fill from the confirmed weekly uploads and are read only, manual lines are
-// typed in, evidence lines need a file. Weeks of the month with no upload show. Submitting needs every yearly output; the consortium
+// typed in, evidence lines need a file. Weeks of the month with no upload show,
+// and so does what was asked for this month (the reporting requirements).
+// Submitting needs every yearly output and required item, unless the partner
+// gives a reason, which the lead sees; the consortium
 // lead reviews with a red, amber or green rating. Figures count on the
 // dashboard and Progress charts only once the return is approved.
 import { db, html, raw, render, $, $$, formData, toast, act, must, icon, pill, fmtMonth, fmtDate, fmtDateTime, fmtNum, rag, statusPill, emptyState, downloadCsv, sectionGroup, uploadFile, openFile } from '../lib.js';
 
 const SOURCE = { weekly_upload: 'From the weekly uploads', return_manual: 'Typed in', evidence_upload: 'Figure with evidence' };
 import { chart, hbars } from '../charts.js';
+import { ST as REQ_ST } from './reporting.js';
 
 // The steps of a return, each with its icon.
 const STEPS = [['attendance', 'Numbers'], ['bids', 'Report'], ['submitted', 'Submit'], ['approved', 'Review']];
@@ -94,6 +98,9 @@ async function detail(ctx, el, id) {
   const step = stepOf(r.status);
   const lines = rd.lines;
   const missing = lines.filter((l) => l.missing);
+  const reqs = rd.requirements || [];
+  const reqMissing = reqs.filter((q) => q.mandatory && q.status !== 'provided');
+  const needReason = missing.length + reqMissing.length > 0;
   const sections = [...new Set(lines.map((l) => l.section || 'Targets'))];
   const lineRow = (l) => html`<tr data-line="${l.commitment_id}" data-src="${l.data_source}">
     <td><strong>${l.label}</strong><br><span class="small muted">${SOURCE[l.data_source]}${l.own ? '' : ' · shared target'}${l.kind === 'outcome' ? ' · outcome, optional' : ''}</span></td>
@@ -123,6 +130,13 @@ async function detail(ctx, el, id) {
       <span class="dot">${raw(icon(i < step ? 'check' : ic, 20))}</span>${label}</li>`)}</ol>
     ${r.status === 'changes_requested' && r.review_note ? html`<div class="banner warn" style="margin-bottom:24px">${raw(icon('returned', 20))}<span><strong>Changes requested:</strong> ${r.review_note}</span></div>` : ''}
     ${figures}
+    ${reqs.length ? html`<section class="panel m-compliance"><header><h2>${raw(icon('requirements', 20))}Asked for this month</h2>
+      <span class="small muted">${reqs.filter((q) => q.status === 'provided').length} of ${reqs.length} provided</span></header>
+      ${r.missing_reason ? html`<div class="lead-banner"><span><strong>Submitted with items missing. Reason given:</strong> ${r.missing_reason}</span></div>` : ''}
+      ${[['Still needed', reqs.filter((q) => q.status !== 'provided')], ['Provided', reqs.filter((q) => q.status === 'provided')]].filter(([, xs]) => xs.length).map(([t, xs], i) => sectionGroup({ title: t, meta: `${xs.length}`, open: i === 0,
+        body: html`<ul class="lw-list">${xs.map((q) => html`<li class="lw-row static"><span class="lw-row-main"><strong>${q.label}</strong><span class="muted small">${q.instruction || (q.mandatory ? 'Required' : 'Optional')}</span></span>
+          <span class="lw-row-tags">${pill(...REQ_ST[q.status])}</span></li>`)}</ul>` }))}
+      ${editable && reqs.some((q) => q.status !== 'provided') ? html`<p class="small" style="margin-top:8px"><a href="#/c/${c.id}/reporting">Upload a report or enter these on Reporting</a></p>` : ''}</section>` : ''}
     <section class="panel m-compliance"><header><h2>${raw(icon('attendance', 20))}Numbers for the month</h2>${editable ? html`<span class="small muted">Live from the register, fixed when you submit</span>` : ''}</header>
       ${chart(withTarget.length ? `${met} of ${withTarget.length} measure${withTarget.length === 1 ? '' : 's'} at or above the monthly target.` : `${ctx.org(r.organisation_id)?.name} has no monthly targets of its own, so these are counts.`,
         withTarget.length ? 'This month against a twelfth of the yearly target. The tick is the monthly target.' : '', hbars(rows))}
@@ -134,6 +148,8 @@ async function detail(ctx, el, id) {
           <input name="safeguarding_refs" value="${r.safeguarding_refs || ''}"></label>
         <label class="f">Risks and issues<textarea name="risks">${r.risks || ''}</textarea></label>
         <label class="f">Narrative<span class="hint">What went well, what didn't, and anything the lead should know.</span><textarea name="narrative" required>${r.narrative || ''}</textarea></label>
+        ${needReason ? html`<label class="f">Why some required items are missing<span class="hint">${missing.length + reqMissing.length} required item${missing.length + reqMissing.length === 1 ? ' is' : 's are'} still missing. You can submit without ${missing.length + reqMissing.length === 1 ? 'it' : 'them'} if you say why; the consortium lead sees this.</span>
+          <textarea name="missing_reason" maxlength="2000"></textarea></label>` : ''}
         <div class="btns"><button class="btn secondary" name="save" value="1" formnovalidate>Save draft</button><button class="btn" name="submit" value="1">${raw(icon('submitted', 18))}Submit return</button></div>
       </form></section>`
     : html`<section class="panel m-compliance"><h2>${raw(icon('bids', 20))}Report</h2>
@@ -141,6 +157,7 @@ async function detail(ctx, el, id) {
         <dt>Safeguarding concerns</dt><dd>${r.safeguarding_concerns}${r.safeguarding_refs ? ` (refs: ${r.safeguarding_refs})` : ''}</dd>
         <dt>Risks and issues</dt><dd class="prose">${r.risks || '–'}</dd>
         <dt>Narrative</dt><dd class="prose">${r.narrative || '–'}</dd>
+        ${r.missing_reason ? html`<dt>Why items are missing</dt><dd class="prose">${r.missing_reason}</dd>` : ''}
         <dt>Submitted</dt><dd>${fmtDateTime(r.submitted_at) || '–'}</dd>
         ${r.reviewed_at ? html`<dt>Reviewed</dt><dd>${fmtDateTime(r.reviewed_at)}${r.review_note ? html`<br><span class="muted">${r.review_note}</span>` : ''}</dd>` : ''}
       </dl></section>`}
@@ -171,11 +188,11 @@ async function detail(ctx, el, id) {
   $('#ret')?.addEventListener('submit', (e) => {
     e.preventDefault();
     act(e.submitter, async () => {
-      const { safeguarding_concerns, safeguarding_refs, risks, narrative } = formData(e.target);
+      const { safeguarding_concerns, safeguarding_refs, risks, narrative, missing_reason } = formData(e.target);
       if ($('#figs', el)) await saveFigures();
       must(await db.from('returns').update({ safeguarding_concerns, safeguarding_refs, risks, narrative }).eq('id', id));
       if (e.submitter.name === 'submit') {
-        must(await db.rpc('submit_return', { p_return: id }));
+        must(await db.rpc('submit_return', { p_return: id, p_reason: missing_reason || null }));
         toast('Submitted to the consortium lead.');
       } else toast('Draft saved.');
       detail(ctx, el, id);

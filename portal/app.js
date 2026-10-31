@@ -8,6 +8,7 @@ import agreements from './views/agreements.js';
 import uploads from './views/uploads.js';
 import profile from './views/profile.js';
 import compliance from './views/compliance.js';
+import reporting from './views/reporting.js';
 import returns from './views/returns.js';
 import risks from './views/risks.js';
 import dashboard from './views/dashboard.js';
@@ -34,7 +35,7 @@ const state = { user: null, profile: null, memberships: [], ctx: null, ready: fa
 // Light unless the person has chosen dark in Account; the device setting is ignored.
 const applyTheme = (t) => { document.documentElement.dataset.theme = t === 'dark' ? 'dark' : 'light'; };
 
-const TAB_ORDER = ['mine', 'programme', 'master', 'dashboard', 'uploads', 'progress', 'returns', 'bid', 'targets', 'hub'];
+const TAB_ORDER = ['mine', 'programme', 'master', 'dashboard', 'reporting', 'uploads', 'progress', 'returns', 'bid', 'targets', 'hub'];
 
 // Each page belongs to a module, which sets its icon and accent colour.
 const VIEWS = {
@@ -50,6 +51,8 @@ const VIEWS = {
   progress: { label: 'Progress', short: 'Progress', icon: 'outcomes', mod: 'delivery', view: progress, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
   // Weekly aggregate figures: the portal holds no individual young person's details.
   uploads: { label: 'Weekly figures', short: 'Weekly', icon: 'spreadsheet', mod: 'delivery', view: uploads, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
+  // What each partner owes each period; reports in any format.
+  reporting: { label: 'Reporting', short: 'Reporting', icon: 'requirements', mod: 'delivery', view: reporting, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
   profile: { label: 'Our profile', short: 'Profile', icon: 'partners', mod: 'governance', view: profile, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance', 'reporting', 'hub_worker'] },
   compliance: { label: 'Compliance', short: 'Compliance', icon: 'compliance', mod: 'compliance', view: compliance, roles: ['lead', 'accountable_body'] },
   returns: { label: 'Returns', short: 'Returns', icon: 'returns', mod: 'compliance', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },

@@ -114,15 +114,14 @@ async function downloadTemplate(ctx, progs) {
   X.writeFile(wb, 'weekly-register-summary.xlsx');
 }
 
-function openUpload(ctx, progs, done) {
+// A file handed over from "Upload a report" (preset) is read straight away.
+export function openUpload(ctx, progs, done, preset = null) {
   const d = openDrawer('Upload weekly figures', html`<div id="wk">
     <p class="small muted">The weekly register summary from T360, or the blank template. One row per site, programme and week.</p>
     <label class="f">File (.xlsx or .csv)<input type="file" id="wk-file" accept=".xlsx,.xls,.csv"></label><div id="wk-step"></div></div>`);
   const step = $('#wk-step', d);
   const state = { file: null, headers: [], rows: [], version: null, mapping: null };
-  $('#wk-file', d).addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const read = async (file, input) => {
     state.file = file;
     try {
       const X = await loadXlsx();
@@ -145,10 +144,12 @@ function openUpload(ctx, progs, done) {
         mapColumns(ctx, d, step, state, progs, done);
       }
     } catch (err) {
-      e.target.value = '';
+      if (input) input.value = '';
       render(step, html`<div class="banner bad" role="alert" style="margin-top:12px">${err.message}</div>`);
     }
-  });
+  };
+  $('#wk-file', d).addEventListener('change', (e) => { if (e.target.files[0]) read(e.target.files[0], e.target); });
+  if (preset) read(preset, null);
 }
 
 // A file not in the template: the uploader confirms which column is which.

@@ -1,6 +1,6 @@
 // The three dashboard tiers.
-//  mine       "My organisation in this programme": a partner's role, actions,
-//             targets, return, money (finance and org admin only), risks,
+//  mine       "My organisation in this programme": what's missing, a partner's
+//             role, actions, targets, return, money (finance and org admin only), risks,
 //             documents and the consortium's progress (no money).
 //  programme  The lead organisation's view: its own delivery, plus the whole
 //             programme's delivery, returns, finance, payment approvals and
@@ -8,6 +8,7 @@
 //  master     The consortium lead's master view: drive controls, data
 //             health, settings, and "view as" (read only and logged).
 import { docPill } from './profile.js';
+import { loadGaps, gapList, bindGapList, canUpload } from './reporting.js';
 import { db, html, raw, render, $, $$, must, act, toast, icon, pill, rag, statusPill, statCard, openDrawer, formData, fmtDate, fmtDateTime, fmtMonth, fmtMoney, fmtNum,
   today, emptyState, sectionGroup, segControl, bindSegments, headline, uploadFile, ROLE_LABEL, live, liveMark } from '../lib.js';
 
@@ -25,7 +26,9 @@ export default async function mine(ctx, el, _parts, preview = null) {
   const d = preview || must(await db.rpc('my_organisation', { p_consortium: ctx.consortium.id }));
   if (d && !preview) d.pack = must(await db.rpc('assurance_pack', { p_consortium: ctx.consortium.id, p_org: d.organisation.id }))[0]?.items || [];
   if (!d) { render(el, html`<div class="panel">You're not linked to an organisation in this workspace.</div>`); return; }
+  try { d.gaps ||= await loadGaps(ctx, d.organisation.id); } catch { d.gaps = null; }
   render(el, partnerView(ctx, d));
+  if (!d.read_only) bindGapList(ctx, el, () => mine(ctx, el, _parts));
   bindPartner(ctx, el, d, () => mine(ctx, el, _parts));
   if (!preview) live(ctx.consortium.id, () => { if (!document.querySelector('dialog[open]')) mine(ctx, el, _parts); });
 }
@@ -56,6 +59,9 @@ function partnerView(ctx, d) {
         : statCard({ icon: 'safeguarding', value: d.risks.length, label: 'My risks', trend: { dir: 'flat', tone: 'grey', text: 'owned or raised by you' } })}</div>
 
     <div class="dgrid">
+      ${d.gaps ? html`<section class="dcard full"><header class="dcard-head"><h2>What's missing ${d.gaps.items.length ? pill('red', `${d.gaps.items.length}`) : pill('green', 'Nothing')}</h2>
+        <p>For the last period: ${d.gaps.provided} of ${d.gaps.total} provided. ${ro ? '' : html`<a href="#/c/${c.id}/reporting">All reporting</a>`}</p></header>
+        ${gapList(ctx, d.gaps.items, ro || !canUpload(ctx))}</section>` : ''}
       <section class="dcard half"><header class="dcard-head"><h2>Our role</h2><p>From the programme summary.</p></header>
         ${d.role_card ? html`<p><strong>${d.role_card.role_title}</strong></p>${d.role_card.responsibilities?.length ? html`<ul class="small">${d.role_card.responsibilities.map((x) => html`<li>${x}</li>`)}</ul>` : ''}
           ${d.role_card.key_contact ? html`<p class="small muted">Key contact: ${d.role_card.key_contact}</p>` : ''}` : html`<p class="muted small">The consortium lead hasn't described your role in the summary yet.</p>`}

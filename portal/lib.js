@@ -225,13 +225,14 @@ export async function uploadFile(bucket, folder, file) {
 
 // Open a private file in a new tab. The tab opens during the click so
 // pop-up blockers allow it, then points at a link that works for a minute.
-export function openFile(button, bucket, path) {
+// A hash (#page=3) opens a PDF at that page.
+export function openFile(button, bucket, path, hash = '') {
   const tab = window.open('', '_blank');
   if (tab) tab.opener = null;
   act(button, async () => {
     try {
       const { signedUrl } = must(await db.storage.from(bucket).createSignedUrl(path, 60));
-      if (tab) tab.location = signedUrl; else location.href = signedUrl;
+      if (tab) tab.location = signedUrl + hash; else location.href = signedUrl + hash;
     } catch (e) { tab?.close(); throw e; }
   });
 }
