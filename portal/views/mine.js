@@ -262,7 +262,7 @@ export async function master(ctx, el) {
   const h = v.health;
   const partners = ctx.orgs.filter((o) => ['delivery_partner', 'accountable_body', 'lead'].includes(o.kind));
   render(el, html`
-    <div class="page-head"><div><span class="eyebrow">Shvft2.0</span><h1>Master view</h1><p class="meta-line">${c.name} · everything across all partners</p>
+    <div class="page-head"><div><span class="eyebrow">Shvft2.0 view</span><h1>Dashboard</h1><p class="meta-line">${c.name} · everything across all partners</p>
       <p style="margin-top:8px">${liveMark()}</p></div>
       <div class="btns">${ctx.lw?.roles?.length ? html`<a class="btn secondary" href="#/c/${c.id}/lw/week">Lead Workspace</a>` : ''}</div></div>
     <div class="stats stats-4">
@@ -375,7 +375,7 @@ function settings(ctx, el, s, again) {
 const WEEKLY_FIELDS = ['sessions_delivered', 'total_attendances', 'unique_young_people', 'new_to_consortium', 'new_to_organisation', 'returning_young_people', 'targeted_unique',
   'targeted_attendances', 'referrals_made', 'referrals_received', 'outreach_hours', 'surveys_completed', 'matched_pre_post_pairs'];
 const AGG = [['sum', 'Sum of the weeks'], ['latest', 'Latest week'], ['ratio', 'Share (one field over another)']];
-async function weeklySettings(ctx, el) {
+export async function weeklySettings(ctx, el) {
   const c = ctx.consortium.id;
   const box = document.createElement('div');
   el.append(box);

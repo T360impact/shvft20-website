@@ -1,7 +1,8 @@
 // Consortium Portal: sign-in, two-step verification, the page shell and the
 // router. Each screen lives in views/ and receives a context describing the
 // consortium and the signed-in person's role in it.
-import { db, html, render, raw, $, formData, toast, errorText, act, must, icon, PD_ROLES } from './lib.js';
+import { db, html, render, raw, $, $$, formData, toast, errorText, act, must, icon, pill, statusPill } from './lib.js';
+import { PD_ROLES, PAGES, allowed, sidebar, tabsFor, PARENT, landing, isConvenor as convenorOf } from './nav.js';
 import homePage from './views/home.js';
 import hub from './views/hub.js';
 import agreements from './views/agreements.js';
@@ -22,6 +23,9 @@ import targets from './views/targets.js';
 import progress from './views/progress.js';
 import lead from './views/lead.js';
 import myOrg, { programme, master } from './views/mine.js';
+import programmes from './views/programmes.js';
+import setup from './views/setup.js';
+import wizard from './views/wizard.js';
 import { unreadCount, openNotifications, notifIcon } from './views/notifications.js';
 
 const app = $('#app');
@@ -45,54 +49,13 @@ const state = { user: null, profile: null, memberships: [], ctx: null, ready: fa
 // Light unless the person has chosen dark in Account; the device setting is ignored.
 const applyTheme = (t) => { document.documentElement.dataset.theme = t === 'dark' ? 'dark' : 'light'; };
 
-const TAB_ORDER = ['mine', 'programme', 'master', 'dashboard', 'reporting', 'uploads', 'progress', 'returns', 'bid', 'targets', 'hub'];
+const TAB_ORDER = ['mine', 'master', 'dashboard', 'reporting', 'uploads', 'returns', 'bid', 'targets', 'hub'];
 
-// Each page belongs to a module, which sets its icon and accent colour.
-const VIEWS = {
-  // The three dashboard tiers: a partner's own, the lead organisation's, and Shvft2.0's master view.
-  master: { label: 'Master view', short: 'Master', icon: 'governance', mod: 'brand', view: master, roles: ['lead'] },
-  programme: { label: 'The programme', short: 'Programme', icon: 'finance', mod: 'finance', view: programme, roles: ['accountable_body'] },
-  mine: { label: 'My organisation', short: 'Mine', icon: 'home', mod: 'brand', view: myOrg, roles: ['accountable_body', 'partner_manager', 'hub_worker', 'org_admin', 'finance', 'reporting'] },
-  bid: { label: 'Bid readiness', short: 'Bid', icon: 'bids', mod: 'bids', view: bid, roles: ['lead', 'accountable_body', 'partner_manager'] },
-  // Everyone but associates, who see the Summary and what's shared with them.
-  dashboard: { label: 'Dashboard', short: 'Dashboard', icon: 'dashboard', mod: 'brand', view: dashboard, roles: ['lead', 'accountable_body', 'partner_manager', 'hub_worker', 'funder_observer', 'youth_voice'] },
-  shared: { label: 'Shared with us', short: 'Shared', icon: 'home', mod: 'brand', view: shared, roles: ['associate'] },
-  hub: { label: 'Summary', short: 'Summary', icon: 'partners', mod: 'governance', view: hub, roles: 'all' },
-  agreements: { label: 'Agreements', short: 'Agreements', icon: 'governance', mod: 'governance', view: agreements, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
-  targets: { label: 'Targets and budget', short: 'Budget', icon: 'finance', mod: 'finance', view: targets, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance'] },
-  progress: { label: 'Progress', short: 'Progress', icon: 'outcomes', mod: 'delivery', view: progress, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
-  // Weekly aggregate figures: the portal holds no individual young person's details.
-  uploads: { label: 'Weekly figures', short: 'Weekly', icon: 'spreadsheet', mod: 'delivery', view: uploads, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
-  // What each partner owes each period; reports in any format.
-  reporting: { label: 'Reporting', short: 'Reporting', icon: 'requirements', mod: 'delivery', view: reporting, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
-  profile: { label: 'Our profile', short: 'Profile', icon: 'partners', mod: 'governance', view: profile, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance', 'reporting', 'hub_worker', 'associate'] },
-  organisations: { label: 'Organisations', short: 'Orgs', icon: 'partners', mod: 'governance', view: organisations, roles: ['lead'] },
-  compliance: { label: 'Compliance', short: 'Compliance', icon: 'compliance', mod: 'compliance', view: compliance, roles: ['lead', 'accountable_body'] },
-  returns: { label: 'Returns', short: 'Returns', icon: 'returns', mod: 'compliance', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
-  risks: { label: 'Risks', short: 'Risks', icon: 'safeguarding', mod: 'compliance', view: risks, roles: ['lead', 'accountable_body', 'partner_manager', 'hub_worker'] },
-  team: { label: 'People', short: 'Team', icon: 'people', mod: 'governance', view: team, roles: ['lead'] },
-  // The lead team's private area: its own sidebar section, never in the main list.
-  lw: { label: 'Lead Workspace', short: 'Lead', icon: 'governance', mod: 'brand', view: lead, roles: 'lw' },
-};
+// Which page each route shows. Who may open each, and how the sidebar
+// groups them, is in nav.js.
+const VIEWS = { master, programme, mine: myOrg, bid, dashboard, shared, setup, hub, agreements, targets, progress, programmes, uploads, reporting, profile,
+  organisations, compliance, returns, risks, team, lw: lead };
 
-// Administrators see every page except the delivery ones, which need an
-// organisation to record against.
-// A bid workspace only has the bid pages; a live consortium keeps its bid
-// as a record for the lead and accountable body.
-const BID_VIEWS = ['bid', 'targets', 'hub', 'agreements', 'team'];
-const allowed = (key, ctx) => {
-  const v = VIEWS[key];
-  if (!v) return false;
-  if (key === 'lw') return !!(ctx.lw?.roles?.length || ctx.staffSelf);
-  // My organisation needs an organisation to show.
-  if ((key === 'mine' || key === 'profile') && !ctx.orgId && !ctx.isAdmin) return false;
-  const stage = ctx.consortium.stage;
-  if (stage !== 'live' && !BID_VIEWS.includes(key)) return false;
-  if (stage === 'live' && key === 'bid' && !(ctx.seesAll && ctx.consortium.bid_deadline)) return false;
-  // Associates see only what's meant for them; extra roles (org admin) don't widen it.
-  if (ctx.role === 'associate') return v.roles === 'all' || v.roles.includes('associate');
-  return v.roles === 'all' || v.roles.includes(ctx.role) || ctx.extraRoles.some((r) => v.roles.includes(r)) || (ctx.isAdmin && v.roles !== PD_ROLES);
-};
 // A live workspace opens on each person's own tier: the master view for the
 // consortium lead, the programme for the lead organisation, their own
 // organisation for a partner, and the dashboard for everyone else.
@@ -100,7 +63,7 @@ const homeView = (ctx) => (ctx.onboarding && allowed('profile', ctx) ? 'profile'
   : ctx.consortium.stage !== 'live' ? (allowed('bid', ctx) ? 'bid' : 'hub')
   : ['master', 'programme', 'mine'].find((k) => allowed(k, ctx) && (k !== 'master' || ctx.manages)) || 'dashboard');
 // Shvft2.0 staff: administrators and anyone leading a consortium.
-const isConvenor = () => !!state.profile?.is_platform_admin || state.memberships.some((m) => m.role === 'lead');
+const isConvenor = () => convenorOf(state.profile, state.memberships);
 
 // ---------------------------------------------------------------- sign-in
 
@@ -322,69 +285,123 @@ async function loadCtx(consortiumId) {
   return state.ctx;
 }
 
-// The page frame: a sidebar on a desktop, a top bar and bottom tab bar on a
-// phone. Pages outside a consortium (home, account, library) keep showing the
-// last consortium's pages so moving between them stays one tap.
+// Collapsed sidebar groups, remembered on this device.
+const NAV_KEY = 'portal-nav-closed';
+const closedGroups = () => { try { return JSON.parse(localStorage.getItem(NAV_KEY) || '[]'); } catch { return []; } };
+
+// Notifications, Library, Admin, Account and Sign out, in either frame.
+function wireCommon() {
+  document.querySelectorAll('[data-signout]').forEach((b) => b.addEventListener('click', signOut));
+  const paintCount = () => { document.querySelectorAll('[data-notifs]').forEach((b) => render(b, notifIcon(state.unread))); };
+  document.querySelectorAll('[data-notifs]').forEach((b) => b.addEventListener('click', () => openNotifications(async () => { state.unread = await unreadCount(); paintCount(); })));
+  unreadCount().then((n) => { state.unread = n; paintCount(); }).catch(() => {});
+}
+
+// Outside a workspace (Home, Account, Library, Admin, the wizards): a slim
+// top bar only, no sidebar.
+function topShell(active) {
+  render(app, html`
+    <div class="app top-only">
+      <header class="platform-bar">
+        <a class="wordmark" href="#/">SHVFT<span class="two">2.0</span><small>Portal</small></a>
+        <div class="platform-bar-right">
+          <button type="button" class="icon-btn" data-notifs aria-label="Notifications">${notifIcon(state.unread)}</button>
+          <details class="account-menu"><summary aria-label="Account menu"><span class="avatar">${(state.profile.full_name || state.user.email || '?').slice(0, 1).toUpperCase()}</span></summary>
+            <div class="account-pop"><p class="small"><strong>${state.profile.full_name || ''}</strong><br><span class="muted">${state.user.email}</span></p>
+              <a href="#/" ${raw(active === 'home' ? 'aria-current="page"' : '')}>${raw(icon('home', 18))}All projects</a>
+              ${isConvenor() ? html`<a href="#/library">${raw(icon('library', 18))}Library</a>` : ''}
+              ${state.profile.is_platform_admin ? html`<a href="#/admin">${raw(icon('admin', 18))}Admin</a>` : ''}
+              <a href="#/account">${raw(icon('people', 18))}Account</a>
+              <button type="button" data-signout>${raw(icon('logout', 18))}Sign out</button></div></details>
+        </div>
+      </header>
+      <main id="main" class="platform-main"></main>
+    </div>`);
+  wireCommon();
+  return $('#main');
+}
+
+// Inside a workspace: the sidebar with the workspace's name, status and a
+// switcher, then its pages in groups (collapsible, remembered), and the
+// Lead workspace for the lead team. A top bar and tab bar on a phone.
 function shell(ctx, active) {
-  const navCtx = ctx || state.ctx;
-  const pages = navCtx ? Object.entries(VIEWS).filter(([k]) => k !== 'lw' && allowed(k, navCtx) && (k !== 'team' || navCtx.manages)) : [];
-  // The Lead Workspace section, only for the lead team (or staff, for their shifts).
-  const lwSub = active === 'lw' ? (location.hash.split('/')[4] || 'week') : '';
-  const lwLinks = navCtx && allowed('lw', navCtx) ? (navCtx.lw?.roles?.length
-    ? [['week', 'This week', 'home'], ['operations', 'Operations', 'sessions'], ['consortium', 'Consortium', 'governance'], ['todo', 'To do', 'check']]
-    : [['mine', 'My shifts', 'sessions']]) : [];
-  const lwNav = lwLinks.length ? html`<p class="side-group">Lead Workspace</p><ul>${lwLinks.map(([k, label, ic]) => html`<li><a href="#/c/${navCtx.consortium.id}/lw/${k}" class="m-brand" ${raw(lwSub === k ? 'aria-current="page"' : '')}>${raw(icon(ic, 20))}<span>${label}</span></a></li>`)}</ul>` : '';
-  const link = ([k, v], short) => html`<a href="#/c/${navCtx.consortium.id}/${k}" class="m-${v.mod}" ${raw(active === k ? 'aria-current="page"' : '')}>
-    ${raw(icon(v.icon, 20))}<span>${short ? v.short : v.label}</span></a>`;
-  const homeLink = () => html`<a href="#/" class="m-brand" ${raw(active === 'home' ? 'aria-current="page"' : '')}>${raw(icon('home', 20))}<span>Home</span></a>`;
+  if (!ctx) return topShell(active);
+  const c = ctx.consortium;
+  const groups = sidebar(ctx);
+  const closed = closedGroups();
+  const current = PARENT[active] || active;
+  const lwSub = active === 'lw' ? `lw/${location.hash.split('/')[4] || 'week'}` : '';
+  const isOn = (i) => i.key === current || i.key === lwSub || (i.key === 'dashboard' && active === 'master');
+  const link = (i, short) => html`<a href="${i.href}" class="m-${i.mod}" ${raw(isOn(i) ? 'aria-current="page"' : '')}>${raw(icon(i.icon, 20))}<span>${short ? i.label.split(' ')[0] : i.label}</span></a>`;
+  const mine = [...new Map(state.memberships.map((m) => [m.consortium_id, m])).values()];
+  const switcher = mine.length > 1 || !mine.some((m) => m.consortium_id === c.id) ? html`<label class="ws-switch"><span class="sr-only">Switch workspace</span>
+    <select id="ws-switch">${[...(mine.some((m) => m.consortium_id === c.id) ? [] : [{ consortium_id: c.id, consortia: { name: c.name } }]), ...mine].map((m) => html`<option value="${m.consortium_id}" ${m.consortium_id === c.id ? 'selected' : ''}>${m.consortia?.name}</option>`)}</select></label>` : '';
   const extras = html`<button type="button" data-notifs>${notifIcon(state.unread)}</button>
     ${isConvenor() ? html`<a href="#/library">${raw(icon('library', 20))}<span>Library</span></a>` : ''}
     ${state.profile.is_platform_admin ? html`<a href="#/admin">${raw(icon('admin', 20))}<span>Admin</span></a>` : ''}
     <a href="#/account">${raw(icon('people', 20))}<span>Account</span></a>`;
-  const where = navCtx ? html`<strong>${navCtx.consortium.name}</strong>${navCtx.orgName}` : '';
+  const flat = groups.flatMap((g) => g.items);
   // The phone's tab bar holds the most used pages; the rest go under More.
-  const tabs = TAB_ORDER.map((k) => pages.find(([key]) => key === k)).filter(Boolean).slice(0, 3);
-  const rest = pages.filter((p) => !tabs.includes(p));
+  const tabs = TAB_ORDER.map((k) => flat.find((i) => i.key === k)).filter(Boolean).slice(0, 3);
   render(app, html`
     <div class="app">
       <aside class="side">
         <a class="wordmark" href="#/">SHVFT<span class="two">2.0</span><small>Portal</small></a>
-        ${where ? html`<p class="where">${where}</p>` : ''}
-        <nav aria-label="Portal"><ul><li>${homeLink()}</li>${pages.map((p) => html`<li>${link(p)}</li>`)}</ul>${lwNav}</nav>
+        <div class="ws-head"><a class="all-projects" href="#/">${raw(icon('home', 16))}All projects</a>
+          <p class="ws-name"><strong>${c.name}</strong></p>
+          <p class="ws-meta">${statusPill(c.stage)}${c.is_demo ? pill('grey', 'Demo') : ''}${ctx.orgName ? html`<span class="small muted">${ctx.orgName}</span>` : ''}</p>
+          ${switcher}</div>
+        <nav aria-label="Workspace">${groups.map((g) => html`<details class="side-sec" data-group="${g.key}" ${raw(closed.includes(g.key) ? '' : 'open')}>
+          <summary class="side-group">${g.label}</summary><ul>${g.items.map((i) => html`<li>${link(i)}</li>`)}</ul></details>`)}</nav>
         <div class="foot">${extras}<button type="button" data-signout>${raw(icon('logout', 20))}<span>Sign out</span></button></div>
       </aside>
       <div class="main-col">
-        <header class="topbar"><a class="wordmark" href="#/">SHVFT<span class="two">2.0</span></a><span class="where">${navCtx ? navCtx.consortium.name : ''}</span></header>
+        <header class="topbar"><a class="wordmark" href="#/">SHVFT<span class="two">2.0</span></a><span class="where">${c.name}</span></header>
         <main id="main"></main>
       </div>
-      <nav class="tabbar" aria-label="Portal shortcuts">${homeLink()}${tabs.map((p) => link(p, true))}
+      <nav class="tabbar" aria-label="Portal shortcuts"><a href="#/" class="m-brand">${raw(icon('home', 20))}<span>All</span></a>${tabs.map((i) => link(i, true))}
         <button type="button" id="more" aria-haspopup="dialog">${raw(icon('more', 20))}<span>More</span></button></nav>
       <dialog class="more-sheet" id="more-sheet" aria-label="More pages"><ul>
-        ${rest.map((p) => html`<li>${link(p)}</li>`)}
-        ${lwLinks.map(([k, label, ic]) => html`<li><a href="#/c/${navCtx.consortium.id}/lw/${k}">${raw(icon(ic, 20))}<span>${label}</span></a></li>`)}
+        ${groups.map((g) => html`<li class="sheet-group">${g.label}</li>${g.items.map((i) => html`<li>${link(i)}</li>`)}`)}
         <li>${extras}</li>
         <li><button type="button" class="row" data-signout>${raw(icon('logout', 20))}<span>Sign out</span></button></li>
         <li><button type="button" class="row" data-close-sheet>${raw(icon('close', 20))}<span>Close</span></button></li></ul></dialog>
     </div>`);
-  document.querySelectorAll('[data-signout]').forEach((b) => b.addEventListener('click', signOut));
-  // Notifications: the count refreshes as each page opens.
-  const paintCount = () => { document.querySelectorAll('[data-notifs]').forEach((b) => render(b, notifIcon(state.unread))); };
-  document.querySelectorAll('[data-notifs]').forEach((b) => b.addEventListener('click', () => openNotifications(async () => { state.unread = await unreadCount(); paintCount(); })));
-  unreadCount().then((n) => { state.unread = n; paintCount(); }).catch(() => {});
+  wireCommon();
+  $$('.side-sec').forEach((d) => d.addEventListener('toggle', () => {
+    const now = new Set(closedGroups());
+    if (d.open) now.delete(d.dataset.group); else now.add(d.dataset.group);
+    try { localStorage.setItem(NAV_KEY, JSON.stringify([...now])); } catch { /* remembered for this visit only */ }
+  }));
+  $('#ws-switch')?.addEventListener('change', (e) => { location.hash = `#/c/${e.target.value}`; });
   const sheet = $('#more-sheet');
   $('#more').addEventListener('click', () => sheet.showModal());
   sheet.addEventListener('click', (e) => { if (e.target === sheet || e.target.closest('a, [data-close-sheet]')) sheet.close(); });
-  return $('#main');
+  // Pages shown together (the Dashboard's tiers, Summary and the programme, ...) get tabs.
+  const main = $('#main');
+  const tabsHere = tabsFor(active, ctx);
+  if (!tabsHere.length) return main;
+  render(main, html`<nav class="page-tabs" aria-label="${PAGES[current]?.label || ''}">${tabsHere.map((t) => html`<a href="${t.href}" ${raw(t.key === active ? 'aria-current="page"' : '')}>${t.label}</a>`)}</nav><div id="tab-body"></div>`);
+  return $('#tab-body');
 }
 
 async function home() {
-  const main = shell(null, 'home');
+  const main = topShell('home');
   await homePage(main, state);
+}
+
+// After a wizard creates a workspace: the person is now its consortium lead.
+async function created(id) {
+  state.memberships = must(await db.from('memberships')
+    .select('id, role, onboarding, consortium_id, organisation_id, consortia(name, stage, bid_deadline), organisations(name)')
+    .eq('user_id', state.user.id).eq('active', true));
+  state.ctx = null;
+  location.hash = `#/c/${id}/setup`;
 }
 
 async function account() {
   state.prefs = must(await db.from('notification_prefs').select('*').eq('user_id', state.user.id).maybeSingle());
-  const main = shell(null, 'account');
+  const main = topShell('account');
   render(main, html`
     <div class="page-head"><div><span class="eyebrow">Account</span><h1>${state.profile.full_name || state.user.email}</h1>
     <p class="muted">${state.user.email}</p></div></div>
@@ -437,26 +454,34 @@ async function account() {
 
 async function route() {
   if (!state.ready) return;
-  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  const [path, query = ''] = location.hash.replace(/^#\/?/, '').split('?');
+  const parts = path.split('/').filter(Boolean);
   window.scrollTo(0, 0);
   try {
-    if (!parts.length) return await home();
+    if (!parts.length) {
+      // Anyone but a lead or Shvft staff, with one workspace, goes straight in.
+      const to = landing(state.profile, state.memberships);
+      if (to) { location.replace(to); return; }
+      return await home();
+    }
     if (parts[0] === 'account') return await account();
-    if (parts[0] === 'admin' && state.profile.is_platform_admin) return await admin(shell(null));
-    if (parts[0] === 'library' && isConvenor()) return await library(shell(null), parts.slice(1));
+    if (parts[0] === 'new' && isConvenor()) return await wizard(topShell('new'), state, parts.slice(1), created);
+    if (parts[0] === 'admin' && state.profile.is_platform_admin) return await admin(topShell('admin'));
+    if (parts[0] === 'library' && isConvenor()) return await library(topShell('library'), parts.slice(1));
     if (parts[0] === 'c' && parts[1]) {
       const ctx = await loadCtx(parts[1]);
-      if (!ctx) { render(shell(null), html`<div class="panel">That consortium isn't available to you.</div>`); return; }
+      if (!ctx) { render(topShell(null), html`<div class="panel">That consortium isn't available to you.</div>`); return; }
       const key = parts[2] || homeView(ctx);
       if (!allowed(key, ctx)) { location.replace(`#/c/${ctx.consortium.id}/${homeView(ctx)}`); return; }
+      ctx.from = new URLSearchParams(query).get('from');
       const main = shell(ctx, key);
       render(main, html`<p class="loading">Loading…</p>`);
-      await VIEWS[key].view(ctx, main, parts.slice(3));
+      await VIEWS[key](ctx, main, parts.slice(3));
       return;
     }
     location.replace('#/');
   } catch (e) {
-    const main = $('#main') || shell(null);
+    const main = $('#tab-body') || $('#main') || topShell(null);
     render(main, html`<div class="panel"><h2>That didn't load</h2><p class="muted" style="margin-top:8px">${errorText(e)}</p></div>`);
   }
 }
