@@ -192,8 +192,9 @@ export const countdown = (d) => {
 
 // Big number, short label, and a trend in status colour.
 export const statCard = ({ icon: ic, mod = 'brand', value, label, trend }) => html`<div class="stat m-${mod}">
-  ${ic ? html`<span class="stat-icon">${raw(icon(ic, 20))}</span>` : ''}<b>${value}</b><span>${label}</span>
-  ${trend ? html`<span class="trend ${trend.tone}">${raw(icon({ up: 'up', down: 'down', flat: 'flat' }[trend.dir] || 'flat', 16))}${trend.text}</span>` : ''}</div>`;
+  <div class="stat-top"><span class="stat-label">${label}</span>${ic ? html`<span class="stat-icon">${raw(icon(ic, 18))}</span>` : ''}</div>
+  <div class="stat-value"><b>${value}</b>${trend?.chip ? html`<span class="stat-chip ${trend.tone}">${trend.chip}</span>` : ''}</div>
+  ${trend ? html`<div class="stat-foot ${trend.tone}">${raw(icon({ up: 'up', down: 'down', flat: 'flat' }[trend.dir] || 'flat', 14))}<span>${trend.text}</span></div>` : ''}</div>`;
 
 // Icon, one sentence, one button.
 export const emptyState = (ic, text, action = '', mod = '') => html`<div class="empty-state ${mod ? `m-${mod}` : ''}">${raw(icon(ic, 48))}<p>${text}</p>${action}</div>`;

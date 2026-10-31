@@ -44,7 +44,7 @@ export function headline(p) {
     if (!k || !k.source) return k ? { dir: 'flat', tone: 'grey', text: 'Nothing reported yet' } : null;
     if (!Number(k.actual)) return { dir: 'flat', tone: 'grey', text: `Year ${k.year} target ${fmtNum(k.target)}` };
     const share = k.target ? Math.round((100 * k.actual) / k.target) : 0;
-    return { dir: { green: 'up', amber: 'flat', red: 'down' }[k.rag] || 'flat', tone: TONE[k.rag] || 'grey', text: `${share}% of the year ${k.year} target` };
+    return { dir: { green: 'up', amber: 'flat', red: 'down' }[k.rag] || 'flat', tone: TONE[k.rag] || 'grey', chip: `${share}%`, text: `of the year ${k.year} target of ${fmtNum(k.target)}` };
   };
   const min = p.consortium?.targeted_share_target;
   const share = figure(p, 'targeted_pct');
@@ -53,7 +53,8 @@ export function headline(p) {
     { key: 'attendances', icon: 'attendance', mod: 'delivery', value: fmtNum(figure(p, 'attendances') || 0), label: 'Attendances', trend: trend('attendances') },
     { key: 'sessions', icon: 'sessions', mod: 'delivery', value: fmtNum(figure(p, 'sessions') || 0), label: 'Sessions', trend: trend('sessions') },
     { key: 'targeted', icon: 'targets', mod: 'surveys', value: share == null ? '–' : `${fmtNum(share)}%`, label: 'Targeted share',
-      trend: share == null || min == null ? null : share >= min ? { dir: 'up', tone: 'green', text: `At or above the ${fmtNum(min)}% minimum` } : { dir: 'down', tone: 'red', text: `Below the ${fmtNum(min)}% minimum` } },
+      trend: min == null ? null : share == null ? { dir: 'flat', tone: 'grey', text: `Funder's minimum ${fmtNum(min)}%` }
+        : share >= min ? { dir: 'up', tone: 'green', chip: 'On target', text: `At or above the ${fmtNum(min)}% minimum` } : { dir: 'down', tone: 'red', chip: 'Below', text: `Below the ${fmtNum(min)}% minimum` } },
   ];
 }
 
@@ -147,7 +148,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
       surveys: { key: 'surveys', icon: 'surveys', mod: 'surveys', value: x.surveys?.rate != null ? `${fmtNum(x.surveys.rate)}%` : '–', label: 'Survey response rate',
         trend: x.surveys?.rate != null ? null : { dir: 'flat', tone: 'grey', text: 'Starts with the first survey' } },
       returns: { key: 'returns', icon: 'returns', mod: 'compliance', value: ret.due ? `${ret.on_time} of ${ret.due}` : '–', label: 'Returns on time',
-        trend: ret.due ? { dir: ret.on_time === ret.due ? 'up' : 'down', tone: ret.on_time === ret.due ? 'green' : 'amber', text: `${Math.round((100 * ret.on_time) / ret.due)}% submitted by the due date` } : { dir: 'flat', tone: 'grey', text: 'No returns due yet' } },
+        trend: ret.due ? { dir: ret.on_time === ret.due ? 'up' : 'down', tone: ret.on_time === ret.due ? 'green' : 'amber', chip: `${Math.round((100 * ret.on_time) / ret.due)}%`, text: 'submitted by the due date' } : { dir: 'flat', tone: 'grey', text: 'No returns due yet' } },
     };
     const keys = ['reached', 'attendances', 'targeted', 'sessions', 'surveys', 'returns'];
     const pins = (editing ? draft : L).pinned;
@@ -171,8 +172,9 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     <div class="score-ring">${ring(score ?? 0, { size: 132, stroke: 12, color: 'var(--progress)', track: 'var(--track)', value: score == null ? '–' : `${score}`, label: 'out of 100' })}
       <p class="muted small">${score == null ? 'The score starts once delivery is recorded.' : `Average of ${scored.length} reported target${scored.length === 1 ? '' : 's'} against where each should be by today.`}</p></div>
     <div><h3 class="small-head">By outcome theme</h3>
-      ${themes.length ? html`<ul class="theme-bars">${themes.filter((r) => r.avg != null || ctx.manages).map((r) => html`<li><span>${r.th} <span class="muted">· ${r.n} outcome${r.n === 1 ? '' : 's'}</span></span>
-        <span class="figure">${r.avg == null ? html`<span class="muted">Results begin with the first survey</span>` : `${Math.round(r.avg)}%`}</span>
+      ${themes.length ? html`<ul class="theme-bars">${themes.filter((r) => r.avg != null || ctx.manages).map((r) => html`<li>
+        <div class="tb-top"><span class="tb-name">${r.th}</span>${r.avg != null ? html`<span class="tb-val">${Math.round(r.avg)}%</span>` : ''}</div>
+        <span class="muted small">${r.n} outcome${r.n === 1 ? '' : 's'}${r.avg == null ? ' · results begin with the first survey' : ''}</span>
         <span class="slim"><span style="width:${r.avg ?? 0}%"></span></span></li>`)}</ul>
         ${!ctx.manages && themes.every((r) => r.avg == null) ? html`<p class="muted small">Results by theme appear with the first survey returns.</p>` : ''}`
       : html`<p class="muted small">No outcome framework agreed yet.</p>`}</div></div>`;
@@ -183,20 +185,21 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
   const programmes = x.programmes || [];
   // Targets show one year at a time, starting with the current year.
   let yearSel = String(p.commitments.find((k) => k.period === 'year' && k.year_start <= today && today < k.year_end)?.year ?? '');
+  // One compact row per target: a short headline (the full wording is in
+  // its details and on hover), who, the target, progress and status.
   const targetRow = (k) => {
     const s = shareOf(k);
+    const short = shortLabel(k.label, 12);
     return html`<tr data-row data-orgs="${orgsOf(k).join(' ')}" data-site="${k.site || ''}" data-year="${k.period === 'lifetime' ? 'lifetime' : k.year}">
-      <td><button type="button" class="t-label" data-id="${k.id}" title="Details">${k.label}</button>
-        <span class="muted small t-meta">${[KIND[k.kind], k.section, k.site, k.source ? SOURCE[k.source].toLowerCase() : ''].filter(Boolean).join(' · ')}</span>
-        ${k.by_org?.length ? html`<span class="muted small t-meta">Reported: ${reportedBy(k)}</span>` : ''}
+      <td class="t-main"><button type="button" class="t-label" data-id="${k.id}" title="${k.label}">${short}</button>
+        <span class="t-meta">${[KIND[k.kind], k.section, k.site, k.source ? SOURCE[k.source].toLowerCase() : ''].filter(Boolean).join(' · ')}${k.by_org?.length ? ` · reported: ${reportedBy(k)}` : ''}</span>
         ${editing ? html`<button type="button" class="linkbtn small" data-change="${k.id}">Change</button>` : ''}</td>
-      <td data-label="Partner">${whoOf(k)}</td>
+      <td class="t-who" data-label="Partner"><span title="${whoOf(k)}">${whoOf(k)}</span></td>
       <td class="num" data-label="Target">${fmtNum(k.target)}${pct(k)}</td>
-      <td class="num" data-label="Achieved">${k.source ? `${fmtNum(k.actual)}${pct(k)}` : '–'}</td>
-      <td class="pct-cell" data-label="Progress">${k.source ? html`<span class="figure">${isPct(k) ? `${fmtNum(k.actual)}%` : `${fmtNum(Math.round(s))}%`}</span>
+      <td class="t-prog" data-label="Progress">${k.source ? html`<span class="t-fig"><strong>${fmtNum(k.actual)}${pct(k)}</strong><span class="muted">${isPct(k) ? '' : ` · ${fmtNum(Math.round(s))}%`}</span></span>
         <span class="slim" role="img" aria-label="${isPct(k) ? `${fmtNum(k.actual)}%` : `${fmtNum(Math.round(s))}% of the target`}"><span style="width:${Math.min(100, isPct(k) ? k.actual : s)}%"></span>
-          ${isPct(k) ? html`<i style="left:${Math.min(100, k.target)}%"></i>` : k.target ? html`<i style="left:${Math.min(100, (100 * k.expected) / k.target)}%"></i>` : ''}</span>` : '–'}</td>
-      <td data-label="Status">${k.source ? rag(k.rag) : pill('grey', 'Not reported', 'waiting')}</td></tr>`;
+          ${isPct(k) ? html`<i style="left:${Math.min(100, k.target)}%"></i>` : k.target ? html`<i style="left:${Math.min(100, (100 * k.expected) / k.target)}%"></i>` : ''}</span>` : html`<span class="muted">–</span>`}</td>
+      <td class="t-status" data-label="Status">${k.source ? rag(k.rag) : html`<span class="muted small">Not reported</span>`}</td></tr>`;
   };
   const groupNote = (rows) => {
     const onTrack = rows.filter((k) => k.source && k.rag === 'green').length;
@@ -216,8 +219,8 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
       ${periods.length > 1 ? html`<div class="seg" role="group" aria-label="Year">${[...periods, ''].map((y) => html`<button type="button" class="seg-btn" data-year-tab="${y}" aria-pressed="${String(y) === yearSel}">${y === '' ? 'All years' : periodLabel(y)}</button>`)}</div>` : ''}</div>` : ''}
       ${list.some((k) => k.source) ? html`<p class="muted small" style="margin-bottom:8px">Select a target for its details. The mark on each bar is where it should be by today.</p>` : html`<p class="muted small" style="margin-bottom:8px">Select a target for its details.</p>`}
       <div class="table-wrap"><table class="cards targets-table">
-        <thead><tr><th>Measure</th><th>Partner</th><th class="num">Target</th><th class="num">Achieved</th><th>Progress</th><th>Status</th></tr></thead>
-        ${groups.map(([y, rows]) => html`<tbody data-group="${y}"><tr class="group-head"><th colspan="6" scope="rowgroup"><h3>${periodLabel(y)}</h3> <span class="muted small">${groupNote(rows)}</span></th></tr>
+        <thead><tr><th>Measure</th><th>Partner</th><th class="num">Target</th><th>Progress</th><th>Status</th></tr></thead>
+        ${groups.map(([y, rows]) => html`<tbody data-group="${y}"><tr class="group-head"><th colspan="5" scope="rowgroup"><h3>${periodLabel(y)}</h3> <span class="muted small">${groupNote(rows)}</span></th></tr>
           ${rows.map(targetRow)}</tbody>`)}</table></div>`;
   };
 

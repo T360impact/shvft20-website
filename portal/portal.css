@@ -819,3 +819,57 @@ tr.clickable:hover td { background: var(--surface-muted); }
 .stat .trend { border-radius: 10px; max-width: 100%; }
 @media (max-width: 640px) { .stat { padding-right: var(--s4); } .stat > span { padding-right: 36px; } }
 .stat .stat-icon { padding: 0; order: 0; }
+
+/* KPI cards, as in the references: a one-line label with an icon tile, the
+   figure with a small chip beside it, and a footer line under a hairline.
+   Never more than three to a row, all the same height. */
+.stats-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+@media (min-width: 1680px) { .stats-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .stats-6 { grid-template-columns: minmax(0, 1fr); } }
+.stats { align-items: stretch; }
+.stat-wrap { height: 100%; }
+.stat { display: flex; flex-direction: column; gap: 0; padding: var(--s5); min-height: 0; height: 100%; }
+.stat .stat-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.stat .stat-label { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0; }
+.stat .stat-icon { position: static; flex: none; width: 34px; height: 34px; }
+.stat .stat-value { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s2) var(--s3); margin: var(--s3) 0 var(--s4); }
+.stat .stat-value b { font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.stat-chip { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.6; white-space: nowrap; border: 1px solid transparent; }
+.stat-chip.green { background: var(--green-tint); color: var(--green-text); }
+.stat-chip.amber { background: var(--amber-tint); color: var(--amber-text); }
+.stat-chip.red { background: var(--red-tint); color: var(--red-text); }
+.stat-chip.grey { background: var(--grey-tint); color: var(--grey-text); }
+.stat .stat-foot { margin-top: auto; padding-top: var(--s3); border-top: 1px solid var(--card-line); display: flex; align-items: center; gap: var(--s2); font-size: 13px; color: var(--text-2); }
+.stat .stat-foot .icon { display: inline-block; flex: none; }
+.stat .stat-foot.green .icon { color: var(--green); } .stat .stat-foot.amber .icon { color: var(--amber); } .stat .stat-foot.red .icon { color: var(--red); } .stat .stat-foot.grey .icon { color: var(--grey); }
+.stat-wrap .pinned { top: auto; bottom: var(--s3); right: var(--s4); }
+@media (max-width: 640px) { .stat { padding: var(--s4); } .stat .stat-value { margin: var(--s2) 0 var(--s3); } .stat .stat-value b { font-size: 26px; } }
+/* Theme rows in the progress score: name and figure on one line, detail and bar under it */
+.theme-bars li { display: flex; flex-direction: column; gap: 6px; }
+.theme-bars .tb-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); min-width: 0; }
+.theme-bars .tb-name { font-weight: 600; min-width: 0; }
+.theme-bars .tb-val { flex: none; font-variant-numeric: tabular-nums; }
+.theme-bars .slim { margin-top: 2px; }
+.score { grid-template-columns: minmax(0, 200px) minmax(0, 1fr); }
+@media (max-width: 1100px) { .dcard.half .score { grid-template-columns: minmax(0, 1fr); gap: var(--s5); } .dcard.half .score-ring { justify-self: center; } }
+
+/* Targets table, compact like the reference tables */
+.targets-table { table-layout: fixed; }
+.targets-table th:nth-child(1) { width: auto; }
+.targets-table th:nth-child(2) { width: 190px; }
+.targets-table th:nth-child(3) { width: 80px; }
+.targets-table th:nth-child(4) { width: 170px; }
+.targets-table th:nth-child(5) { width: 120px; }
+.targets-table td { padding: 12px var(--s3); vertical-align: middle; font-size: 14px; }
+.targets-table .t-main { min-width: 0; }
+.targets-table button.t-label { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.targets-table .t-meta { display: block; margin-top: 2px; font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.targets-table .t-who span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.targets-table .t-prog .t-fig { display: block; font-size: 13px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.targets-table tr.group-head th { background: var(--surface-muted); border-radius: 8px; padding: 10px var(--s3); }
+.targets-table tbody + tbody tr.group-head th { border-top: 8px solid var(--surface); }
+@media (max-width: 640px) {
+  .targets-table { table-layout: auto; }
+  .targets-table button.t-label, .targets-table .t-meta, .targets-table .t-who span { white-space: normal; }
+}
+.stat .stat-value b { order: 0; } .stat .stat-value .stat-chip { order: 1; }
