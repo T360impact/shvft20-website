@@ -1,4 +1,6 @@
-/* Consortium Portal. The same design system as shvft20.org: warm off-white
+/* Consortium Portal. The same design system as shvft20.org. Always light
+   unless the person chooses dark in Account (data-theme="dark" on the root);
+   the device's dark setting is ignored. warm off-white
    page, white panels with a hairline border, navy as the anchor colour,
    green for progress only, and the site's gradient in exactly three places
    (the "2.0", one word in the Home heading, the active nav underline).
@@ -76,21 +78,6 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --brand: #fafaf8; --brand-hover: #e8e9e5; --brand-text: #fafaf8; --brand-tint: #1d2638; --on-brand: #111a2c;
-    --surface: #161e2e; --surface-muted: #0f1522; --surface-raised: #161e2e; --border: #273149; --track: #273149;
-    --text: #eef0f2; --text-2: #a9b2c1; --focus: #fafaf8; --progress: #2fcc8a; --progress-text: #5fdba6;
-    --green: #2fcc8a; --green-tint: #15302a; --green-text: #8be3bb;
-    --amber: #e9a72e; --amber-tint: #3a2c12; --amber-text: #f3c977;
-    --red: #e2645a; --red-tint: #3d1c19; --red-text: #f4a39c;
-    --blue: #7ea8f2; --blue-tint: #1a2740; --blue-text: #a9c4f6;
-    --grey: #8a94a6; --grey-tint: #222b3d; --grey-text: #c3c9d4;
-    --seg-approved: #2fcc8a; --seg-submitted: #7ea8f2; --seg-returned: #e9a72e; --seg-requested: #a9b2c1; --on-seg: #0f1522; --on-seg-returned: #0f1522;
-    --series-1: #eef0f2;
-    color-scheme: dark;
-  }
-}
 :root[data-theme="dark"] {
   --brand: #fafaf8; --brand-hover: #e8e9e5; --brand-text: #fafaf8; --brand-tint: #1d2638; --on-brand: #111a2c;
   --surface: #161e2e; --surface-muted: #0f1522; --surface-raised: #161e2e; --border: #273149; --track: #273149;
@@ -512,7 +499,8 @@ body { font-size: 15px; line-height: 1.6; }
 h1 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3vw, 34px); line-height: 1.12; letter-spacing: -.01em; }
 h2 { font-size: 20px; font-weight: 600; }
 main { max-width: calc(var(--content) + 2 * var(--page-pad)); padding-block: var(--s7) var(--s8); }
-.wordmark { font-family: var(--label); color: var(--navy); }
+.wordmark { font-family: var(--label); color: var(--text); }
+.wordmark small { color: var(--text-2); }
 .wordmark .two, .grad { background: var(--journey); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .eyebrow { font: 600 12px/1 var(--label); letter-spacing: .16em; text-transform: uppercase; color: var(--text-2); }
 .eyebrow .icon { display: none; }
@@ -522,8 +510,9 @@ main { max-width: calc(var(--content) + 2 * var(--page-pad)); padding-block: var
 /* Sidebar: navy for the active item, the gradient as its underline */
 .side { background: var(--surface); }
 .side nav a .icon, .tabbar a .icon, .more-sheet a .icon { color: var(--text-2); }
-.side nav a[aria-current="page"] { background: var(--brand); color: var(--on-brand); box-shadow: none; position: relative; }
-.side nav a[aria-current="page"] .icon { color: var(--on-brand); }
+.side { border-right: 1px solid var(--border); }
+.side nav a[aria-current="page"] { background: var(--paper-2); color: var(--text); font-weight: 600; box-shadow: none; position: relative; }
+.side nav a[aria-current="page"] .icon { color: var(--text); }
 .side nav a[aria-current="page"]::after { content: ""; position: absolute; left: var(--s3); right: var(--s3); bottom: 4px; height: 2px; border-radius: 2px; background: var(--journey); }
 .tabbar a[aria-current="page"] { color: var(--text); box-shadow: none; }
 .tabbar a[aria-current="page"]::after { content: ""; width: 24px; height: 2px; border-radius: 2px; background: var(--journey); }
@@ -594,7 +583,6 @@ details.wording > p { color: var(--text-2); font-size: 14px; }
 .band .trend-up { color: var(--on-navy-up); font-size: 13px; font-weight: 600; margin-top: var(--s2); }
 .band .trend-down { color: var(--on-navy-down); font-size: 13px; font-weight: 600; margin-top: var(--s2); }
 .band .trend-flat { color: var(--on-navy-2); font-size: 13px; margin-top: var(--s2); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .band { background: var(--brand-tint); } }
 :root[data-theme="dark"] .band { background: var(--brand-tint); }
 
 /* Banners are neutral notes; only their icon carries the status colour. */
@@ -603,7 +591,6 @@ details.wording > p { color: var(--text-2); font-size: 14px; }
 .banner.bad > .icon { color: var(--red); }
 .banner.ok > .icon { color: var(--progress); }
 .banner.info > .icon { color: var(--text-2); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .banner { background: var(--brand-tint); } }
 :root[data-theme="dark"] .banner { background: var(--brand-tint); }
 
 /* Bars and rings show progress in the site's green; status goes in pills. */
@@ -623,3 +610,26 @@ details.wording > p { color: var(--text-2); font-size: 14px; }
   .band { padding: var(--s5); grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .band b { font-size: 26px; }
 }
+
+/* Outcome theme panels on the Summary */
+.sec-head .display { font-family: var(--display); font-weight: 400; font-size: clamp(24px, 2.6vw, 30px); line-height: 1.15; }
+.themes { display: grid; gap: var(--s5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: stretch; }
+.theme-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: var(--s6); display: flex; flex-direction: column; gap: var(--s5); min-width: 0; }
+.theme-panel header { display: flex; align-items: center; gap: var(--s3); }
+.theme-icon { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 10px; color: var(--text); }
+.theme-panel h3 { font-size: 17px; font-weight: 600; }
+.theme-panel .count { color: var(--text-2); font-size: 13px; }
+.theme-progress { display: flex; align-items: center; gap: var(--s4); }
+.theme-progress p { color: var(--text-2); font-size: 14px; }
+.outcome-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); flex: 1; }
+.outcome-list button { all: unset; box-sizing: border-box; width: 100%; display: flex; gap: var(--s3); align-items: flex-start; padding: 6px 0; cursor: pointer; font-size: 15px; line-height: 1.45; border-radius: 6px; }
+.outcome-list button:hover span:last-child { text-decoration: underline; text-underline-offset: 3px; }
+.outcome-list button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* A small dot that fills with the outcome's progress */
+.fill-dot { width: 12px; height: 12px; flex: none; border-radius: 50%; margin-top: 5px; border: 1.5px solid var(--progress);
+  background: conic-gradient(var(--progress) calc(var(--p, 0) * 1%), transparent 0); }
+.theme-panel footer { border-top: 1px solid var(--border); padding-top: var(--s4); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); font-size: 13px; color: var(--text-2); }
+.chip-neutral { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--paper-2); color: var(--text); font-size: 12px; font-weight: 500; }
+.lead-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s4); border-radius: var(--radius-ctl); background: var(--paper-2); margin-bottom: var(--s5); font-size: 14px; }
+.methods-table select { min-width: 180px; }
+@media (max-width: 640px) { .theme-panel { padding: var(--s5); } }

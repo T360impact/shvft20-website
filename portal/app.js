@@ -26,6 +26,9 @@ const linkError = /[#&]error_description=([^&]+)/.exec(startHash)?.[1];
 
 const state = { user: null, profile: null, memberships: [], ctx: null, ready: false };
 
+// Light unless the person has chosen dark in Account; the device setting is ignored.
+const applyTheme = (t) => { document.documentElement.dataset.theme = t === 'dark' ? 'dark' : 'light'; };
+
 const TAB_ORDER = ['dashboard', 'sessions', 'progress', 'returns', 'bid', 'targets', 'hub'];
 
 // Each page belongs to a module, which sets its icon and accent colour.
@@ -177,6 +180,7 @@ async function mfaView() {
 }
 
 async function signOut() {
+  applyTheme('light');
   Object.assign(state, { user: null, profile: null, memberships: [], ctx: null, ready: false });
   await db.auth.signOut();
   history.replaceState(null, '', '/portal/');
@@ -192,6 +196,7 @@ async function boot(skipLink = false) {
 
   state.user = session.user;
   state.profile = must(await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle()) || {};
+  applyTheme(state.profile.theme);
   state.memberships = must(await db.from('memberships')
     .select('id, role, consortium_id, organisation_id, consortia(name, stage, bid_deadline), organisations(name)')
     .eq('user_id', session.user.id).eq('active', true));
@@ -296,6 +301,11 @@ function account() {
           <label class="f">New password<input type="password" name="password" minlength="12" autocomplete="new-password" required></label>
           <button class="btn">Save password</button>
         </form></div>
+      <div class="panel"><h2>Appearance</h2>
+        <form class="form" id="theme"><fieldset><legend>Theme</legend><div class="checks">
+          <label class="check"><input type="radio" name="theme" value="light" ${state.profile.theme !== 'dark' ? 'checked' : ''}> Light</label>
+          <label class="check"><input type="radio" name="theme" value="dark" ${state.profile.theme === 'dark' ? 'checked' : ''}> Dark</label></div></fieldset>
+          <p class="small muted">Saved to your account, so it follows you to any device.</p></form></div>
       <div class="panel"><h2>Your name</h2>
         <form class="form" id="nm">
           <label class="f">Full name<input name="full_name" value="${state.profile.full_name || ''}" required></label>
@@ -306,6 +316,13 @@ function account() {
     e.preventDefault();
     act(e.submitter, async () => { must(await db.auth.updateUser({ password: formData(e.target).password })); e.target.reset(); toast('Password changed.'); });
   });
+  $('#theme').addEventListener('change', (e) => act(null, async () => {
+    const theme = e.target.value;
+    must(await db.from('profiles').update({ theme }).eq('id', state.user.id));
+    state.profile.theme = theme;
+    applyTheme(theme);
+    toast(theme === 'dark' ? 'Dark theme on.' : 'Light theme on.');
+  }));
   $('#nm').addEventListener('submit', (e) => {
     e.preventDefault();
     act(e.submitter, async () => {

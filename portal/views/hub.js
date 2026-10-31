@@ -4,8 +4,8 @@
 // edits a draft and publishes it; everyone else sees the published version.
 // The lead's edit view also keeps the workspace's records: organisations,
 // sites, key dates, outcomes and details.
-import { db, html, raw, render, $, $$, formData, toast, act, must, icon, pill, emptyState, openFile, headline, fmtDate, fmtNum, KIND_LABEL, ROLE_LABEL, today } from '../lib.js';
-import { initials } from '../charts.js';
+import { db, html, raw, render, $, $$, formData, toast, act, must, icon, pill, emptyState, openFile, openDrawer, headline, fmtDate, fmtNum, KIND_LABEL, ROLE_LABEL, today } from '../lib.js';
+import { initials, ring } from '../charts.js';
 
 // How an outcome is evidenced, read from the document's own evidence text.
 const METHOD = [
@@ -13,13 +13,18 @@ const METHOD = [
   [/register|attendance|session log|logs|records|registration/i, 'Session data', 'attendance', 'delivery'],
 ];
 const methodOf = (evidence) => (evidence ? METHOD.find(([re]) => re.test(evidence)) || [null, 'Form', 'requirements', 'compliance'] : [null, 'Unknown']);
-const METHOD_TEXT = { Survey: 'Survey', 'Session data': 'Session data', Form: 'Monitoring form', Unknown: 'Method not set' };
 const lines = (v) => (v || '').split('\n').map((s) => s.trim()).filter(Boolean);
 const firstSentence = (s) => (s || '').split(/(?<=\.)\s/)[0];
+const METHOD_LABEL = { survey: 'Pre and post survey', session_data: 'Session data', form: 'Monitoring form', external: 'External data' };
+const METHOD_GUESS = { Survey: 'survey', 'Session data': 'session_data', Form: 'form' };
+// An outline icon for a theme, from its name; a neutral one otherwise.
+const themeIcon = (t) => (/safe|belong|access|space/i.test(t) ? 'compliance' : /skill|progress|work|employ|train|educat/i.test(t) ? 'outcomes'
+  : /well|health|relation|mental|emotion/i.test(t) ? 'surveys' : 'targets');
 const DOC_KIND = { delivery_model: 'Delivery model', monitoring_framework: 'Outcome framework', consortium_agreement: 'Consortium agreement', policy: 'Policy', other: 'Document' };
 
 export default async function hub(ctx, el, [sub]) {
   if (sub === 'edit' && ctx.manages) return edit(ctx, el);
+  if (sub === 'methods' && ctx.manages) return methods(ctx, el);
   const c = ctx.consortium;
   const [s, dates] = await Promise.all([
     db.rpc('consortium_summary', { p_consortium: c.id }).then(must),
@@ -39,19 +44,7 @@ export default async function hub(ctx, el, [sub]) {
   // Outcomes grouped under their themes, in the framework's order.
   const outcomes = [...s.outcomes].sort((a, b) => a.code.localeCompare(b.code));
   const themes = [...new Set(outcomes.map((o) => o.theme || 'Outcomes'))];
-  const reported = outcomes.filter((o) => o.reported);
-  const outcomeRow = (o) => {
-    const short = o.headline || headline(o.label);
-    const pct = o.reported && o.target ? (100 * o.actual) / o.target : null;
-    return html`<li class="row">
-      <div>${short !== o.label ? html`<details class="wording"><summary>${short}</summary><p>${o.label}</p></details>` : html`<span>${o.label}</span>`}
-        <span class="muted">${[METHOD_TEXT[methodOf(o.evidence)[1]], o.section].filter(Boolean).join(' · ')}</span>
-        ${o.evidence ? html`<details class="wording"><summary class="small muted" style="text-decoration:underline">How it's measured</summary><p>${o.evidence}</p></details>` : ''}</div>
-      <div class="row-end">${pct != null ? html`<span class="figure"><span>${fmtNum(o.actual)} of ${fmtNum(o.target)}</span><strong>${fmtNum(Math.round(pct))}%</strong></span>
-        <span class="slim" role="img" aria-label="${fmtNum(Math.round(pct))}% of the target"><span style="width:${Math.min(100, pct)}%"></span></span>`
-        : html`<span class="not-yet">${o.target != null ? `Target ${fmtNum(o.target)} · not yet reported` : 'Not yet reported'}</span>`}</div></li>`;
-  };
-
+  const unmeasured = outcomes.filter((o) => !o.method).length;
   render(el, html`
     <div class="page-head"><div><span class="eyebrow">${isBid ? 'Bid summary' : 'Consortium summary'}</span><h1>${w.name}</h1>
       <p class="meta-line">${[sum.funder_name || w.funder, sum.programme_name || w.programme].filter(Boolean).join(' · ')}</p>
@@ -76,17 +69,32 @@ export default async function hub(ctx, el, [sub]) {
           ${o.contact ? html`<p class="small muted" style="margin-top:4px">${o.contact.name}, ${(ROLE_LABEL[o.contact.role] || o.contact.role).toLowerCase()}</p>` : ''}</div></li>`;
       })}</ul></section>
 
-    <section class="sec"><div class="sec-head split-head"><div><h2>What we are measuring</h2>
-      <p>${outcomes.length ? `${outcomes.length} outcomes${reported.length ? `, ${reported.length} with progress reported` : ', none reported yet'}.` : 'No outcome framework agreed yet.'}</p></div></div>
-      ${themes.map((t) => html`<div style="margin-top:24px"><h3 style="margin-bottom:4px">${t}</h3>
-        <ul class="rows">${outcomes.filter((o) => (o.theme || 'Outcomes') === t).map(outcomeRow)}</ul></div>`)}</section>
+    <section class="sec"><div class="sec-head"><span class="eyebrow">Outcomes</span><h2 class="display">What we are measuring</h2>
+      <p>${outcomes.length ? `${outcomes.length} outcome${outcomes.length === 1 ? '' : 's'} across ${themes.length} theme${themes.length === 1 ? '' : 's'}` : 'No outcome framework agreed yet.'}</p></div>
+      ${s.editable && unmeasured ? html`<div class="lead-banner"><span><strong>${unmeasured} outcome${unmeasured === 1 ? ' needs' : 's need'} a measurement method.</strong> Only you can see this.</span>
+        <a class="btn secondary" href="#/c/${c.id}/hub/methods">Set methods</a></div>` : ''}
+      ${outcomes.length ? html`<div class="themes">${themes.map((t) => {
+        const list = outcomes.filter((o) => (o.theme || 'Outcomes') === t);
+        const measured = list.filter((o) => o.reported && o.target);
+        const avg = measured.length ? measured.reduce((n, o) => n + Math.min(100, (100 * o.actual) / o.target), 0) / measured.length : null;
+        const methods = [...new Set(list.map((o) => o.method).filter(Boolean))];
+        return html`<article class="theme-panel">
+          <header><span class="theme-icon">${raw(icon(themeIcon(t), 20))}</span><div><h3>${t}</h3><span class="count">${list.length} outcome${list.length === 1 ? '' : 's'}</span></div></header>
+          <div class="theme-progress">${ring(avg ?? 0, { size: 64, stroke: 7, color: 'var(--progress)', track: 'var(--track)', value: avg == null ? '–' : `${Math.round(avg)}%`, label: `${t} progress` })}
+            <p>${avg == null ? 'Measurement begins with the first survey' : `Average progress across ${measured.length} of ${list.length} outcome${list.length === 1 ? '' : 's'} with results`}</p></div>
+          <ul class="outcome-list">${list.map((o) => {
+            const pct = o.reported && o.target ? Math.min(100, (100 * o.actual) / o.target) : 0;
+            return html`<li><button type="button" data-outcome="${o.code}" title="${o.label}"><span class="fill-dot" style="--p:${Math.round(pct)}" aria-hidden="true"></span><span>${o.headline || headline(o.label)}</span></button></li>`;
+          })}</ul>
+          ${methods.length ? html`<footer>Measured by ${methods.map((m) => html`<span class="chip-neutral">${METHOD_LABEL[m]}</span>`)}</footer>` : ''}</article>`;
+      })}</div>` : ''}</section>
 
     <section class="sec"><div class="sec-head"><h2>Delivery</h2>${sum.delivery_overview ? html`<p>${sum.delivery_overview}</p>` : ''}</div>
       <div class="two-col">
         <div><h3 style="margin-bottom:4px">Sites</h3>
           ${s.sites.length ? html`<ul class="rows">${s.sites.map((x) => html`<li><strong>${x.name}</strong>${x.organisation ? html` <span class="muted">· ${x.organisation}</span>` : ''}
             ${x.days || x.notes ? html`<div class="muted">${[x.days, x.notes].filter(Boolean).join(' · ')}</div>` : ''}</li>`)}</ul>` : html`<p class="not-yet">No sites added yet.</p>`}</div>
-        <div><h3 style="margin-bottom:4px">Targeted share</h3>
+        ${share == null && !s.editable ? '' : html`<div><h3 style="margin-bottom:4px">Targeted share</h3>
           ${share == null ? html`<p class="not-yet" style="padding-top:20px">Not yet reported${min != null ? `. The funder's minimum is ${fmtNum(min)}%.` : '.'}</p>`
           : html`<p style="margin-top:12px;font-weight:600">${min == null ? `${fmtNum(share)}% of young people are from targeted groups.` : share >= min ? `${fmtNum(share)}%, at or above the ${fmtNum(min)}% minimum.` : `${fmtNum(share)}%, below the ${fmtNum(min)}% minimum.`}</p>
             <div style="padding-top:12px"><div class="figure" style="display:flex;justify-content:space-between;align-items:baseline"><strong style="font:400 30px/1 var(--display)">${fmtNum(share)}%</strong>
@@ -94,7 +102,7 @@ export default async function hub(ctx, el, [sub]) {
             <span class="slim" style="margin-top:12px" role="img" aria-label="${fmtNum(share)}% targeted${min != null ? `, minimum ${fmtNum(min)}%` : ''}"><span style="width:${Math.min(100, share)}%"></span>${min != null ? html`<i style="left:${min}%"></i>` : ''}</span>
             <p class="muted small" style="margin-top:8px">Share of young people from targeted groups${min != null ? '; the mark is the funder\'s minimum' : ''}.</p></div>`}
           ${w.targeted_criteria?.length ? html`<details class="wording" style="margin-top:16px"><summary class="small muted">Who counts as targeted</summary>
-            <ul class="plain small">${w.targeted_criteria.map((t) => html`<li>${t}</li>`)}</ul></details>` : ''}</div>
+            <ul class="plain small">${w.targeted_criteria.map((t) => html`<li>${t}</li>`)}</ul></details>` : ''}</div>`}
       </div></section>
 
     ${sum.youth_voice_mechanism || sum.governance?.length ? html`<section class="sec two-col">
@@ -109,6 +117,19 @@ export default async function hub(ctx, el, [sub]) {
       })}</ul></div>` : ''}</section>` : ''}`);
 
   $$('[data-path]').forEach((b) => b.addEventListener('click', () => openFile(b, 'documents', b.dataset.path)));
+  // An outcome's details: wording, who delivers it, how it is measured, results.
+  $$('[data-outcome]').forEach((b) => b.addEventListener('click', () => {
+    const o = outcomes.find((x) => x.code === b.dataset.outcome);
+    const pct = o.reported && o.target ? (100 * o.actual) / o.target : null;
+    const title = o.headline || headline(o.label);
+    openDrawer(title, html`${title !== o.label ? html`<p>${o.label}</p>` : ''}<dl class="facts">
+      <dt>Theme</dt><dd>${[o.theme, o.section].filter(Boolean).join(' · ') || 'Outcomes'}</dd>
+      ${o.partners?.length ? html`<dt>Delivered by</dt><dd>${o.partners.join(', ')}</dd>` : ''}
+      ${o.method || o.evidence ? html`<dt>How it's measured</dt><dd>${o.method ? METHOD_LABEL[o.method] : ''}${o.method && o.evidence ? html`<br>` : ''}${o.evidence ? html`<span class="muted">${o.evidence}</span>` : ''}</dd>` : ''}
+      ${o.target != null ? html`<dt>Target</dt><dd>${fmtNum(o.target)} over the programme</dd>` : ''}
+      ${pct != null ? html`<dt>Latest result</dt><dd>${fmtNum(o.actual)} of ${fmtNum(o.target)} (${fmtNum(Math.round(pct))}%)
+        <span class="slim" style="margin-top:8px"><span style="width:${Math.min(100, pct)}%"></span></span></dd>` : s.editable ? html`<dt>Latest result</dt><dd class="muted">Not yet reported</dd>` : ''}</dl>`);
+  }));
   $('#publish')?.addEventListener('click', (e) => act(e.currentTarget, async () => {
     const n = must(await db.rpc('publish_summary', { p_consortium: c.id }));
     toast(`Version ${n} published.`);
@@ -329,6 +350,43 @@ async function edit(ctx, el) {
       must(await db.from('consortia').update(row).eq('id', c.id));
       toast('Details saved.');
       await ctx.reload();
+    });
+  });
+}
+
+// ---------------------------------------------------- measurement methods
+
+// One screen to give every outcome its measurement method. Where the
+// documents' evidence text suggests one, it is offered, never assumed.
+async function methods(ctx, el) {
+  const c = ctx.consortium;
+  const [s, rows] = await Promise.all([
+    db.rpc('consortium_summary', { p_consortium: c.id }).then(must),
+    db.from('outcome_measures').select('id, code, label, headline, theme, method').eq('consortium_id', c.id).order('code').then(must),
+  ]);
+  const evidence = (code) => s.outcomes.find((o) => o.code === code)?.evidence;
+  const themes = [...new Set(rows.map((r) => r.theme || 'Outcomes'))];
+  render(el, html`
+    <p class="small" style="margin-bottom:16px"><a href="#/c/${c.id}/hub">← Summary</a></p>
+    <div class="page-head"><div><span class="eyebrow">Outcomes</span><h1>Measurement methods</h1>
+      <p>Choose how each outcome is measured. Suggestions come from the evidence text in the bid.</p></div></div>
+    <form id="methods" class="stack">${themes.map((t) => html`<section><h2 style="margin-bottom:8px">${t}</h2>
+      <ul class="rows">${rows.filter((r) => (r.theme || 'Outcomes') === t).map((r) => {
+        const guess = METHOD_GUESS[methodOf(evidence(r.code))[1]];
+        return html`<li class="row methods-table"><div><strong>${r.headline || headline(r.label)}</strong><span class="muted">${r.label}</span>
+            ${!r.method && guess ? html`<span class="muted">Suggested from the bid: ${METHOD_LABEL[guess]}</span>` : ''}</div>
+          <label class="f"><span class="sr-only">Method for ${r.label}</span><select name="m" data-id="${r.id}">
+            <option value="">Choose…</option>${Object.entries(METHOD_LABEL).map(([k, v]) => html`<option value="${k}" ${(r.method || guess) === k ? 'selected' : ''}>${v}</option>`)}</select></label></li>`;
+      })}</ul></section>`)}
+      <div class="btns"><button class="btn">${raw(icon('check', 16))}Save methods</button></div></form>`);
+  $('#methods').addEventListener('submit', (e) => {
+    e.preventDefault();
+    act(e.submitter, async () => {
+      for (const sel of $$('select[name=m]', e.target)) {
+        must(await db.from('outcome_measures').update({ method: sel.value || null }).eq('id', sel.dataset.id));
+      }
+      toast('Methods saved.');
+      location.hash = `#/c/${c.id}/hub`;
     });
   });
 }
