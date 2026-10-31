@@ -13,6 +13,7 @@ import admin from './views/admin.js';
 import bid from './views/bid.js';
 import library from './views/library.js';
 import targets from './views/targets.js';
+import progress from './views/progress.js';
 
 const app = $('#app');
 
@@ -30,6 +31,7 @@ const VIEWS = {
   hub: { label: 'Consortium', view: hub, roles: 'all' },
   agreements: { label: 'Agreements', view: agreements, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
   targets: { label: 'Targets and budget', view: targets, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance'] },
+  progress: { label: 'Progress', view: progress, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
   sessions: { label: 'Sessions', view: sessions, roles: PD_ROLES },
   register: { label: 'Young people', view: register, roles: PD_ROLES },
   returns: { label: 'Returns', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },

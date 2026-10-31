@@ -46,19 +46,28 @@ export default async function dashboard(ctx, el) {
   const t = p.totals;
   const periods = [...new Set(p.commitments.map((x) => (x.period === 'lifetime' ? 'lifetime' : x.year)))];
   const pct = (m) => (m.unit === '%' || m.measure === 'targeted_pct' ? '%' : '');
+  // Until there are records in the register, the headline figures are what
+  // partners have reported.
+  const fromReports = p.reported?.any && !t.reached && !t.sessions && !t.attendances;
+  const stat = (k) => (fromReports ? p.reported[k] : t[k]);
+  const SOURCE = { reported: 'from partner reports', records: 'from the register' };
+  const reportedBy = (x) => (x.by_org || []).map((b) => `${ctx.org(b.organisation_id)?.name} ${fmtNum(b.value)}${pct(x)}`).join(' · ');
 
   render(el, html`
     <div class="page-head"><div><span class="eyebrow">Live dashboard</span><h1>Are we on track?</h1>
       <p class="muted">Every figure traces back to a record a partner entered. Ratings compare progress with where we should be by today.</p></div>
       ${ctx.role !== 'youth_voice' ? html`<div class="btns"><button class="btn secondary" id="x-commit">Export targets</button><button class="btn secondary" id="x-quarters">Export quarters</button></div>` : ''}</div>
-    ${!c.allow_real_records ? html`<div class="banner warn" style="margin-bottom:20px"><strong>Demo mode.</strong> These figures come from made-up records.</div>` : ''}
+    ${!c.allow_real_records ? html`<div class="banner warn" style="margin-bottom:20px"><strong>Demo mode.</strong> ${fromReports
+      ? 'The register of young people holds made-up records only. The figures below are what partners report under Progress.'
+      : 'Figures from the register come from made-up records.'}</div>` : ''}
     <div class="stats">
-      <div class="stat"><b>${fmtNum(t.reached)}</b><span>Young people reached</span></div>
-      <div class="stat"><b>${t.targeted_pct == null ? '–' : `${fmtNum(t.targeted_pct)}%`}</b><span>Targeted${c.targeted_share_target != null ? ` (aim ${fmtNum(c.targeted_share_target)}%)` : ''}</span></div>
-      <div class="stat"><b>${fmtNum(t.sessions)}</b><span>Sessions</span></div>
-      <div class="stat"><b>${fmtNum(t.attendances)}</b><span>Attendances</span></div>
-      <div class="stat"><b>${fmtNum(t.outcomes)}</b><span>Outcomes</span></div>
+      <div class="stat"><b>${fmtNum(stat('reached') || 0)}</b><span>Young people reached</span></div>
+      <div class="stat"><b>${stat('targeted_pct') == null ? '–' : `${fmtNum(stat('targeted_pct'))}%`}</b><span>Targeted${c.targeted_share_target != null ? ` (aim ${fmtNum(c.targeted_share_target)}%)` : ''}</span></div>
+      <div class="stat"><b>${fmtNum(stat('sessions') || 0)}</b><span>Sessions</span></div>
+      <div class="stat"><b>${fmtNum(stat('attendances') || 0)}</b><span>Attendances</span></div>
+      <div class="stat"><b>${fmtNum(stat('outcomes') || 0)}</b><span>Outcomes</span></div>
     </div>
+    ${fromReports ? html`<p class="small muted" style="margin-top:8px">These totals are what partners have reported under Progress, added up across months.</p>` : ''}
 
     ${byOrganisation(ctx, p, budgets)}
 
@@ -70,23 +79,25 @@ export default async function dashboard(ctx, el) {
           <thead><tr><th>Commitment</th><th>Who</th><th class="num">Target</th><th class="num">Due by now</th><th class="num">Actual</th><th>Progress</th><th>Rating</th></tr></thead>
           <tbody>${rows.map((x) => {
             const share = x.target ? Math.min(100, Math.round((x.actual / x.target) * 100)) : 0;
-            const tracked = x.measure !== 'other' && x.measure !== 'outcomes';
-            return html`<tr><td><strong>${x.label}</strong><br><span class="muted small">${[KIND[x.kind], x.section, tracked ? `tracked as ${MEASURE_LABEL[x.measure].toLowerCase()}` : 'not tracked automatically yet'].filter(Boolean).join(' · ')}</span></td>
-              <td>${x.organisation || 'Whole consortium'}${x.site ? html`<br><span class="muted small">${x.site}</span>` : ''}</td>
+            const tracked = !!x.source;
+            return html`<tr><td><strong>${x.label}</strong><br><span class="muted small">${[KIND[x.kind], x.section, tracked ? SOURCE[x.source] : 'nothing reported yet'].filter(Boolean).join(' · ')}</span></td>
+              <td>${x.organisation || 'Whole consortium'}${x.site ? html`<br><span class="muted small">${x.site}</span>` : ''}
+                ${x.by_org?.length ? html`<br><span class="muted small">Reported: ${reportedBy(x)}</span>` : ''}</td>
               <td class="num">${fmtNum(x.target)}${pct(x)}</td><td class="num">${tracked ? `${fmtNum(x.expected)}${pct(x)}` : '–'}</td>
               <td class="num"><strong>${tracked ? `${fmtNum(x.actual)}${pct(x)}` : '–'}</strong></td>
               <td>${tracked ? html`<span class="bar-track" title="${share}% of the target"><span class="bar-fill" style="width:${share}%"></span></span>` : ''}</td>
-              <td>${tracked ? rag(x.rag) : html`<span class="rag rag-grey">Not tracked</span>`}</td></tr>`;
+              <td>${tracked ? rag(x.rag) : html`<span class="rag rag-grey">Not reported</span>`}</td></tr>`;
           })}</tbody></table></div></section>`;
     }) : html`<section class="panel" style="margin-top:20px"><p class="empty">No commitments set yet.${ctx.manages ? ' Add them under Agreements.' : ''}</p></section>`}
 
     ${p.partners.length ? html`<section class="panel" style="margin-top:20px"><header><h2>${p.partners.length > 1 ? 'By partner' : ctx.orgName}</h2>
       ${p.partners.length > 1 ? html`<button class="btn small secondary" id="x-partners">Export</button>` : ''}</header>
       <div class="table-wrap"><table>
-        <thead><tr><th>Partner</th><th class="num">Reached</th><th class="num">Targeted</th><th class="num">Sessions</th><th class="num">Attendances</th><th class="num">Outcomes</th><th>Latest return</th><th>Action</th></tr></thead>
+        <thead><tr><th>Partner</th><th class="num">Reached</th><th class="num">Targeted</th><th class="num">Sessions</th><th class="num">Attendances</th><th class="num">Outcomes</th><th>Latest progress</th><th>Latest return</th><th>Action</th></tr></thead>
         <tbody>${p.partners.map((o) => html`<tr><td><strong>${o.name}</strong></td>
           <td class="num">${fmtNum(o.reached)}</td><td class="num">${o.targeted_pct == null ? '–' : `${fmtNum(o.targeted_pct)}%`}</td>
           <td class="num">${fmtNum(o.sessions)}</td><td class="num">${fmtNum(o.attendances)}</td><td class="num">${fmtNum(o.outcomes)}</td>
+          <td class="small">${o.last_progress ? fmtMonth(o.last_progress) : html`<span class="muted">None yet</span>`}</td>
           <td class="small">${o.latest_return ? html`${fmtMonth(o.latest_return.period)}<br>${statusPill(o.latest_return.status)} ${o.latest_return.rag ? rag(o.latest_return.rag) : ''}` : html`<span class="muted">None yet</span>`}</td>
           <td>${o.escalation ? html`<span class="rag ${o.escalation === 'Conversation' ? 'rag-amber' : 'rag-red'}">${o.escalation}</span>` : ''}</td></tr>`)}</tbody></table></div>
     </section>` : ''}
@@ -104,6 +115,7 @@ export default async function dashboard(ctx, el) {
   const name = c.name.replace(/[^\w ]+/g, '');
   $('#x-commit')?.addEventListener('click', () => downloadCsv(`${name} targets.csv`, p.commitments.map((x) => ({
     Period: x.period === 'lifetime' ? 'Project lifetime' : `Year ${x.year}`, Type: KIND[x.kind] || '', Section: x.section || '', Commitment: x.label, 'Tracked as': MEASURE_LABEL[x.measure],
+    'Actual from': x.source === 'reported' ? 'Partner reports' : x.source === 'records' ? 'Register' : '', 'Reported by': reportedBy(x),
     'Linked organisations': (x.links || []).map((id) => ctx.org(id)?.name).filter(Boolean).join('; '), Who: x.organisation || 'Whole consortium', Site: x.site || '',
     Target: x.target, 'Due by now': x.expected, Actual: x.actual, Rating: x.rag,
   }))));

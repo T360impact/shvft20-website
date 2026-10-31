@@ -4,6 +4,7 @@
 // admin then confirms their own targets and budget. Re-running on a new
 // document version shows what changed before anything is replaced.
 import { db, html, render, $, $$, formData, toast, act, must, fmtDate, fmtDateTime, fmtMoney, fmtNum, statusPill, uploadFile, MEASURE_LABEL } from '../lib.js';
+import { loadBudget, budgetView } from './budget.js';
 
 const PROGRAMME_DOCS = {
   application_form: 'Application form', submitted_bid: 'Submitted bid', budget: 'Budget', delivery_model: 'Delivery model (e.g. Annex A)',
@@ -44,21 +45,13 @@ const targetTable = (ctx, rows, showOrg) => rows.length ? html`<div class="table
     <td class="small">${r.organisation_id ? (r.confirmed_by_partner_at ? fmtDateTime(r.confirmed_by_partner_at) : html`<span class="pill pill-proposed">Waiting</span>`) : '–'}</td></tr>`)}</tbody></table></div>`
   : html`<p class="empty">No targets yet.</p>`;
 
-const budgetTable = (ctx, rows, showOrg) => rows.length ? html`<div class="table-wrap"><table>
-  <thead><tr><th>Year</th><th>Budget line</th>${showOrg ? html`<th>Who</th>` : ''}<th class="num">Amount</th><th>Version</th><th>Partner confirmed</th></tr></thead>
-  <tbody>${rows.map((r) => html`<tr><td>${r.year}</td><td><strong>${r.budget_line}</strong></td>
-    ${showOrg ? html`<td>${r.is_central ? 'Central costs' : ctx.org(r.organisation_id)?.name}</td>` : ''}
-    <td class="num">${fmtMoney(r.amount)}</td><td>v${r.version}</td>
-    <td class="small">${r.is_central ? '–' : r.confirmed_by_partner_at ? fmtDateTime(r.confirmed_by_partner_at) : html`<span class="pill pill-proposed">Waiting</span>`}</td></tr>`)}
-    <tr><td></td><td><strong>Total</strong></td>${showOrg ? html`<td></td>` : ''}<td class="num"><strong>${fmtMoney(rows.reduce((s, r) => s + Number(r.amount), 0))}</strong></td><td></td><td></td></tr>
-  </tbody></table></div>` : html`<p class="empty">No budget yet.</p>`;
-
 // ------------------------------------------------------------------ partner
 
 async function partnerHome(ctx, el) {
-  const [[commit, alloc], links] = await Promise.all([
+  const [[commit, alloc], links, budget] = await Promise.all([
     current(ctx, ctx.orgId),
     db.from('commitment_organisations').select('commitments(*, commitment_organisations(organisation_id))').eq('organisation_id', ctx.orgId).then(must),
+    loadBudget(ctx, ctx.orgId),
   ]);
   const linked = links.map((l) => l.commitments).filter((x) => x && !x.superseded_by && !x.retired_at);
   const waiting = [...commit, ...alloc].filter((r) => !r.confirmed_by_partner_at).length;
@@ -74,7 +67,7 @@ async function partnerHome(ctx, el) {
         ${canConfirm ? 'Check the figures below. If anything is wrong, tell the lead before confirming.' : 'Your organisation admin confirms these.'}</div>`
       : html`<div class="banner info" style="margin-bottom:20px">Everything here is confirmed.</div>`}
       <section class="panel"><h2>Targets</h2>${targetTable(ctx, commit, false)}</section>
-      <section class="panel" style="margin-top:20px"><h2>Budget</h2>${budgetTable(ctx, alloc, false)}
+      <section class="panel" style="margin-top:20px"><h2>Budget</h2>${budgetView(ctx, budget)}
         ${!alloc.length && !canConfirm && !ctx.extraRoles.includes('finance') ? html`<p class="small muted">Budgets are visible to your organisation's admin and finance roles.</p>` : ''}</section>
       ${waiting && canConfirm ? html`<section class="panel" style="margin-top:20px"><h2>Confirm</h2>
         <form class="form" id="confirm">
@@ -93,11 +86,12 @@ async function partnerHome(ctx, el) {
 
 async function leadHome(ctx, el) {
   const c = ctx.consortium;
-  const [docs, runs, confirmations, [commit, alloc]] = await Promise.all([
+  const [docs, runs, confirmations, [commit], budget] = await Promise.all([
     db.from('documents').select('*').eq('consortium_id', c.id).in('kind', Object.keys(PROGRAMME_DOCS)).order('created_at', { ascending: false }).then(must),
     db.from('extraction_runs').select('*').eq('consortium_id', c.id).order('created_at', { ascending: false }).limit(20).then(must),
     db.rpc('partner_confirmations', { p_consortium: c.id }).then(must),
     current(ctx, null),
+    loadBudget(ctx, null),
   ]);
   // Latest version of each document: one nothing else replaces.
   const replaced = new Set(docs.map((d) => d.previous_id).filter(Boolean));
@@ -146,8 +140,7 @@ async function leadHome(ctx, el) {
       : html`<p class="empty">Nothing allocated to partners yet.</p>`}
     </section>
     <section class="panel" style="margin-top:20px"><h2>Current targets</h2>${targetTable(ctx, commit, true)}</section>
-    <section class="panel" style="margin-top:20px"><h2>Current budget</h2>
-      ${c.grant_value ? html`<p class="small muted">Total grant ${fmtMoney(c.grant_value)}.</p>` : ''}${budgetTable(ctx, alloc, true)}</section>`);
+    <section class="panel" style="margin-top:20px"><h2>Current budget</h2>${budgetView(ctx, budget, { project: true })}</section>`);
 
   const again = () => leadHome(ctx, el);
   if (running) setTimeout(() => { if (location.hash.endsWith('/targets')) again(); }, 6000);
