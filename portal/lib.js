@@ -18,6 +18,7 @@ export const ROLE_LABEL = {
   hub_worker: 'Hub or session worker',
   funder_observer: 'Funder observer',
   youth_voice: 'Youth voice',
+  associate: 'Associate (referral partner, site owner or staffing provider)',
 };
 
 export const KIND_LABEL = {

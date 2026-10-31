@@ -1410,3 +1410,15 @@ ul.lw-nd { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1
 .gm-cell.tone-amber { background: var(--amber-tint); color: var(--amber-text); }
 .gm-cell.tone-red { background: var(--red-tint); color: var(--red-text); }
 .gm-cell:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+/* Invite form: organisation picker and the new-organisation panel */
+.org-pick { position: relative; }
+.pick-list { position: absolute; z-index: 20; left: 0; right: 0; top: 100%; margin-top: 4px; max-height: 320px; overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-ctl); box-shadow: var(--shadow-card); }
+.pick-list ul { list-style: none; margin: 0; padding: 4px; }
+.pick-head { padding: 8px 10px 4px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); }
+.pick-opt { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.pick-opt .small { flex-basis: 100%; }
+.pick-opt:hover, .pick-opt:focus { background: var(--surface-muted); outline: none; }
+.pick-new { border-top: 1px solid var(--border); margin-top: 4px; }
+.chosen-org { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); margin-top: var(--s2); padding: var(--s2) var(--s3); border-radius: var(--radius-ctl); background: var(--surface-muted); }
+.new-org-panel { display: grid; gap: var(--s3); padding: var(--s3); border: 1px dashed var(--border); border-radius: var(--radius-ctl); }

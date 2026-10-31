@@ -50,7 +50,11 @@ export default async function profile(ctx, el, [orgId]) {
         ${p.can_review && cur && ['uploaded', 'under_review'].includes(st) ? html`<button type="button" class="btn small" data-approve="${cur.id}">Approve</button><button type="button" class="btn secondary small" data-return="${cur.id}">Return</button>` : ''}</span></li>`;
   };
   const ct = p.contacts || {};
-  render(el, html`${head}
+  // The first person from a newly added organisation lands here.
+  const welcome = ctx.onboarding && org === ctx.orgId ? html`<div class="banner info" id="welcome"><span><strong>Welcome to ${c.name}.</strong>
+    You're ${p.name}'s admin in the portal. Please complete its profile and upload its compliance documents below; they're shared with every workspace it joins.</span>
+    <button type="button" class="btn secondary small" id="welcome-done">Done for now</button></div>` : '';
+  render(el, html`${head}${welcome}
     ${p.completeness.missing.length ? html`<div class="lead-banner"><span><strong>Still to add:</strong> ${p.completeness.missing.join(', ')}.</span></div>` : ''}
     <div class="dgrid">
       <section class="dcard full"><header class="dcard-head"><h2>Documents</h2><p>Uploaded once, used in every workspace and bid. An approved, in-date document shows as already provided wherever it's needed.</p></header>
@@ -90,6 +94,10 @@ export default async function profile(ctx, el, [orgId]) {
       staff_band: f.staff_band || null, volunteer_band: f.volunteer_band || null, contacts, logo_path }).eq('id', p.id));
     toast('Profile saved.'); again();
   }); });
+  $('#welcome-done', el)?.addEventListener('click', (e) => act(e.currentTarget, async () => {
+    must(await db.rpc('finish_onboarding', { p_consortium: c.id })); ctx.onboarding = false; $('#welcome', el)?.remove();
+    toast('You can come back to the profile any time from the menu.');
+  }));
   $$('[data-open]', el).forEach((b) => b.addEventListener('click', () => openFile(b, 'library', b.dataset.open)));
   $$('[data-upload]', el).forEach((b) => b.addEventListener('click', () => {
     const t = p.documents.find((x) => x.type === b.dataset.upload);

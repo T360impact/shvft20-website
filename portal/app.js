@@ -12,7 +12,9 @@ import reporting from './views/reporting.js';
 import returns from './views/returns.js';
 import risks from './views/risks.js';
 import dashboard from './views/dashboard.js';
-import team from './views/team.js';
+import team, { adminCall } from './views/team.js';
+import organisations from './views/organisations.js';
+import shared from './views/shared.js';
 import admin from './views/admin.js';
 import bid from './views/bid.js';
 import library from './views/library.js';
@@ -27,7 +29,15 @@ const app = $('#app');
 // Supabase reads sign-in links from the address bar on start-up, so note
 // what kind of link this was before it clears it.
 const startHash = location.hash;
-const linkType = /[#&]type=(invite|recovery)/.exec(startHash)?.[1] || null;
+// An invitation link (?invite=...) is kept until it has been accepted, so
+// it survives signing in or setting up an account.
+const INVITE_KEY = 'portal-invite';
+const inviteFromUrl = new URLSearchParams(location.search).get('invite');
+if (inviteFromUrl) { try { localStorage.setItem(INVITE_KEY, JSON.stringify({ token: inviteFromUrl, at: Date.now() })); } catch { /* the URL still has it */ } }
+const pendingInvite = () => { try { const v = JSON.parse(localStorage.getItem(INVITE_KEY) || 'null'); return v && Date.now() - v.at < 864e5 * 14 ? v.token : null; } catch { return inviteFromUrl; } };
+const clearInvite = () => { try { localStorage.removeItem(INVITE_KEY); } catch { /* nothing kept */ } };
+// A sign-up link from an invitation can arrive as a magic link; it still needs a password.
+const linkType = /[#&]type=(invite|recovery)/.exec(startHash)?.[1] || (/[#&]type=magiclink/.test(startHash) && pendingInvite() ? 'invite' : null);
 const linkError = /[#&]error_description=([^&]+)/.exec(startHash)?.[1];
 
 const state = { user: null, profile: null, memberships: [], ctx: null, ready: false, unread: 0, prefs: null };
@@ -44,7 +54,9 @@ const VIEWS = {
   programme: { label: 'The programme', short: 'Programme', icon: 'finance', mod: 'finance', view: programme, roles: ['accountable_body'] },
   mine: { label: 'My organisation', short: 'Mine', icon: 'home', mod: 'brand', view: myOrg, roles: ['accountable_body', 'partner_manager', 'hub_worker', 'org_admin', 'finance', 'reporting'] },
   bid: { label: 'Bid readiness', short: 'Bid', icon: 'bids', mod: 'bids', view: bid, roles: ['lead', 'accountable_body', 'partner_manager'] },
-  dashboard: { label: 'Dashboard', short: 'Dashboard', icon: 'dashboard', mod: 'brand', view: dashboard, roles: 'all' },
+  // Everyone but associates, who see the Summary and what's shared with them.
+  dashboard: { label: 'Dashboard', short: 'Dashboard', icon: 'dashboard', mod: 'brand', view: dashboard, roles: ['lead', 'accountable_body', 'partner_manager', 'hub_worker', 'funder_observer', 'youth_voice'] },
+  shared: { label: 'Shared with us', short: 'Shared', icon: 'home', mod: 'brand', view: shared, roles: ['associate'] },
   hub: { label: 'Summary', short: 'Summary', icon: 'partners', mod: 'governance', view: hub, roles: 'all' },
   agreements: { label: 'Agreements', short: 'Agreements', icon: 'governance', mod: 'governance', view: agreements, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
   targets: { label: 'Targets and budget', short: 'Budget', icon: 'finance', mod: 'finance', view: targets, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance'] },
@@ -53,7 +65,8 @@ const VIEWS = {
   uploads: { label: 'Weekly figures', short: 'Weekly', icon: 'spreadsheet', mod: 'delivery', view: uploads, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
   // What each partner owes each period; reports in any format.
   reporting: { label: 'Reporting', short: 'Reporting', icon: 'requirements', mod: 'delivery', view: reporting, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
-  profile: { label: 'Our profile', short: 'Profile', icon: 'partners', mod: 'governance', view: profile, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance', 'reporting', 'hub_worker'] },
+  profile: { label: 'Our profile', short: 'Profile', icon: 'partners', mod: 'governance', view: profile, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance', 'reporting', 'hub_worker', 'associate'] },
+  organisations: { label: 'Organisations', short: 'Orgs', icon: 'partners', mod: 'governance', view: organisations, roles: ['lead'] },
   compliance: { label: 'Compliance', short: 'Compliance', icon: 'compliance', mod: 'compliance', view: compliance, roles: ['lead', 'accountable_body'] },
   returns: { label: 'Returns', short: 'Returns', icon: 'returns', mod: 'compliance', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
   risks: { label: 'Risks', short: 'Risks', icon: 'safeguarding', mod: 'compliance', view: risks, roles: ['lead', 'accountable_body', 'partner_manager', 'hub_worker'] },
@@ -76,12 +89,15 @@ const allowed = (key, ctx) => {
   const stage = ctx.consortium.stage;
   if (stage !== 'live' && !BID_VIEWS.includes(key)) return false;
   if (stage === 'live' && key === 'bid' && !(ctx.seesAll && ctx.consortium.bid_deadline)) return false;
+  // Associates see only what's meant for them; extra roles (org admin) don't widen it.
+  if (ctx.role === 'associate') return v.roles === 'all' || v.roles.includes('associate');
   return v.roles === 'all' || v.roles.includes(ctx.role) || ctx.extraRoles.some((r) => v.roles.includes(r)) || (ctx.isAdmin && v.roles !== PD_ROLES);
 };
 // A live workspace opens on each person's own tier: the master view for the
 // consortium lead, the programme for the lead organisation, their own
 // organisation for a partner, and the dashboard for everyone else.
-const homeView = (ctx) => (ctx.consortium.stage !== 'live' ? (allowed('bid', ctx) ? 'bid' : 'hub')
+const homeView = (ctx) => (ctx.onboarding && allowed('profile', ctx) ? 'profile' : ctx.role === 'associate' ? 'shared'
+  : ctx.consortium.stage !== 'live' ? (allowed('bid', ctx) ? 'bid' : 'hub')
   : ['master', 'programme', 'mine'].find((k) => allowed(k, ctx) && (k !== 'master' || ctx.manages)) || 'dashboard');
 // Shvft2.0 staff: administrators and anyone leading a consortium.
 const isConvenor = () => !!state.profile?.is_platform_admin || state.memberships.some((m) => m.role === 'lead');
@@ -114,6 +130,28 @@ function signInView(message) {
     });
   });
   $('#forgot').addEventListener('click', forgotView);
+}
+
+// The invitation link, before signing in: who invited them to what, then
+// set up an account (new) or sign in as the invited address (existing).
+async function inviteView(token) {
+  const { data: inv } = await db.rpc('invitation_info', { p_token: token });
+  const done = (msg) => { clearInvite(); history.replaceState(null, '', '/portal/'); signInView(msg); };
+  if (!inv) return done('That invitation link isn\'t valid. Ask the consortium lead for a new one.');
+  if (inv.status !== 'pending') return done(inv.status === 'expired' ? 'That invitation has expired. Ask the consortium lead to resend it.'
+    : inv.status === 'accepted' ? 'That invitation has been accepted. Sign in to continue.' : 'That invitation was cancelled. Ask the consortium lead for a new one.');
+  authCard(html`
+    <div><h1>You're invited</h1><p class="muted small" style="margin-top:6px">${inv.invited_by || 'The consortium lead'} has invited ${inv.full_name} to join
+      <strong>${inv.workspace}</strong>, as part of ${inv.organisation}.</p></div>
+    ${inv.message ? html`<blockquote class="src-quote">${inv.message}</blockquote>` : ''}
+    <p class="small muted">For ${inv.email_hint}. The link works until ${new Date(inv.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    ${inv.has_account ? html`<button class="btn" id="inv-signin">Sign in to accept</button>`
+      : html`<button class="btn" id="inv-new">Accept and set up your account</button><button class="linkbtn small" id="inv-signin" type="button">I already have an account</button>`}`);
+  $('#inv-signin').addEventListener('click', () => signInView(`Sign in as ${inv.email_hint} to accept the invitation to ${inv.workspace}.`));
+  $('#inv-new')?.addEventListener('click', (e) => act(e.currentTarget, async () => {
+    const res = await adminCall({ action: 'accept_new', token });
+    location.href = res.link;
+  }));
 }
 
 function forgotView() {
@@ -215,14 +253,21 @@ async function signOut() {
 
 async function boot(skipLink = false) {
   const { data: { session } } = await db.auth.getSession();
-  if (!session) return signInView(linkError ? decodeURIComponent(linkError.replace(/\+/g, ' ')) : null);
+  if (!session) return pendingInvite() && !linkError ? inviteView(pendingInvite()) : signInView(linkError ? decodeURIComponent(linkError.replace(/\+/g, ' ')) : null);
   if (!skipLink && linkType) return setPasswordView(linkType);
+  // Signed in with an invitation waiting: accept it as this person.
+  if (pendingInvite()) {
+    const { data: acc, error } = await db.rpc('accept_invitation', { p_token: pendingInvite() });
+    clearInvite();
+    history.replaceState(null, '', `/portal/${acc ? `#/c/${acc.consortium_id}` : location.hash}`);
+    if (error) toast(errorText(error), 'bad'); else toast('Invitation accepted. Welcome.');
+  }
 
   state.user = session.user;
   state.profile = must(await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle()) || {};
   applyTheme(state.profile.theme);
   state.memberships = must(await db.from('memberships')
-    .select('id, role, consortium_id, organisation_id, consortia(name, stage, bid_deadline), organisations(name)')
+    .select('id, role, onboarding, consortium_id, organisation_id, consortia(name, stage, bid_deadline), organisations(name)')
     .eq('user_id', session.user.id).eq('active', true));
 
   const needsMfa = state.profile.is_platform_admin || state.memberships.some((m) => PD_ROLES.includes(m.role));
@@ -241,10 +286,12 @@ async function loadCtx(consortiumId) {
   if (state.ctx?.consortium.id === consortiumId) return state.ctx;
   const consortium = must(await db.from('consortia').select('*').eq('id', consortiumId).maybeSingle());
   if (!consortium) return null;
-  const [orgs, sites] = await Promise.all([
+  const [allOrgs, sites] = await Promise.all([
     db.from('organisations').select('*').eq('consortium_id', consortiumId).order('name').then(must),
     db.from('sites').select('*').eq('consortium_id', consortiumId).order('name').then(must),
   ]);
+  // Organisations taken out of the workspace keep their names for old records.
+  const orgs = allOrgs.filter((o) => !o.removed_at);
   const m = state.memberships.find((x) => x.consortium_id === consortiumId);
   const isAdmin = !!state.profile.is_platform_admin;
   // Roles held on top of the main one (finance, org admin, ...).
@@ -256,7 +303,8 @@ async function loadCtx(consortiumId) {
     db.rpc('lw_my_shifts', { p_consortium: consortiumId }).then(({ data }) => data),
   ]);
   state.ctx = {
-    consortium, orgs, sites, isAdmin,
+    consortium, orgs, allOrgs, sites, isAdmin,
+    onboarding: !!m?.onboarding,
     user: state.user, profile: state.profile,
     role: m?.role || (isAdmin ? 'platform_admin' : null),
     extraRoles,
@@ -267,7 +315,7 @@ async function loadCtx(consortiumId) {
     seesAll: isAdmin || ['lead', 'accountable_body'].includes(m?.role),
     manages: isAdmin || m?.role === 'lead',
     hasPd: PD_ROLES.includes(m?.role),
-    org: (id) => orgs.find((o) => o.id === id),
+    org: (id) => allOrgs.find((o) => o.id === id),
     site: (id) => sites.find((s) => s.id === id),
     reload: async () => { state.ctx = null; await loadCtx(consortiumId); route(); },
   };
