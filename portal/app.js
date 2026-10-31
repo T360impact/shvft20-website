@@ -16,6 +16,7 @@ import bid from './views/bid.js';
 import library from './views/library.js';
 import targets from './views/targets.js';
 import progress from './views/progress.js';
+import lead from './views/lead.js';
 
 const app = $('#app');
 
@@ -45,6 +46,8 @@ const VIEWS = {
   returns: { label: 'Returns', short: 'Returns', icon: 'returns', mod: 'compliance', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
   risks: { label: 'Risks', short: 'Risks', icon: 'safeguarding', mod: 'compliance', view: risks, roles: ['lead', 'accountable_body', 'partner_manager', 'hub_worker'] },
   team: { label: 'People', short: 'Team', icon: 'people', mod: 'governance', view: team, roles: ['lead'] },
+  // The lead team's private area: its own sidebar section, never in the main list.
+  lw: { label: 'Lead Workspace', short: 'Lead', icon: 'governance', mod: 'brand', view: lead, roles: 'lw' },
 };
 
 // Administrators see every page except the delivery ones, which need an
@@ -55,6 +58,7 @@ const BID_VIEWS = ['bid', 'targets', 'hub', 'agreements', 'team'];
 const allowed = (key, ctx) => {
   const v = VIEWS[key];
   if (!v) return false;
+  if (key === 'lw') return !!(ctx.lw?.roles?.length || ctx.staffSelf);
   const stage = ctx.consortium.stage;
   if (stage !== 'live' && !BID_VIEWS.includes(key)) return false;
   if (stage === 'live' && key === 'bid' && !(ctx.seesAll && ctx.consortium.bid_deadline)) return false;
@@ -227,11 +231,19 @@ async function loadCtx(consortiumId) {
   const isAdmin = !!state.profile.is_platform_admin;
   // Roles held on top of the main one (finance, org admin, ...).
   const extraRoles = m ? must(await db.from('membership_roles').select('role').eq('membership_id', m.id)).map((r) => r.role) : [];
+  // Lead Workspace: roles held on the lead team (none for most people), and
+  // whether this person is on the staff list with their own shifts.
+  const [lwCtx, mine] = await Promise.all([
+    db.rpc('lw_context', { p_consortium: consortiumId }).then(({ data }) => data || { roles: [] }),
+    db.rpc('lw_my_shifts', { p_consortium: consortiumId }).then(({ data }) => data),
+  ]);
   state.ctx = {
     consortium, orgs, sites, isAdmin,
     user: state.user, profile: state.profile,
     role: m?.role || (isAdmin ? 'platform_admin' : null),
     extraRoles,
+    lw: lwCtx,
+    staffSelf: !!mine?.staff,
     orgId: m?.organisation_id || null,
     orgName: m?.organisations?.name || '',
     seesAll: isAdmin || ['lead', 'accountable_body'].includes(m?.role),
@@ -249,7 +261,13 @@ async function loadCtx(consortiumId) {
 // last consortium's pages so moving between them stays one tap.
 function shell(ctx, active) {
   const navCtx = ctx || state.ctx;
-  const pages = navCtx ? Object.entries(VIEWS).filter(([k]) => allowed(k, navCtx) && (k !== 'team' || navCtx.manages)) : [];
+  const pages = navCtx ? Object.entries(VIEWS).filter(([k]) => k !== 'lw' && allowed(k, navCtx) && (k !== 'team' || navCtx.manages)) : [];
+  // The Lead Workspace section, only for the lead team (or staff, for their shifts).
+  const lwSub = active === 'lw' ? (location.hash.split('/')[4] || 'week') : '';
+  const lwLinks = navCtx && allowed('lw', navCtx) ? (navCtx.lw?.roles?.length
+    ? [['week', 'This week', 'home'], ['operations', 'Operations', 'sessions'], ['consortium', 'Consortium', 'governance'], ['meetings', 'Meetings', 'people']]
+    : [['mine', 'My shifts', 'sessions']]) : [];
+  const lwNav = lwLinks.length ? html`<p class="side-group">Lead Workspace</p><ul>${lwLinks.map(([k, label, ic]) => html`<li><a href="#/c/${navCtx.consortium.id}/lw/${k}" class="m-brand" ${raw(lwSub === k ? 'aria-current="page"' : '')}>${raw(icon(ic, 20))}<span>${label}</span></a></li>`)}</ul>` : '';
   const link = ([k, v], short) => html`<a href="#/c/${navCtx.consortium.id}/${k}" class="m-${v.mod}" ${raw(active === k ? 'aria-current="page"' : '')}>
     ${raw(icon(v.icon, 20))}<span>${short ? v.short : v.label}</span></a>`;
   const homeLink = () => html`<a href="#/" class="m-brand" ${raw(active === 'home' ? 'aria-current="page"' : '')}>${raw(icon('home', 20))}<span>Home</span></a>`;
@@ -265,7 +283,7 @@ function shell(ctx, active) {
       <aside class="side">
         <a class="wordmark" href="#/">SHVFT<span class="two">2.0</span><small>Portal</small></a>
         ${where ? html`<p class="where">${where}</p>` : ''}
-        <nav aria-label="Portal"><ul><li>${homeLink()}</li>${pages.map((p) => html`<li>${link(p)}</li>`)}</ul></nav>
+        <nav aria-label="Portal"><ul><li>${homeLink()}</li>${pages.map((p) => html`<li>${link(p)}</li>`)}</ul>${lwNav}</nav>
         <div class="foot">${extras}<button type="button" data-signout>${raw(icon('logout', 20))}<span>Sign out</span></button></div>
       </aside>
       <div class="main-col">
@@ -276,6 +294,7 @@ function shell(ctx, active) {
         <button type="button" id="more" aria-haspopup="dialog">${raw(icon('more', 20))}<span>More</span></button></nav>
       <dialog class="more-sheet" id="more-sheet" aria-label="More pages"><ul>
         ${rest.map((p) => html`<li>${link(p)}</li>`)}
+        ${lwLinks.map(([k, label, ic]) => html`<li><a href="#/c/${navCtx.consortium.id}/lw/${k}">${raw(icon(ic, 20))}<span>${label}</span></a></li>`)}
         <li>${extras}</li>
         <li><button type="button" class="row" data-signout>${raw(icon('logout', 20))}<span>Sign out</span></button></li>
         <li><button type="button" class="row" data-close-sheet>${raw(icon('close', 20))}<span>Close</span></button></li></ul></dialog>

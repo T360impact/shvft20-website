@@ -274,11 +274,12 @@ export const toneBar = (parts) => {
 // a session. The signal carries no data; the page fetches what the viewer
 // may see. One listener at a time, dropped when the page changes.
 let liveChannel = null;
-export function live(consortiumId, onChange) {
+// The Lead Workspace listens on its own signal (lw_pings), which partners never receive.
+export function live(consortiumId, onChange, table = 'live_pings') {
   if (liveChannel) { db.removeChannel(liveChannel); liveChannel = null; }
   let timer;
   const ch = db.channel(`live:${consortiumId}:${crypto.randomUUID()}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'live_pings', filter: `consortium_id=eq.${consortiumId}` }, (payload) => {
+    .on('postgres_changes', { event: '*', schema: 'public', table, filter: `consortium_id=eq.${consortiumId}` }, (payload) => {
       clearTimeout(timer);
       timer = setTimeout(() => onChange(payload.new?.kind), 1200);
     })
