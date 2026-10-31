@@ -368,7 +368,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     const body = BODY[k]();
     if (!editing && (body == null || body === '')) return '';
     const hidden = draft.hidden.includes(k);
-    return html`<section class="dcard ${SIZE[k] || 'half'} ${k === 'stats' && !editing ? 'bare' : ''} ${editing && hidden ? 'is-hidden' : ''}" data-panel="${k}">
+    return html`<section class="dcard ${SIZE[k] || 'half'} ${k === 'stats' && !editing ? 'bare' : ''} ${k === 'score' ? 'feature' : ''} ${editing && hidden ? 'is-hidden' : ''}" data-panel="${k}">
       ${editing ? html`<div class="panel-tools" role="group" aria-label="${PANELS[k]} panel">
         <button type="button" class="icon-btn" data-move="-1" ${i === 0 ? 'disabled' : ''} aria-label="Move ${PANELS[k]} up"><span aria-hidden="true">↑</span></button>
         <button type="button" class="icon-btn" data-move="1" ${i === keys.length - 1 ? 'disabled' : ''} aria-label="Move ${PANELS[k]} down"><span aria-hidden="true">↓</span></button>

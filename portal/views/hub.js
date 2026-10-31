@@ -47,7 +47,7 @@ export default async function hub(ctx, el, [sub]) {
   const themes = [...new Set(outcomes.map((o) => o.theme || 'Outcomes'))];
   const unmeasured = outcomes.filter((o) => !o.method).length;
   const withResults = outcomes.filter((o) => o.reported).length;
-  render(el, html`
+  render(el, html`<div class="summary-page">
     <div class="page-head"><div><span class="eyebrow">${isBid ? 'Bid summary' : 'Consortium summary'}</span><h1>${w.name}</h1>
       <p class="meta-line">${[sum.funder_name || w.funder, sum.programme_name || w.programme].filter(Boolean).join(' · ')}</p>
       <p class="meta-line">${[sum.area_served, sum.age_range ? `Ages ${sum.age_range}` : `Ages ${w.min_age} to ${w.max_age}`, start ? `${fmtDate(start)} to ${fmtDate(end)}` : ''].filter(Boolean).join(' · ')}</p>
@@ -72,7 +72,7 @@ export default async function hub(ctx, el, [sub]) {
           ${o.contact ? html`<p class="small muted" style="margin-top:4px">${o.contact.name}, ${(ROLE_LABEL[o.contact.role] || o.contact.role).toLowerCase()}</p>` : ''}</div></li>`;
       })}</ul></section>
 
-    <section class="sec"><div class="sec-head"><span class="eyebrow">Outcomes</span><h2 class="display">What we are measuring</h2>
+    <section class="sec bare"><div class="sec-head"><span class="eyebrow">Outcomes</span><h2 class="display">What we are measuring</h2>
       <p>${outcomes.length ? `${outcomes.length} outcome${outcomes.length === 1 ? '' : 's'} across ${themes.length} theme${themes.length === 1 ? '' : 's'}` : 'No outcome framework agreed yet.'}</p>
       ${withResults ? html`<p class="muted small">${withResults} of ${outcomes.length} outcomes have progress reported</p>` : ''}</div>
       ${s.editable && unmeasured ? html`<div class="lead-banner"><span><strong>${unmeasured} outcome${unmeasured === 1 ? ' needs' : 's need'} a measurement method.</strong> Only you can see this.</span>
@@ -118,7 +118,7 @@ export default async function hub(ctx, el, [sub]) {
       ${s.documents.length ? html`<div><div class="sec-head"><h2>Key documents</h2></div><ul class="rows">${s.documents.map((d) => {
         const f = docs.find((x) => x.id === d.id);
         return html`<li>${f?.storage_path ? html`<button class="linkbtn" data-path="${f.storage_path}">${d.title}</button>` : d.title} <span class="muted">· ${DOC_KIND[d.kind] || 'Document'}</span></li>`;
-      })}</ul></div>` : ''}</section>` : ''}`);
+      })}</ul></div>` : ''}</section>` : ''}</div>`);
 
   $$('[data-path]').forEach((b) => b.addEventListener('click', () => openFile(b, 'documents', b.dataset.path)));
   // An outcome's details: wording, who delivers it, how it is measured, results.

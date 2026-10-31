@@ -747,3 +747,75 @@ details.wording > p { color: var(--text-2); font-size: 14px; }
 @media (max-width: 899px) { .rows.two-up { grid-template-columns: minmax(0, 1fr); } .rows.two-up > li:nth-child(2) { border-top: 1px solid var(--border); } }
 .dcard.half .org-bar { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
 .dcard.half .org-bar .track { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+
+/* ------------------------------------------------------------------
+   Card system (after the Bankio, Vizora and Deskboard references):
+   a light grey page, white rounded cards, KPI cards with a small icon
+   tile and a change chip, tables with a solid navy header row, a white
+   sidebar whose active item is a solid navy pill, and one navy feature
+   card per page. Navy and green stay the website's own. */
+:root { --surface-muted: #f2f3f0; --radius-card: 16px; --card-line: #e6e7e3; --table-head: var(--navy); --on-table-head: #ffffff; --feature: var(--navy); }
+:root[data-theme="dark"] { --card-line: #273149; --table-head: #1d2638; --on-table-head: #eef0f2; --feature: #1d2638; }
+
+/* Sidebar: white, active item a navy pill */
+.side { background: var(--surface); border-right-color: var(--card-line); }
+.side nav a { border-radius: 10px; }
+.side nav a[aria-current="page"] { background: var(--navy); color: #ffffff; font-weight: 600; }
+.side nav a[aria-current="page"] .icon { color: #ffffff; }
+.side nav a[aria-current="page"]::after { content: none; }
+:root[data-theme="dark"] .side nav a[aria-current="page"] { background: #eef0f2; color: #111a2c; }
+:root[data-theme="dark"] .side nav a[aria-current="page"] .icon { color: #111a2c; }
+
+/* Cards */
+.panel, .dcard, .stat, .theme-panel, .clock, .ed-card, .edit-bar { border-radius: var(--radius-card); border-color: var(--card-line); box-shadow: none; }
+.panel { padding: var(--s6); }
+.panel[class*="m-"] { border-top: 1px solid var(--card-line); }
+.panel > h2, .panel header h2 { font-size: 17px; font-weight: 600; }
+.dcard.bare { border: 0; }
+
+/* KPI cards: label, big figure, change chip, small icon tile top right */
+.stat { display: flex; flex-direction: column; gap: var(--s2); padding: var(--s5); padding-right: 60px; min-height: 132px; }
+.stat > span { order: 1; font-size: 13px; color: var(--text-2); }
+.stat b { order: 2; font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.stat .trend { order: 3; align-self: flex-start; margin-top: auto; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.6; }
+.stat .trend.green { background: var(--green-tint); color: var(--green-text); }
+.stat .trend.amber { background: var(--amber-tint); color: var(--amber-text); }
+.stat .trend.red { background: var(--red-tint); color: var(--red-text); }
+.stat .trend.grey { background: var(--grey-tint); color: var(--grey-text); }
+.stat .trend .icon { display: inline-block; width: 12px; height: 12px; }
+.stat .stat-icon { display: inline-grid; position: absolute; top: var(--s4); right: var(--s4); width: 34px; height: 34px; margin: 0; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--card-line); color: var(--text); }
+.stat .stat-icon .icon { width: 18px; height: 18px; }
+@media (max-width: 640px) { .stat { min-height: 0; padding: var(--s4); padding-right: 52px; } .stat b { font-size: 24px; } .stat .stat-icon { top: var(--s3); right: var(--s3); width: 30px; height: 30px; } }
+
+/* Tables: a solid navy header row with rounded ends */
+table:not(.matrix) thead th { background: var(--table-head); color: var(--on-table-head); border-bottom: 0; padding: var(--s3); font-size: 12px; letter-spacing: .02em; }
+table:not(.matrix) thead th:first-child { border-radius: 10px 0 0 10px; }
+table:not(.matrix) thead th:last-child { border-radius: 0 10px 10px 0; }
+table:not(.matrix) thead tr { box-shadow: none; }
+tbody tr:hover td { background: transparent; }
+tr.clickable:hover td { background: var(--surface-muted); }
+
+/* One navy feature card per page */
+.dcard.feature, .panel.feature { background: var(--feature); border-color: transparent; color: var(--on-navy); }
+.feature h2, .feature h3, .feature strong, .feature .figure { color: var(--on-navy); }
+.feature .muted, .feature .dcard-head p, .feature p.muted { color: var(--on-navy-2); }
+.feature .slim { background: rgb(255 255 255 / .16); }
+.feature .ring circle:first-child { stroke: rgb(255 255 255 / .16) !important; }
+.feature .ring-label b, .feature .ring-label span { color: var(--on-navy); }
+.feature .theme-bars li { color: var(--on-navy); }
+
+/* The Summary's sections become cards; the outcome themes keep their own cards */
+.summary-page > .sec { background: var(--surface); border: 1px solid var(--card-line); border-radius: var(--radius-card); padding: var(--s6); margin-top: var(--s6); }
+.summary-page > .sec.bare { background: none; border: 0; padding: 0; margin-top: var(--s7); }
+.summary-page > .sec.two-col > div > .sec-head { margin-bottom: var(--s3); }
+@media (max-width: 640px) { .summary-page > .sec { padding: var(--s5); } }
+/* KPI cards: three to a row on most screens so the change chip fits on one line */
+.stats-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (min-width: 1680px) { .stats-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .stats-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { padding-right: var(--s5); min-height: 0; }
+.stat > span { padding-right: 44px; }
+.stat .trend { border-radius: 10px; max-width: 100%; }
+@media (max-width: 640px) { .stat { padding-right: var(--s4); } .stat > span { padding-right: 36px; } }
+.stat .stat-icon { padding: 0; order: 0; }
