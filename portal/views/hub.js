@@ -4,15 +4,16 @@
 // edits a draft and publishes it; everyone else sees the published version.
 // The lead's edit view also keeps the workspace's records: organisations,
 // sites, key dates, outcomes and details.
-import { db, html, raw, render, $, $$, formData, toast, act, must, icon, pill, emptyState, openFile, fmtDate, fmtNum, KIND_LABEL, ROLE_LABEL, today } from '../lib.js';
-import { chart, donut, initials } from '../charts.js';
+import { db, html, raw, render, $, $$, formData, toast, act, must, icon, pill, emptyState, openFile, headline, fmtDate, fmtNum, KIND_LABEL, ROLE_LABEL, today } from '../lib.js';
+import { initials } from '../charts.js';
 
 // How an outcome is evidenced, read from the document's own evidence text.
 const METHOD = [
   [/survey|scale|self[- ]?report|questionnaire|pre and post|warwick|ucla/i, 'Survey', 'surveys', 'surveys'],
   [/register|attendance|session log|logs|records|registration/i, 'Session data', 'attendance', 'delivery'],
 ];
-const methodOf = (evidence) => METHOD.find(([re]) => re.test(evidence || '')) || [null, 'Form', 'requirements', 'compliance'];
+const methodOf = (evidence) => (evidence ? METHOD.find(([re]) => re.test(evidence)) || [null, 'Form', 'requirements', 'compliance'] : [null, 'Unknown']);
+const METHOD_TEXT = { Survey: 'Survey', 'Session data': 'Session data', Form: 'Monitoring form', Unknown: 'Method not set' };
 const lines = (v) => (v || '').split('\n').map((s) => s.trim()).filter(Boolean);
 const firstSentence = (s) => (s || '').split(/(?<=\.)\s/)[0];
 const DOC_KIND = { delivery_model: 'Delivery model', monitoring_framework: 'Outcome framework', consortium_agreement: 'Consortium agreement', policy: 'Policy', other: 'Document' };
@@ -35,80 +36,76 @@ export default async function hub(ctx, el, [sub]) {
   const isBid = w.stage !== 'live';
   const start = sum.start_date || w.start_date;
   const end = sum.end_date || w.end_date;
-  const chip = (ic, text) => (text ? html`<span class="chip">${raw(icon(ic, 16))}${text}</span>` : '');
-  const reported = s.outcomes.filter((o) => o.reported);
+  // Outcomes grouped under their themes, in the framework's order.
+  const outcomes = [...s.outcomes].sort((a, b) => a.code.localeCompare(b.code));
+  const themes = [...new Set(outcomes.map((o) => o.theme || 'Outcomes'))];
+  const reported = outcomes.filter((o) => o.reported);
+  const outcomeRow = (o) => {
+    const short = o.headline || headline(o.label);
+    const pct = o.reported && o.target ? (100 * o.actual) / o.target : null;
+    return html`<li class="row">
+      <div>${short !== o.label ? html`<details class="wording"><summary>${short}</summary><p>${o.label}</p></details>` : html`<span>${o.label}</span>`}
+        <span class="muted">${[METHOD_TEXT[methodOf(o.evidence)[1]], o.section].filter(Boolean).join(' · ')}</span>
+        ${o.evidence ? html`<details class="wording"><summary class="small muted" style="text-decoration:underline">How it's measured</summary><p>${o.evidence}</p></details>` : ''}</div>
+      <div class="row-end">${pct != null ? html`<span class="figure"><span>${fmtNum(o.actual)} of ${fmtNum(o.target)}</span><strong>${fmtNum(Math.round(pct))}%</strong></span>
+        <span class="slim" role="img" aria-label="${fmtNum(Math.round(pct))}% of the target"><span style="width:${Math.min(100, pct)}%"></span></span>`
+        : html`<span class="not-yet">${o.target != null ? `Target ${fmtNum(o.target)} · not yet reported` : 'Not yet reported'}</span>`}</div></li>`;
+  };
 
   render(el, html`
-    <section class="hero panel m-brand">
-      <span class="eyebrow m-governance">${raw(icon('partners', 16))}${isBid ? 'Bid summary' : 'Consortium summary'}</span>
-      <h1>${w.name}</h1>
-      <p class="hero-sub">${[sum.funder_name || w.funder, sum.programme_name || w.programme].filter(Boolean).join(' · ')}</p>
-      <div class="chips">${chip('sites', sum.area_served)}${chip('youngPeople', sum.age_range || `Ages ${w.min_age} to ${w.max_age}`)}
-        ${start ? chip('sessions', `${fmtDate(start)} to ${fmtDate(end)}`) : ''}</div>
-      ${sum.purpose ? html`<p class="hero-purpose">${firstSentence(sum.purpose)}</p>` : ''}
-      ${s.editable ? html`<div class="hero-actions">
-        ${s.published ? (s.draft_changed ? pill('amber', `Unpublished changes · version ${s.version} is live`, 'due') : pill('green', `Published · version ${s.version}`, 'approved')) : pill('grey', 'Draft · not published', 'waiting')}
-        <div class="btns"><a class="btn secondary" href="#/c/${c.id}/hub/edit">${raw(icon('bids', 18))}Edit</a>
-          ${s.summary && (!s.published || s.draft_changed) ? html`<button class="btn" id="publish">${raw(icon('submitted', 18))}Publish</button>` : ''}</div></div>` : ''}
-    </section>
-    ${!s.summary ? html`<div class="banner info" style="margin-top:24px">${raw(icon('info', 20))}<span>${s.editable
-      ? 'Start the summary from what the bid already holds, then edit and publish it.' : 'The lead hasn\'t published the summary yet. Partners, sites and outcomes below are live.'}</span></div>` : ''}
+    <div class="page-head"><div><span class="eyebrow">${isBid ? 'Bid summary' : 'Consortium summary'}</span><h1>${w.name}</h1>
+      <p class="meta-line">${[sum.funder_name || w.funder, sum.programme_name || w.programme].filter(Boolean).join(' · ')}</p>
+      <p class="meta-line">${[sum.area_served, sum.age_range ? `Ages ${sum.age_range}` : `Ages ${w.min_age} to ${w.max_age}`, start ? `${fmtDate(start)} to ${fmtDate(end)}` : ''].filter(Boolean).join(' · ')}</p>
+      ${sum.purpose ? html`<p class="lead-para">${firstSentence(sum.purpose)}</p>` : ''}</div>
+      ${s.editable ? html`<div class="btns" style="align-items:center">
+        ${s.published ? (s.draft_changed ? pill('amber', `Unpublished changes`, 'due') : pill('green', `Published · version ${s.version}`, 'approved')) : pill('grey', 'Draft', 'waiting')}
+        <a class="btn secondary" href="#/c/${c.id}/hub/edit">Edit</a>
+        ${s.summary && (!s.published || s.draft_changed) ? html`<button class="btn" id="publish">${raw(icon('submitted', 16))}Publish</button>` : ''}</div>` : ''}</div>
+    ${!s.summary ? html`<p class="note">${s.editable ? 'Start the summary from what the bid already holds, then edit and publish it.' : 'The lead hasn\'t published the summary yet. Partners, sites and outcomes below are live.'}</p>` : ''}
 
-    ${sum.purpose || sum.aims?.length ? html`<div class="section"><h2>About the project</h2><div class="grid2">
-      <section class="panel m-brand"><h2>${raw(icon('info', 20))}Purpose</h2><p>${sum.purpose}</p></section>
-      ${sum.aims?.length ? html`<section class="panel m-brand"><h2>${raw(icon('targets', 20))}Aims</h2>
-        <ul class="statements">${sum.aims.map((a) => html`<li>${raw(icon('check', 18))}<span>${a}</span></li>`)}</ul></section>` : ''}</div></div>` : ''}
+    ${sum.purpose || sum.aims?.length ? html`<section class="sec"><div class="sec-head"><h2>About the project</h2></div>
+      <div class="two-col"><p>${sum.purpose}</p>
+        ${sum.aims?.length ? html`<div><p class="muted" style="margin-bottom:8px">Aims</p><ul class="plain">${sum.aims.map((a) => html`<li>${a}</li>`)}</ul></div>` : ''}</div></section>` : ''}
 
-    <div class="section"><h2>Partners</h2><div class="tiles">${orgs.map((o) => {
-      const r = roleOf(o);
-      return html`<article class="panel partner m-governance">
-        <header><span class="avatar" aria-hidden="true">${initials(o.name)}</span><div style="min-width:0"><h3>${o.name}</h3>${pill('blue', r?.role_title || o.default_role, 'partners')}</div></header>
-        ${r?.responsibilities?.length ? html`<ul class="statements small">${r.responsibilities.map((x) => html`<li>${raw(icon('chevron', 16))}<span>${x}</span></li>`)}</ul>` : ''}
-        ${o.contact ? html`<p class="small muted contact">${raw(icon('people', 16))}${o.contact.name} · ${ROLE_LABEL[o.contact.role] || o.contact.role}</p>` : ''}</article>`;
-    })}</div></div>
+    <section class="sec"><div class="sec-head"><h2>Partners</h2><p>Who is in the partnership and what each organisation does.</p></div>
+      <ul class="people">${orgs.map((o) => {
+        const r = roleOf(o);
+        return html`<li><span class="avatar-sm" aria-hidden="true">${initials(o.name)}</span><div style="min-width:0">
+          <strong>${o.name}</strong><span class="muted small">${r?.role_title || o.default_role}</span>
+          ${r?.responsibilities?.length ? html`<ul class="plain small" style="margin-top:6px">${r.responsibilities.map((x) => html`<li>${x}</li>`)}</ul>` : ''}
+          ${o.contact ? html`<p class="small muted" style="margin-top:4px">${o.contact.name}, ${(ROLE_LABEL[o.contact.role] || o.contact.role).toLowerCase()}</p>` : ''}</div></li>`;
+      })}</ul></section>
 
-    <div class="section"><header><h2>What we are measuring</h2>${s.outcomes.length ? html`<span class="small muted">${reported.length ? `${reported.length} of ${s.outcomes.length} outcomes have progress reported` : 'No progress reported yet'}</span>` : ''}</header>
-      ${s.outcomes.length ? html`<div class="tiles">${s.outcomes.map((o) => {
-        const [, method, ic, mod] = methodOf(o.evidence);
-        const pct = o.reported && o.target ? (100 * o.actual) / o.target : null;
-        return html`<article class="panel outcome m-${mod}"><header><span class="stat-icon">${raw(icon(ic, 20))}</span><h3>${o.label}</h3></header>
-          <p class="small" style="display:flex;flex-wrap:wrap;gap:8px">${pill('grey', method, ic)}${o.section ? html`<span class="small muted">${o.section}</span>` : ''}</p>
-          ${o.target != null ? html`<div class="hbar"><span class="lbl small muted">${o.reported ? `${fmtNum(o.actual)} of ${fmtNum(o.target)}` : `Target ${fmtNum(o.target)} over the programme`}</span>
-            <span class="val">${pct != null ? `${fmtNum(Math.round(pct))}%` : ''}</span>
-            ${pct != null ? html`<span class="track fill-green" aria-hidden="true"><span style="width:${Math.min(100, pct)}%"></span></span>` : ''}</div>` : ''}
-          ${o.evidence ? html`<details class="learn"><summary>${raw(icon('info', 16))}How it's measured</summary><p>${o.evidence}</p></details>` : ''}</article>`;
-      })}</div>` : html`<section class="panel">${emptyState('outcomes', 'No outcome framework agreed yet.', '', 'surveys')}</section>`}</div>
+    <section class="sec"><div class="sec-head split-head"><div><h2>What we are measuring</h2>
+      <p>${outcomes.length ? `${outcomes.length} outcomes${reported.length ? `, ${reported.length} with progress reported` : ', none reported yet'}.` : 'No outcome framework agreed yet.'}</p></div></div>
+      ${themes.map((t) => html`<div style="margin-top:24px"><h3 style="margin-bottom:4px">${t}</h3>
+        <ul class="rows">${outcomes.filter((o) => (o.theme || 'Outcomes') === t).map(outcomeRow)}</ul></div>`)}</section>
 
-    <div class="section"><h2>Delivery</h2>
-      ${sum.delivery_overview ? html`<p style="margin-bottom:24px">${sum.delivery_overview}</p>` : ''}
-      <div class="grid2 split" style="grid-template-columns:minmax(0,3fr) minmax(0,2fr)">
-        <section class="panel m-delivery"><h2>${raw(icon('sites', 20))}Sites</h2>
-          ${s.sites.length ? html`<ul class="sites">${s.sites.map((x) => html`<li><span class="pin">${raw(icon('sites', 20))}</span><div>
-            <strong>${x.name}</strong>${x.organisation ? html` <span class="small muted">· ${x.organisation}</span>` : ''}
-            ${x.days ? html`<br><span class="small">${raw(icon('sessions', 14))} ${x.days}</span>` : ''}${x.notes ? html`<br><span class="small muted">${x.notes}</span>` : ''}</div></li>`)}</ul>`
-          : emptyState('sites', 'No sites added yet.', '', 'delivery')}</section>
-        <section class="panel m-surveys"><h2>${raw(icon('targets', 20))}Targeted share</h2>
-          ${share == null ? emptyState('youngPeople', 'Nothing reported yet.', '', 'surveys')
-          : chart(min == null ? `${fmtNum(share)}% of young people are from targeted groups.` : share >= min ? `${fmtNum(share)}%, at or above the ${fmtNum(min)}% minimum.` : `${fmtNum(share)}%, below the ${fmtNum(min)}% minimum.`,
-            'Targeted against universal. The tick is the funder\'s minimum.', donut(share, { size: 150, marker: min, label: 'targeted' }))}
-          ${w.targeted_criteria?.length ? html`<details class="learn" style="margin-top:16px"><summary>${raw(icon('info', 16))}Who counts as targeted</summary>
-            <ul class="statements small">${w.targeted_criteria.map((t) => html`<li>${raw(icon('chevron', 16))}<span>${t}</span></li>`)}</ul></details>` : ''}</section>
-      </div></div>
+    <section class="sec"><div class="sec-head"><h2>Delivery</h2>${sum.delivery_overview ? html`<p>${sum.delivery_overview}</p>` : ''}</div>
+      <div class="two-col">
+        <div><h3 style="margin-bottom:4px">Sites</h3>
+          ${s.sites.length ? html`<ul class="rows">${s.sites.map((x) => html`<li><strong>${x.name}</strong>${x.organisation ? html` <span class="muted">· ${x.organisation}</span>` : ''}
+            ${x.days || x.notes ? html`<div class="muted">${[x.days, x.notes].filter(Boolean).join(' · ')}</div>` : ''}</li>`)}</ul>` : html`<p class="not-yet">No sites added yet.</p>`}</div>
+        <div><h3 style="margin-bottom:4px">Targeted share</h3>
+          ${share == null ? html`<p class="not-yet" style="padding-top:20px">Not yet reported${min != null ? `. The funder's minimum is ${fmtNum(min)}%.` : '.'}</p>`
+          : html`<div style="padding-top:20px"><div class="figure" style="display:flex;justify-content:space-between;align-items:baseline"><strong style="font:400 30px/1 var(--display)">${fmtNum(share)}%</strong>
+              ${min != null ? (share >= min ? pill('green', `At or above ${fmtNum(min)}%`, 'approved') : pill('amber', `Below ${fmtNum(min)}%`, 'overdue')) : ''}</div>
+            <span class="slim" style="margin-top:12px" role="img" aria-label="${fmtNum(share)}% targeted${min != null ? `, minimum ${fmtNum(min)}%` : ''}"><span style="width:${Math.min(100, share)}%"></span>${min != null ? html`<i style="left:${min}%"></i>` : ''}</span>
+            <p class="muted small" style="margin-top:8px">Share of young people from targeted groups${min != null ? '; the mark is the funder\'s minimum' : ''}.</p></div>`}
+          ${w.targeted_criteria?.length ? html`<details class="wording" style="margin-top:16px"><summary class="small muted">Who counts as targeted</summary>
+            <ul class="plain small">${w.targeted_criteria.map((t) => html`<li>${t}</li>`)}</ul></details>` : ''}</div>
+      </div></section>
 
-    ${sum.youth_voice_mechanism || sum.governance?.length ? html`<div class="section grid2">
-      ${sum.youth_voice_mechanism ? html`<section class="panel m-surveys"><h2>${raw(icon('surveys', 20))}Youth voice</h2><p>${sum.youth_voice_mechanism}</p></section>` : ''}
-      ${sum.governance?.length ? html`<section class="panel m-governance"><h2>${raw(icon('governance', 20))}Governance</h2>
-        <ul class="statements">${sum.governance.map((g) => html`<li>${raw(icon('check', 18))}<span>${g}</span></li>`)}</ul></section>` : ''}</div>` : ''}
+    ${sum.youth_voice_mechanism || sum.governance?.length ? html`<section class="sec two-col">
+      ${sum.youth_voice_mechanism ? html`<div><div class="sec-head"><h2>Youth voice</h2></div><p>${sum.youth_voice_mechanism}</p></div>` : ''}
+      ${sum.governance?.length ? html`<div><div class="sec-head"><h2>Governance</h2></div><ul class="plain">${sum.governance.map((g) => html`<li>${g}</li>`)}</ul></div>` : ''}</section>` : ''}
 
-    ${dates.length || s.documents.length ? html`<div class="section grid2">
-      ${dates.length ? html`<section class="panel m-compliance"><h2>${raw(icon('expiry', 20))}Key dates</h2>
-        <ul class="statements">${dates.map((d) => html`<li>${raw(icon('sessions', 18))}<span><strong>${fmtDate(d.due_on)}</strong> ${d.title}</span></li>`)}</ul></section>` : ''}
-      ${s.documents.length ? html`<section class="panel m-governance"><h2>${raw(icon('bids', 20))}Key documents</h2>
-        <ul class="statements">${s.documents.map((d) => {
-          const f = docs.find((x) => x.id === d.id);
-          return html`<li>${raw(icon('bids', 18))}<span>${f?.storage_path ? html`<button class="linkbtn" data-path="${f.storage_path}">${d.title}</button>` : d.title}
-            <span class="small muted">· ${DOC_KIND[d.kind] || 'Document'}</span></span></li>`;
-        })}</ul></section>` : ''}</div>` : ''}`);
+    ${dates.length || s.documents.length ? html`<section class="sec two-col">
+      ${dates.length ? html`<div><div class="sec-head"><h2>Key dates</h2></div><ul class="rows">${dates.map((d) => html`<li class="row" style="grid-template-columns:minmax(0,1fr) auto"><span>${d.title}</span><span class="muted nowrap">${fmtDate(d.due_on)}</span></li>`)}</ul></div>` : ''}
+      ${s.documents.length ? html`<div><div class="sec-head"><h2>Key documents</h2></div><ul class="rows">${s.documents.map((d) => {
+        const f = docs.find((x) => x.id === d.id);
+        return html`<li>${f?.storage_path ? html`<button class="linkbtn" data-path="${f.storage_path}">${d.title}</button>` : d.title} <span class="muted">· ${DOC_KIND[d.kind] || 'Document'}</span></li>`;
+      })}</ul></div>` : ''}</section>` : ''}`);
 
   $$('[data-path]').forEach((b) => b.addEventListener('click', () => openFile(b, 'documents', b.dataset.path)));
   $('#publish')?.addEventListener('click', (e) => act(e.currentTarget, async () => {

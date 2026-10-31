@@ -157,6 +157,20 @@ const STATUS = {
 };
 export const statusPill = (s) => { const [tone, text, ic] = STATUS[s] || ['grey', s, 'info']; return pill(tone, text, ic); };
 
+// A short headline for a long funder statement: the wording without its
+// "Number of young people that ..." preamble, brackets or "as a result of
+// this funding", eight words at most. The full wording stays available.
+export function headline(label, max = 8) {
+  let s = String(label || '').replace(/\s*\([^)]*\)/g, '')
+    .replace(/^(the )?(%|percentage) of (unique )?young people/i, 'Share of young people')
+    .replace(/^(the )?(total )?number of (unique )?young people (that|who) (report |have )?/i, '')
+    .replace(/^(the )?(total )?number of (unique )?young people/i, 'Young people')
+    .replace(/\s+(as a result of|through|as part of) this funding/gi, '').trim();
+  s = s.charAt(0).toUpperCase() + s.slice(1);
+  const words = s.split(/\s+/);
+  return words.length > max ? `${words.slice(0, max).join(' ')}…` : s;
+}
+
 // A due date as a pill: overdue in red, within a week in amber, later in blue.
 export const duePill = (d, status) => {
   if (!d) return '';

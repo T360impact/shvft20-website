@@ -49,7 +49,7 @@ export default async function home(main, state) {
     <p class="small muted" style="margin-top:8px">${ROLE_LABEL[c.role]}${c.org ? ` · ${c.org}` : ''}</p></a>`;
 
   render(main, html`
-    <div class="page-head"><div><h1>${hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}${first ? `, ${first}` : ''}</h1>
+    <div class="page-head"><div><h1>${hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}${first ? html`, <span class="grad">${first}</span>` : ''}</h1>
       <p>${due ? `You have ${due} thing${due === 1 ? '' : 's'} to do.` : 'Nothing needs you right now.'}</p></div></div>
 
     ${due ? html`<div class="grid3">${Object.entries(tasks).filter(([, t]) => t.length).map(([k, t]) => html`

@@ -1,61 +1,76 @@
-/* Consortium Portal. Calm and clear: one font, a fixed spacing scale, deep
-   teal for the brand, a colour for each module, and every status as a
-   tinted pill with an icon. All values come from the tokens below; nothing
-   in a component is hard coded. */
+/* Consortium Portal. The same design system as shvft20.org: warm off-white
+   page, white panels with a hairline border, navy as the anchor colour,
+   green for progress only, and the site's gradient in exactly three places
+   (the "2.0", one word in the Home heading, the active nav underline).
+   Status colours appear only inside small pills. Values are the website's
+   own (website/styles.css); nothing in a component is hard coded. */
 
 :root {
-  /* Brand */
-  --brand: #0F5C5C;            /* nav, primary buttons, heading accents */
-  --brand-hover: #0B4848;
-  --brand-text: #0F5C5C;       /* brand as text or links */
-  --brand-tint: #E4EFEE;
-  --on-brand: #FFFFFF;
-  --highlight: #F2A33A;        /* highlights, key numbers' underline, active tab */
-  --highlight-tint: #FDF0DC;
+  /* From the website */
+  --navy: #111a2c;             /* site --ink: text, primary buttons, active nav */
+  --navy-2: #1a2438;           /* site --ink-2: hover, the one feature band */
+  --paper: #fafaf8;            /* site page background */
+  --paper-2: #f1f1ee;          /* site muted surface */
+  --hairline: #dfe1e4;         /* site --rule */
+  --slate: #4f5a6c;            /* site secondary text */
+  --slate-light: #8a94a6;
+  --progress: #1fb57a;         /* site readiness green: progress bars, rings, positive trends */
+  --progress-text: #12764f;    /* the site's green for text on white */
+  --journey: linear-gradient(90deg, #1fb57a, #7b4df5 52%, #f2702e);   /* site gradient */
+  --on-navy: #fafaf8; --on-navy-2: #c3c9d4; --on-navy-up: #6fe0ae; --on-navy-down: #f6b3ac;   /* text on the navy band */
 
-  /* Surfaces and text */
-  --surface: #FFFFFF;
-  --surface-muted: #F6F7F5;
-  --surface-raised: #FFFFFF;
-  --border: #E3E6E1;
-  --text: #1B1F1E;
-  --text-2: #5C6461;
-  --focus: #2D6CDF;
+  /* Roles */
+  --brand: var(--navy);
+  --brand-hover: var(--navy-2);
+  --brand-text: var(--navy);
+  --brand-tint: var(--paper-2);
+  --on-brand: #ffffff;
+  --highlight: var(--progress);
+  --highlight-tint: var(--paper-2);
+  --surface: #ffffff;
+  --surface-muted: var(--paper);
+  --surface-raised: #ffffff;
+  --border: var(--hairline);
+  --text: var(--navy);
+  --text-2: var(--slate);
+  --focus: var(--navy);
+  --track: #e9eae6;
 
-  /* Status: the colour for icons, bars and borders; a darker shade for text
-     on the tint, so every pill meets WCAG AA (4.5:1). */
-  --green: #2E8B57;  --green-tint: #E6F4EC;  --green-text: #1E6B42;
-  --amber: #D98E04;  --amber-tint: #FDF3DD;  --amber-text: #8A5A00;
-  --red: #C8372D;    --red-tint: #FBE7E5;    --red-text: #A82C23;
-  --blue: #2D6CDF;   --blue-tint: #E7EFFC;   --blue-text: #1F55B8;
-  --grey: #8A928F;   --grey-tint: #EEF0EE;   --grey-text: #4E5654;
-  --on-status: #FFFFFF;        /* text on a solid status colour */
-  --on-amber: #1B1F1E;
-  --qr-paper: #FFFFFF;         /* QR codes stay black on white in both themes */
-  /* Solid chart segments that carry a number: AA for small text */
-  --seg-approved: #1E6B42; --seg-submitted: #1F55B8; --seg-returned: #D98E04; --seg-requested: #4E5654;
-  --on-seg: #FFFFFF; --on-seg-returned: #1B1F1E;
+  /* Status: only inside small pills. The colour for the icon, a darker
+     shade for text on the tint, so every pill meets WCAG AA. */
+  --green: #1fb57a;  --green-tint: #e5f5ee;  --green-text: #12764f;
+  --amber: #d98e04;  --amber-tint: #fdf3dd;  --amber-text: #8a5a00;
+  --red: #c8372d;    --red-tint: #fbe7e5;    --red-text: #a82c23;
+  --blue: #2d6cdf;   --blue-tint: #e7effc;   --blue-text: #1f55b8;
+  --grey: #8a94a6;   --grey-tint: #eef0f2;   --grey-text: #4f5a6c;
+  --on-status: #ffffff;
+  --on-amber: #111a2c;
+  --qr-paper: #ffffff;
+  --seg-approved: #12764f; --seg-submitted: #1f55b8; --seg-returned: #d98e04; --seg-requested: #4f5a6c;
+  --on-seg: #ffffff; --on-seg-returned: #111a2c;
 
-  /* Module accents: icons, card top borders, chart series */
-  --m-bids: #6A4FB3;
-  --m-delivery: #0F8A8A;
-  --m-finance: #2E8B57;
-  --m-surveys: #E07A2F;
-  --m-evidence: #C2457A;
-  --m-compliance: #2D6CDF;
-  --m-governance: #5C6461;
+  /* Modules no longer carry their own colours: one system, one anchor. */
+  --m-bids: var(--slate); --m-delivery: var(--slate); --m-finance: var(--slate); --m-surveys: var(--slate);
+  --m-evidence: var(--slate); --m-compliance: var(--slate); --m-governance: var(--slate);
+  /* Chart series: navy first, then the site's green. */
+  --series-1: var(--navy); --series-2: var(--progress);
 
-  /* Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64 */
+  /* Spacing: 4, 8, 12, 16, 20, 24, 32, 48, 64 */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
-  --page-pad: var(--s6);
-  --card-pad: var(--s5);
-  --radius-card: 12px;
-  --radius-ctl: 8px;
-  --shadow-card: 0 1px 2px rgba(20, 30, 28, .05), 0 6px 20px rgba(20, 30, 28, .06);
+  --row-gap: 20px;
+  --page-pad: 48px;
+  --card-pad: 24px;
+  --section-gap: 64px;
+  --radius-card: 10px;         /* site cards */
+  --radius-ctl: 8px;           /* site inputs */
+  --shadow-card: none;
 
-  /* Type */
+  /* Type: the site's three families */
+  --display: "Archivo Black", "Arial Black", sans-serif;
+  --label: "Space Grotesk", system-ui, sans-serif;
   --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --measure: 680px;
+  --content: 1120px;
   --side-w: 248px;
   --tabbar-h: 64px;
   color-scheme: light;
@@ -63,36 +78,30 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --brand: #1E7572; --brand-hover: #25878A; --brand-text: #7CC6C2; --brand-tint: #17302F; --on-brand: #FFFFFF;
-    --highlight: #F2A33A; --highlight-tint: #3A2C14;
-    --surface: #161B1A; --surface-muted: #0F1312; --surface-raised: #1C2221; --border: #2C3533;
-    --text: #E8ECEA; --text-2: #A6B0AC; --focus: #7EA8F2;
-    --green: #4CB97D; --green-tint: #183326; --green-text: #8ED9AE;
-    --amber: #E9A72E; --amber-tint: #3A2C12; --amber-text: #F3C977;
-    --red: #E2645A; --red-tint: #3D1C19; --red-text: #F4A39C;
-    --blue: #5E8FEA; --blue-tint: #1A2740; --blue-text: #A9C4F6;
-    --grey: #8E9794; --grey-tint: #252C2A; --grey-text: #BFC7C4;
-    --seg-approved: #4CB97D; --seg-submitted: #7EA8F2; --seg-returned: #E9A72E; --seg-requested: #A6B0AC; --on-seg: #0F1312; --on-seg-returned: #0F1312;
-    --m-bids: #9A82E0; --m-delivery: #3DB6B3; --m-finance: #4CB97D; --m-surveys: #F0965A;
-    --m-evidence: #E07AA6; --m-compliance: #5E8FEA; --m-governance: #A6B0AC;
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 20px rgba(0, 0, 0, .25);
+    --brand: #fafaf8; --brand-hover: #e8e9e5; --brand-text: #fafaf8; --brand-tint: #1d2638; --on-brand: #111a2c;
+    --surface: #161e2e; --surface-muted: #0f1522; --surface-raised: #161e2e; --border: #273149; --track: #273149;
+    --text: #eef0f2; --text-2: #a9b2c1; --focus: #fafaf8; --progress: #2fcc8a; --progress-text: #5fdba6;
+    --green: #2fcc8a; --green-tint: #15302a; --green-text: #8be3bb;
+    --amber: #e9a72e; --amber-tint: #3a2c12; --amber-text: #f3c977;
+    --red: #e2645a; --red-tint: #3d1c19; --red-text: #f4a39c;
+    --blue: #7ea8f2; --blue-tint: #1a2740; --blue-text: #a9c4f6;
+    --grey: #8a94a6; --grey-tint: #222b3d; --grey-text: #c3c9d4;
+    --seg-approved: #2fcc8a; --seg-submitted: #7ea8f2; --seg-returned: #e9a72e; --seg-requested: #a9b2c1; --on-seg: #0f1522; --on-seg-returned: #0f1522;
+    --series-1: #eef0f2;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --brand: #1E7572; --brand-hover: #25878A; --brand-text: #7CC6C2; --brand-tint: #17302F; --on-brand: #FFFFFF;
-  --highlight: #F2A33A; --highlight-tint: #3A2C14;
-  --surface: #161B1A; --surface-muted: #0F1312; --surface-raised: #1C2221; --border: #2C3533;
-  --text: #E8ECEA; --text-2: #A6B0AC; --focus: #7EA8F2;
-  --green: #4CB97D; --green-tint: #183326; --green-text: #8ED9AE;
-  --amber: #E9A72E; --amber-tint: #3A2C12; --amber-text: #F3C977;
-  --red: #E2645A; --red-tint: #3D1C19; --red-text: #F4A39C;
-  --blue: #5E8FEA; --blue-tint: #1A2740; --blue-text: #A9C4F6;
-  --grey: #8E9794; --grey-tint: #252C2A; --grey-text: #BFC7C4;
-    --seg-approved: #4CB97D; --seg-submitted: #7EA8F2; --seg-returned: #E9A72E; --seg-requested: #A6B0AC; --on-seg: #0F1312; --on-seg-returned: #0F1312;
-  --m-bids: #9A82E0; --m-delivery: #3DB6B3; --m-finance: #4CB97D; --m-surveys: #F0965A;
-  --m-evidence: #E07AA6; --m-compliance: #5E8FEA; --m-governance: #A6B0AC;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 20px rgba(0, 0, 0, .25);
+  --brand: #fafaf8; --brand-hover: #e8e9e5; --brand-text: #fafaf8; --brand-tint: #1d2638; --on-brand: #111a2c;
+  --surface: #161e2e; --surface-muted: #0f1522; --surface-raised: #161e2e; --border: #273149; --track: #273149;
+  --text: #eef0f2; --text-2: #a9b2c1; --focus: #fafaf8; --progress: #2fcc8a; --progress-text: #5fdba6;
+  --green: #2fcc8a; --green-tint: #15302a; --green-text: #8be3bb;
+  --amber: #e9a72e; --amber-tint: #3a2c12; --amber-text: #f3c977;
+  --red: #e2645a; --red-tint: #3d1c19; --red-text: #f4a39c;
+  --blue: #7ea8f2; --blue-tint: #1a2740; --blue-text: #a9c4f6;
+  --grey: #8a94a6; --grey-tint: #222b3d; --grey-text: #c3c9d4;
+  --seg-approved: #2fcc8a; --seg-submitted: #7ea8f2; --seg-returned: #e9a72e; --seg-requested: #a9b2c1; --on-seg: #0f1522; --on-seg-returned: #0f1522;
+  --series-1: #eef0f2;
   color-scheme: dark;
 }
 
@@ -173,7 +182,8 @@ main { width: 100%; max-width: 1200px; margin: 0 auto; padding-block: var(--s6) 
 .page-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s4) var(--s5); margin-bottom: var(--s6); }
 .page-head > div:first-child { min-width: 0; flex: 1 1 320px; }
 .page-head p { margin-top: var(--s2); color: var(--text-2); }
-.page-head .btns { flex: none; }
+.page-head .btns { flex: 0 1 auto; }
+@media (max-width: 640px) { .page-head .btns { flex-basis: 100%; } }
 .eyebrow { display: inline-flex; align-items: center; gap: var(--s2); font-size: 13px; font-weight: 600; color: var(--mod, var(--text-2)); margin-bottom: var(--s2); }
 .stack { display: grid; gap: var(--s5); }
 .grid2 { display: grid; gap: var(--s5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); align-items: start; }
@@ -490,4 +500,110 @@ table.matrix td.lbl { min-width: 280px; }
   .toast, .ring circle { transition: none; }
   .tick-pop span { animation-duration: 1.2s; animation-name: fade; }
   @keyframes fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+}
+
+
+/* ===================================================================
+   Restraint layer, matching shvft20.org. Whitespace separates content;
+   one white panel per section at most; rows with hairline dividers;
+   icons only in the sidebar, primary buttons and status pills.
+   =================================================================== */
+body { font-size: 15px; line-height: 1.6; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3vw, 34px); line-height: 1.12; letter-spacing: -.01em; }
+h2 { font-size: 20px; font-weight: 600; }
+main { max-width: calc(var(--content) + 2 * var(--page-pad)); padding-block: var(--s7) var(--s8); }
+.wordmark { font-family: var(--label); color: var(--navy); }
+.wordmark .two, .grad { background: var(--journey); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.eyebrow { font: 600 12px/1 var(--label); letter-spacing: .16em; text-transform: uppercase; color: var(--text-2); }
+.eyebrow .icon { display: none; }
+.page-head { margin-bottom: var(--s7); }
+.page-head p { font-size: 15px; }
+
+/* Sidebar: navy for the active item, the gradient as its underline */
+.side { background: var(--surface); }
+.side nav a .icon, .tabbar a .icon, .more-sheet a .icon { color: var(--text-2); }
+.side nav a[aria-current="page"] { background: var(--brand); color: var(--on-brand); box-shadow: none; position: relative; }
+.side nav a[aria-current="page"] .icon { color: var(--on-brand); }
+.side nav a[aria-current="page"]::after { content: ""; position: absolute; left: var(--s3); right: var(--s3); bottom: 4px; height: 2px; border-radius: 2px; background: var(--journey); }
+.tabbar a[aria-current="page"] { color: var(--text); box-shadow: none; }
+.tabbar a[aria-current="page"]::after { content: ""; width: 24px; height: 2px; border-radius: 2px; background: var(--journey); }
+
+/* Buttons as on the site: navy pills, label type */
+.btn { border-radius: 999px; font: 700 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; padding: 12px 20px; }
+.btn.secondary { background: transparent; color: var(--text); border: 1.5px solid var(--text); }
+.btn.secondary:hover { background: var(--text); color: var(--surface); }
+.btn.secondary .icon { display: none; }
+a { color: var(--text); text-underline-offset: 3px; }
+.linkbtn { color: var(--text); }
+
+/* Panels: white, hairline, no shadow, no coloured edge, no heading icons */
+.panel, .stat { box-shadow: none; }
+.panel[class*="m-"] { border-top: 1px solid var(--border); }
+.panel > h2 .icon, .panel header h2 .icon { display: none; }
+.stat .stat-icon { display: none; }
+.stat b { font-family: var(--display); font-weight: 400; font-size: 30px; letter-spacing: -.01em; }
+.trend .icon { display: none; }
+.trend.green { color: var(--progress-text); }
+.empty-state .icon { display: none; }
+
+/* Sections and rows */
+.sec { margin-top: var(--section-gap); }
+.sec-head { margin-bottom: var(--s4); }
+.sec-head h2 { font-size: 20px; font-weight: 600; }
+.sec-head p { color: var(--text-2); font-size: 14px; margin-top: var(--s1); }
+.sec-head.split-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s2) var(--s4); }
+.box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--s2) var(--card-pad); }
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows > li { padding: 14px 0; border-top: 1px solid var(--border); }
+.rows > li:first-child { border-top: 0; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: var(--s2) var(--s6); align-items: center; }
+.row .muted, .rows .muted { font-size: 14px; }
+.row > div:first-child > .muted { display: block; margin-top: 2px; }
+.row-end { display: grid; gap: var(--s2); justify-items: stretch; }
+.row-end .figure { display: flex; justify-content: space-between; gap: var(--s3); align-items: center; font-size: 14px; font-variant-numeric: tabular-nums; }
+.row-end .figure > span:last-child { display: inline-flex; gap: var(--s3); align-items: center; }
+details.period > summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); }
+details.period > summary::-webkit-details-marker { display: none; }
+details.period > summary::after { content: 'Show'; font-size: 13px; color: var(--text-2); text-decoration: underline; }
+details.period[open] > summary::after { content: 'Hide'; }
+details.period > summary h2 { display: inline; }
+.rows .clickable { cursor: pointer; border-radius: var(--radius-ctl); }
+.rows .clickable:hover { background: var(--surface-muted); }
+.slim { display: block; height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; position: relative; }
+.slim > span { display: block; height: 100%; border-radius: 3px; background: var(--progress); }
+.slim > i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); opacity: .6; }
+.not-yet { color: var(--text-2); font-size: 14px; }
+details.wording > summary { cursor: pointer; list-style: none; }
+details.wording > summary::-webkit-details-marker { display: none; }
+details.wording[open] > summary { margin-bottom: var(--s1); }
+details.wording > p { color: var(--text-2); font-size: 14px; }
+.people { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); column-gap: var(--s6); }
+.people > li { display: flex; gap: var(--s3); align-items: flex-start; padding: var(--s4) 0; border-top: 1px solid var(--border); }
+.avatar-sm { width: 24px; height: 24px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 600 10px/1 var(--font); background: var(--paper-2); color: var(--text-2); margin-top: 2px; }
+.people strong { display: block; font-weight: 600; }
+.plain { margin: 0; padding-left: 1.1em; display: grid; gap: var(--s2); }
+.plain li::marker { color: var(--text-2); }
+.meta-line { color: var(--text-2); margin-top: var(--s2); }
+.lead-para { font-size: 17px; line-height: 1.6; max-width: var(--measure); margin-top: var(--s4); }
+.two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s7); }
+.note { color: var(--text-2); font-size: 14px; padding: var(--s3) var(--s4); border-radius: var(--radius-ctl); background: var(--paper-2); }
+/* The one feature band a page may have: navy, as on the site's dark sections */
+.band { margin-top: var(--s5); background: var(--navy); color: var(--on-navy); border-radius: var(--radius-card); padding: var(--s6); display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--s5); }
+.band b { display: block; font: 400 34px/1.1 var(--display); letter-spacing: -.01em; }
+.band span { display: block; color: var(--on-navy-2); font-size: 14px; margin-top: var(--s1); }
+.band .trend-up { color: var(--on-navy-up); font-size: 13px; font-weight: 600; margin-top: var(--s2); }
+.band .trend-down { color: var(--on-navy-down); font-size: 13px; font-weight: 600; margin-top: var(--s2); }
+.band .trend-flat { color: var(--on-navy-2); font-size: 13px; margin-top: var(--s2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .band { background: var(--brand-tint); } }
+:root[data-theme="dark"] .band { background: var(--brand-tint); }
+
+@media (max-width: 899px) {
+  :root { --page-pad: 20px; --section-gap: 48px; }
+  main { padding-top: var(--s5); }
+}
+@media (max-width: 640px) {
+  .row { grid-template-columns: minmax(0, 1fr); }
+  .two-col { grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+  .band { padding: var(--s5); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .band b { font-size: 26px; }
 }
