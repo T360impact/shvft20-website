@@ -3,7 +3,7 @@
 // cost categories in the same order and the document's commentary on each,
 // then the funding breakdown with its limits. Used on the Targets and budget
 // pages; what each person sees is limited by the database.
-import { db, html, must, fmtMoney, fmtNum, fmtDateTime } from '../lib.js';
+import { db, html, must, fmtMoney, fmtNum, fmtDateTime, pill, sectionGroup } from '../lib.js';
 
 const WORDS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 const monthYear = new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric' });
@@ -99,10 +99,10 @@ export function budgetView(ctx, b, opts = {}) {
     const rows = alloc.filter((r) => r.organisation_id === id);
     const confirmed = rows.every((r) => r.confirmed_by_partner_at);
     const last = rows.map((r) => r.confirmed_by_partner_at).filter(Boolean).sort().pop();
-    return html`<section class="budget-org">
-      <header><h3>${s ? html`<span class="muted">${s.title}:</span> ${s.name_in_document || ctx.org(id)?.name}` : ctx.org(id)?.name}</h3>
-        <span class="small">${confirmed ? html`<span class="pill pill-confirmed">Confirmed</span> <span class="muted">${fmtDateTime(last)}</span>` : html`<span class="pill pill-proposed">Waiting for ${ctx.org(id)?.name} to confirm</span>`}</span></header>
-      ${costTable(c, years, categories, rows, note(id))}</section>`;
+    return sectionGroup({ title: s ? html`<span class="muted">${s.title}:</span> ${s.name_in_document || ctx.org(id)?.name}` : ctx.org(id)?.name,
+      meta: `${fmtMoney(sum(rows))} over ${years.length} year${years.length === 1 ? '' : 's'}${confirmed ? ` · confirmed ${fmtDateTime(last)}` : ''}`,
+      aside: confirmed ? pill('green', 'Confirmed', 'approved') : pill('amber', `Waiting for ${ctx.org(id)?.name} to confirm`, 'waiting'),
+      body: costTable(c, years, categories, rows, note(id)) });
   };
 
   return html`
@@ -110,7 +110,7 @@ export function budgetView(ctx, b, opts = {}) {
       ${c.grant_value ? html`<span class="small muted">Grant ${fmtMoney(c.grant_value)}${Math.round(sum(alloc)) !== Math.round(Number(c.grant_value)) ? ` · budget totals ${fmtMoney(sum(alloc))}` : ''}</span>` : ''}</header>
       ${costTable(c, years, categories, alloc, note(null))}</section>` : ''}
     ${orgIds.map(orgBlock)}
-    ${central.length ? html`<section class="budget-org"><header><h3>Central costs</h3></header>${costTable(c, years, categories, central, () => null)}</section>` : ''}
+    ${central.length ? sectionGroup({ title: 'Central costs', meta: fmtMoney(sum(central)), body: costTable(c, years, categories, central, () => null) }) : ''}
     ${opts.project ? fundingTable(c, years, elements, amounts) : ''}
     <p class="small muted" style="margin-top:12px">Open a cost category to read what it covers, as the budget document describes it.</p>`;
 }

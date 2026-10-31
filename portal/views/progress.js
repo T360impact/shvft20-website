@@ -3,7 +3,7 @@
 // consortium's shared ones. Figures go in on this page, or in a spreadsheet
 // downloaded from it and uploaded back. save_progress() checks every figure
 // before anything is saved, and the dashboard adds them up.
-import { db, html, render, $, $$, toast, act, must, fmtNum, fmtMonth, fmtDateTime, today, uploadFile, openFile } from '../lib.js';
+import { db, html, render, $, $$, toast, act, must, fmtNum, fmtMonth, fmtDateTime, today, uploadFile, openFile, sectionGroup } from '../lib.js';
 import { periodText, figureText } from './targets.js';
 
 // SheetJS, loaded only when someone downloads or uploads a spreadsheet.
@@ -115,10 +115,14 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
     : !rows.length ? html`<section class="panel" style="margin-top:20px"><p>No targets fall in ${monthName}.</p></section>`
     : html`<section class="panel" style="margin-top:20px">
       <header><h2>${monthName}</h2>${anyLinked ? html`<label class="check small"><input type="checkbox" id="only-linked"> Only lines linked to ${org.name}</label>` : ''}</header>
-      <form id="entry"><div class="table-wrap"><table class="entry">
-        <thead><tr><th>Output or outcome</th><th class="num">Target</th><th class="num">Reported before</th><th class="num">${monthName}</th><th>Note</th></tr></thead>
-        <tbody>${groups.map((g) => html`<tr class="group-head"><td colspan="5">${g}</td></tr>${rows.filter((r) => group(r) === g).map(row)}`)}</tbody>
-      </table></div>
+      <form id="entry"><p class="muted small" style="margin-bottom:12px">Open a section to enter its figures. <button type="button" class="linkbtn small" id="open-all">Open all</button></p>
+        ${groups.map((g, i) => {
+          const gr = rows.filter((r) => group(r) === g);
+          return sectionGroup({ title: g, open: i === 0, meta: `${gr.length} line${gr.length === 1 ? '' : 's'} · ${gr.filter((r) => r.now).length} filled for ${monthName}`,
+            body: html`<div class="table-wrap"><table class="entry">
+              <thead><tr><th>Output or outcome</th><th class="num">Target</th><th class="num">Reported before</th><th class="num">${monthName}</th><th>Note</th></tr></thead>
+              <tbody>${gr.map(row)}</tbody></table></div>` });
+        })}
       <div id="errors"></div>
       <p class="small muted" style="margin-top:10px">Leave a figure empty if there's nothing to report. Emptying a figure you saved before removes it.${rows.some((r) => r.locked) ? ' Percentages are reported by the consortium lead.' : ''}</p>
       <div class="btns" style="margin-top:14px"><button class="btn">Save ${monthName}</button></div></form></section>`}
@@ -135,7 +139,12 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
 
   const again = () => progress(ctx, el, [org.id, month]);
   $('#pick').addEventListener('change', (e) => go(e.currentTarget.elements.org?.value || org.id, e.currentTarget.elements.month.value));
-  $('#only-linked')?.addEventListener('change', (e) => $('table.entry').classList.toggle('linked-only', e.target.checked));
+  $('#only-linked')?.addEventListener('change', (e) => $$('table.entry').forEach((t) => t.classList.toggle('linked-only', e.target.checked)));
+  $('#open-all')?.addEventListener('click', (e) => {
+    const open = e.currentTarget.textContent === 'Open all';
+    $$('#entry details.tgroup').forEach((d) => { d.open = open; });
+    e.currentTarget.textContent = open ? 'Close all' : 'Open all';
+  });
   $$('[data-path]').forEach((b) => b.addEventListener('click', () => openFile(b, 'documents', b.dataset.path)));
 
   const call = (p_rows, p_dry_run, file) => db.rpc('save_progress', {

@@ -3,7 +3,7 @@
 // its source, and confirms once the figures reconcile. Each partner's org
 // admin then confirms their own targets and budget. Re-running on a new
 // document version shows what changed before anything is replaced.
-import { db, html, render, $, $$, formData, toast, act, must, fmtDate, fmtDateTime, fmtMoney, fmtNum, statusPill, uploadFile, MEASURE_LABEL } from '../lib.js';
+import { db, html, render, $, $$, formData, toast, act, must, fmtDate, fmtDateTime, fmtMoney, fmtNum, statusPill, uploadFile, MEASURE_LABEL, pill, segControl, bindSegments, sectionGroup, toneBar } from '../lib.js';
 import { loadBudget, budgetView } from './budget.js';
 
 const PROGRAMME_DOCS = {
@@ -36,14 +36,37 @@ async function current(ctx, orgId) {
 }
 
 const linkedNames = (ctx, r) => (r.commitment_organisations || []).map((l) => ctx.org(l.organisation_id)?.name).filter(Boolean).join(', ');
-const targetTable = (ctx, rows, showOrg) => rows.length ? html`<div class="table-wrap"><table>
-  <thead><tr><th>Period</th><th>Output or outcome</th>${showOrg ? html`<th>Who</th>` : ''}<th>Linked organisations</th><th class="num">Target</th><th>Version</th><th>Partner confirmed</th></tr></thead>
-  <tbody>${rows.map((r) => html`<tr><td class="nowrap">${periodText(r)}</td><td><strong>${r.label}</strong><br><span class="small muted">${context(r)}${r.site_id ? ` · ${ctx.site(r.site_id)?.name}` : r.site_name ? ` · ${r.site_name}` : ''}</span></td>
-    ${showOrg ? html`<td>${r.organisation_id ? ctx.org(r.organisation_id)?.name : 'Whole consortium'}</td>` : ''}
-    <td class="small">${linkedNames(ctx, r) || html`<span class="muted">–</span>`}</td>
-    <td class="num">${figureText(r.target, r.unit)}</td><td>v${r.version}</td>
-    <td class="small">${r.organisation_id ? (r.confirmed_by_partner_at ? fmtDateTime(r.confirmed_by_partner_at) : html`<span class="pill pill-proposed">Waiting</span>`) : '–'}</td></tr>`)}</tbody></table></div>`
-  : html`<p class="empty">No targets yet.</p>`;
+// Targets one period at a time (a segmented switch), grouped into sections
+// as the documents group them, each closed to a one-line summary.
+const periodKey = (r) => (r.period === 'lifetime' ? 'lifetime' : String(r.year));
+const periodName = (p) => (p === 'lifetime' ? 'Project lifetime' : `Year ${p}`);
+const sectionKey = (r) => `${r.section || 'Other'} ${r.kind === 'outcome' ? 'outcomes' : 'outputs'}`;
+const sectionRank = (k) => (k.startsWith('Targeted') ? 0 : k.startsWith('Universal') ? 1 : 2);
+let paneCount = 0;
+const targetTable = (ctx, rows, showOrg) => {
+  if (!rows.length) return html`<p class="empty">No targets yet.</p>`;
+  const name = `tp${++paneCount}`;
+  const periods = [...new Set(rows.map(periodKey))].sort((a, b) => (a === 'lifetime') - (b === 'lifetime') || a - b);
+  const table = (list) => html`<div class="table-wrap"><table>
+    <thead><tr><th>Output or outcome</th>${showOrg ? html`<th>Who</th>` : ''}<th>Linked organisations</th><th class="num">Target</th><th>Version</th><th>Partner confirmed</th></tr></thead>
+    <tbody>${list.map((r) => html`<tr><td><strong>${r.label}</strong><br><span class="small muted">${periodText(r)} · ${context(r)}${r.site_id ? ` · ${ctx.site(r.site_id)?.name}` : r.site_name ? ` · ${r.site_name}` : ''}</span></td>
+      ${showOrg ? html`<td>${r.organisation_id ? ctx.org(r.organisation_id)?.name : 'Whole consortium'}</td>` : ''}
+      <td class="small">${linkedNames(ctx, r) || html`<span class="muted">–</span>`}</td>
+      <td class="num">${figureText(r.target, r.unit)}</td><td>v${r.version}</td>
+      <td class="small">${r.organisation_id ? (r.confirmed_by_partner_at ? fmtDateTime(r.confirmed_by_partner_at) : html`<span class="pill pill-proposed">Waiting</span>`) : '–'}</td></tr>`)}</tbody></table></div>`;
+  return html`<div class="group-tools">${periods.length > 1 ? segControl(name, [...periods.map((p) => [p, periodName(p)]), ['', 'All periods']], periods[0]) : html`<span></span>`}
+      <span class="muted small">${rows.length} target${rows.length === 1 ? '' : 's'}</span></div>
+    ${periods.map((p) => {
+      const pr = rows.filter((r) => periodKey(r) === p);
+      const keys = [...new Set(pr.map(sectionKey))].sort((a, b) => sectionRank(a) - sectionRank(b) || a.localeCompare(b));
+      return html`<div class="pane" data-seg-pane="${name}:${p}"><h3 class="pane-head">${periodName(p)}</h3>${keys.map((k) => {
+        const kr = pr.filter((r) => sectionKey(r) === k);
+        const waiting = kr.filter((r) => r.organisation_id && !r.confirmed_by_partner_at).length;
+        return sectionGroup({ title: k, meta: `${kr.length} target${kr.length === 1 ? '' : 's'}${kr.some((r) => r.organisation_id) ? ` · ${kr.filter((r) => r.confirmed_by_partner_at).length} confirmed` : ''}`,
+          aside: waiting ? pill('amber', `${waiting} waiting`, 'waiting') : '', body: table(kr) });
+      })}</div>`;
+    })}`;
+};
 
 // ------------------------------------------------------------------ partner
 
@@ -73,6 +96,7 @@ async function partnerHome(ctx, el) {
         <form class="form" id="confirm">
           <label class="check"><input type="checkbox" required> I've checked these targets and budget and confirm them on behalf of ${ctx.orgName}.</label>
           <div class="btns"><button class="btn">Confirm targets and budget</button></div></form></section>` : ''}`}`);
+  bindSegments(el);
   $('#confirm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     act(e.submitter, async () => {
@@ -145,6 +169,7 @@ async function leadHome(ctx, el) {
           <button class="btn secondary small">Save</button></form>` : ''}</header>
       ${budgetView(ctx, budget, { project: true })}</section>`);
 
+  bindSegments(el);
   const again = () => leadHome(ctx, el);
   // The grant value lives here, with the rest of the money, not on the summary.
   $('#grant')?.addEventListener('submit', (e) => {
@@ -270,10 +295,16 @@ async function review(ctx, el, runId) {
     ${open ? html`<div class="btns" style="margin:20px 0"><button class="btn" id="confirm" disabled>Confirm and create commitments</button>
       <button class="btn secondary" id="accept-all" type="button">Accept everything not yet reviewed</button></div>` : ''}
     <section class="panel" style="margin-top:20px"><h2>${items.length} line${items.length === 1 ? '' : 's'}</h2>
-      ${items.length ? html`<div class="table-wrap"><table>
-        <thead><tr><th>Status</th><th>Wording in the document</th><th>Figure</th><th>Period</th><th>Tracked as</th><th>Belongs to</th><th>Linked organisations</th><th>Source</th><th></th></tr></thead>
-        <tbody>${ordered.map(([key, rows]) => html`<tr class="group-head"><td colspan="9">${key.split('|')[1]} (${rows.length})</td></tr>${rows.map(row)}`)}</tbody>
-      </table></div>` : html`<p class="empty">No figures were found in these documents.</p>`}
+      ${items.length ? html`<p class="muted small" style="margin-bottom:12px">Grouped as the documents group them. Sections with lines still to review start open.</p>
+        ${ordered.map(([key, rows]) => {
+          const n = (st) => rows.filter((r) => r.review_status === st).length;
+          return sectionGroup({ title: key.split('|')[1], open: n('proposed') > 0,
+            meta: `${rows.length} line${rows.length === 1 ? '' : 's'} · ${n('accepted') + n('edited')} accepted${n('rejected') ? ` · ${n('rejected')} rejected` : ''}${rows.some((r) => r.needs_check) ? ` · ${rows.filter((r) => r.needs_check).length} to check` : ''}`,
+            aside: toneBar([['green', n('accepted') + n('edited'), 'accepted'], ['red', n('rejected'), 'rejected'], ['none', n('proposed'), 'to review']]),
+            body: html`<div class="table-wrap"><table>
+              <thead><tr><th>Status</th><th>Wording in the document</th><th>Figure</th><th>Period</th><th>Tracked as</th><th>Belongs to</th><th>Linked organisations</th><th>Source</th><th></th></tr></thead>
+              <tbody>${rows.map(row)}</tbody></table></div>` });
+        })}` : html`<p class="empty">No figures were found in these documents.</p>`}
     </section>`);
 
   const docById = (did) => docs.find((d) => d.id === did);

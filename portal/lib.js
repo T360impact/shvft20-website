@@ -235,3 +235,35 @@ export function openFile(button, bucket, path) {
     } catch (e) { tab?.close(); throw e; }
   });
 }
+
+// ------------------------------------------------- grouped lists, not long ones
+// The portal never lays out long runs of rows. Lists are grouped into short
+// collapsible sections, each with a one-line summary, and switched with
+// segments; every row stays one click away.
+
+// A segmented switch. Panes marked data-seg-pane="name:value" show for their
+// value; the empty value ('') shows them all.
+export const segControl = (name, options, selected) => html`<div class="seg" role="group" data-seg-for="${name}">${options.map(([v, label]) => html`<button type="button" class="seg-btn" data-seg="${v}" aria-pressed="${String(v) === String(selected)}">${label}</button>`)}</div>`;
+export function bindSegments(root = document) {
+  $$('[data-seg-for]', root).forEach((bar) => {
+    const name = bar.dataset.segFor;
+    const apply = (v) => {
+      $$('[data-seg]', bar).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.seg === v)));
+      $$(`[data-seg-pane^="${name}:"]`, root).forEach((p) => { p.hidden = v !== '' && p.dataset.segPane !== `${name}:${v}`; });
+    };
+    $$('[data-seg]', bar).forEach((b) => b.addEventListener('click', () => apply(b.dataset.seg)));
+    apply($('[aria-pressed="true"]', bar)?.dataset.seg ?? '');
+  });
+}
+
+// A collapsible section: a title, a one-line summary, an optional bar or pill
+// on the right, and the rows inside.
+export const sectionGroup = ({ title, meta = '', aside = '', body, open = false }) => html`<details class="tgroup" ${raw(open ? 'open' : '')}>
+  <summary><span class="tg-title">${title}</span><span class="tg-meta">${meta}</span><span class="tg-aside">${aside}</span><span class="tg-chev" aria-hidden="true"></span></summary>
+  <div class="tg-body">${body}</div></details>`;
+
+// A thin bar of counts by tone, for a section's summary line.
+export const toneBar = (parts) => {
+  const shown = parts.filter(([, n]) => n);
+  return shown.length ? html`<span class="tg-bar" role="img" aria-label="${shown.map(([t, n, label]) => `${n} ${label || t}`).join(', ')}">${shown.map(([t, n]) => html`<i class="seg-${t}" style="flex:${n}"></i>`)}</span>` : '';
+};

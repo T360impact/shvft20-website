@@ -927,3 +927,31 @@ details.tgroup .targets-table thead th { background: transparent; color: var(--t
   details.tgroup > summary { grid-template-columns: minmax(0, 1fr) 20px; gap: var(--s1) var(--s3); }
   .tg-meta { grid-column: 1; } .tg-bar { grid-column: 1; } .tg-chev { grid-row: 1; grid-column: 2; }
 }
+/* Shared section groups: the aside column holds a bar or a pill */
+.tg-aside { display: flex; justify-content: flex-end; min-width: 0; }
+.tg-aside .tg-bar { width: 100%; }
+.tg-body { padding: 0 var(--s2) var(--s2); }
+.tg-body > .table-wrap { margin: 0; }
+details.tgroup .tg-body table thead th { background: transparent; color: var(--text-2); border-radius: 0; border-bottom: 1px solid var(--card-line); }
+.group-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s4); }
+@media (max-width: 640px) { .tg-aside { grid-column: 1; justify-content: flex-start; } }
+
+/* The Shvft gradient in four strengths, for the outcome theme tiles */
+:root {
+  --g-brand: #1fb57a, #7b4df5 52%, #f2702e;
+  --g-dark: #13845a, #5a2fd1 52%, #c8501a;
+  --g-darker: #0b5a3d, #3d1f95 52%, #8f3510;
+  --g-light: #a5e8cb, #c7b6fb 52%, #f9c3a4;
+}
+.otile.g1 { --g: var(--g-brand); --accent: #7b4df5; --tab-ink: #ffffff; }
+.otile.g2 { --g: var(--g-dark); --accent: #5a2fd1; --tab-ink: #ffffff; }
+.otile.g3 { --g: var(--g-darker); --accent: #3d1f95; --tab-ink: #ffffff; }
+.otile.g4 { --g: var(--g-light); --accent: #6a3fe0; --tab-ink: #111a2c; }
+:root[data-theme="dark"] .otile.g3 { --accent: #a58bf7; }
+.otile-tab { background: linear-gradient(180deg, var(--g)); }
+.otile-tab span { color: var(--tab-ink); }
+.otile-icon { color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.ocol { background: var(--track); }
+.ocol i { background: linear-gradient(0deg, var(--g)); }
+.olist .ocode { color: var(--accent); }
+.olist .slim > span { background: linear-gradient(90deg, var(--g)); }

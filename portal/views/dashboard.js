@@ -299,7 +299,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     if (!outcomes.length || (!ctx.manages && !outcomes.some((o) => o.reported))) return null;
     return html`<div class="otiles">${themes.map((r, i) => {
       const list = outcomes.filter((o) => (o.theme || 'Outcomes') === r.th);
-      return html`<article class="otile" style="--accent:var(--theme-${(i % 4) + 1})">
+      return html`<article class="otile g${(i % 4) + 1}">
         <div class="otile-tab" aria-hidden="true"><span>${String(i + 1).padStart(2, '0')}</span></div>
         <div class="otile-body">
           <header><span class="otile-icon">${raw(icon(OUTCOME_ICON(r.th), 20))}</span>
