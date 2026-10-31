@@ -18,6 +18,14 @@ const ACTION_TONE = { not_started: 'grey', in_progress: 'blue', complete: 'green
 const FEATURE = { compliance_vault: 'Compliance vault', safeguarding_flags: 'Safeguarding flags', registration: 'Registration',
   session_plans: 'Session plans', forms: 'Forms' };
 const TONE = { green: 'green', amber: 'amber', red: 'red' };
+// A short theme name and icon for each category, read from the register's
+// own heading so any workspace's categories get a sensible tile.
+const THEMES = [[/premis|building|site|venue|fire/i, 'Buildings', 'sites'], [/arriv|depart|travel|transport|journey/i, 'Travel', 'next'],
+  [/activit|programme|session|trip|sport|event/i, 'Programmes', 'sessions'], [/safeguard|young people|welfare/i, 'Safeguarding', 'safeguarding'],
+  [/staff|workforce|supervis|recruit|volunteer/i, 'Staffing', 'people'], [/data|privacy|information|cyber/i, 'Data', 'compliance'],
+  [/financ|money|budget|fund/i, 'Money', 'finance'], [/partner|governance|consortium|contract/i, 'Partnership', 'governance'],
+  [/health|medical|food|kitchen/i, 'Health and safety', 'checkin'], [/reputat|media|communic/i, 'Reputation', 'stories']];
+const themeOf = (k) => { if (!k) return { short: 'Other', icon: 'info' }; const t = THEMES.find(([re]) => re.test(k.name)); return t ? { short: t[1], icon: t[2] } : { short: k.name, icon: 'compliance' }; };
 const errText = async (error) => { try { return (await error.context.json()).error || error.message; } catch { return error.message; } };
 
 export default async function risks(ctx, el, [sub, id]) {
@@ -122,17 +130,45 @@ export default async function risks(ctx, el, [sub, id]) {
       ${still.length ? html`<ul class="fx-list">${still.map((r) => html`<li><button type="button" class="linkbtn" data-pick="${r.id}">${r.ref}</button> <span>${r.title}</span>${scorePill(r.residual_score, r.residual_band)}</li>`)}</ul>` : ''}`;
   };
 
-  const pills = () => html`<div class="cat-pills" role="group" aria-label="Category">
-    ${[['', 'All', live.length], ...cats.map((k) => [k.id, `${k.code}. ${k.name}`, live.filter((r) => r.category_id === k.id).length])].map(([v, label, n]) =>
-      html`<button type="button" class="cat-pill" data-cat="${v}" aria-pressed="${v === cat}">${label} <span>${n}</span></button>`)}</div>`;
+  // Themes: one tile per category (Buildings, Travel, Programmes...), each
+  // with its count, how its risks band after action, and what needs doing.
+  const groups = [...cats.map((k) => [k, live.filter((r) => r.category_id === k.id)]),
+    ...(live.some((r) => !catOf(r)) ? [[null, live.filter((r) => !catOf(r))]] : [])].filter(([, rs]) => rs.length || cats.length <= 12);
+  const bandBar = (rs) => html`<span class="fx-bar rt-bar" role="img" aria-label="${bands.map((b) => `${rs.filter((r) => (r.residual_band || r.band) === b.name).length} ${b.name}`).join(', ')} after action">
+    ${bands.map((b) => [b, rs.filter((r) => (r.residual_band || r.band) === b.name).length]).filter(([, n]) => n).map(([b, n]) => html`<i class="tone-${tone(b.name)}" style="flex:${n}">${n}</i>`)}</span>`;
+  const themeTile = (k, rs) => {
+    const t = themeOf(k);
+    const v = k ? k.id : 'none';
+    const highs = rs.filter((r) => r.band === top).length;
+    const acts = rs.flatMap((r) => r.actions).filter((a) => ['not_started', 'in_progress'].includes(a.status));
+    const late = acts.filter((a) => a.due_date && a.due_date < today()).length;
+    const noOwner = rs.filter((r) => !r.owner_organisation_id && !r.owner_profile_id).length;
+    return html`<button type="button" class="rtile" data-cat="${v}" aria-pressed="${String(cat === v)}" title="${k ? k.name : 'No category'}">
+      <span class="rtile-top"><span class="rtile-icon">${raw(icon(t.icon, 20))}</span><span class="rtile-name"><strong>${t.short}</strong>${k && t.short !== k.name ? html`<span class="muted small">${k.code ? `${k.code}. ` : ''}${k.name}</span>` : ''}</span><b class="rtile-n">${rs.length}</b></span>
+      ${rs.length ? bandBar(rs) : html`<span class="muted small">No risks</span>`}
+      <span class="rtile-foot small">${highs ? html`<span>${highs} ${top.toLowerCase()} before action</span>` : ''}${acts.length ? html`<span>${acts.length} action${acts.length === 1 ? '' : 's'} open${late ? html`, <span class="warn-text">${late} overdue</span>` : ''}</span>` : ''}
+        ${admin && noOwner ? html`<span class="warn-text">${noOwner} without an owner</span>` : ''}</span></button>`;
+  };
+  const themes = () => html`<div class="risk-themes" role="group" aria-label="Themes">
+    <button type="button" class="rtile all" data-cat="" aria-pressed="${String(!cat)}"><span class="rtile-top"><span class="rtile-icon">${raw(icon('dashboard', 20))}</span>
+      <span class="rtile-name"><strong>All themes</strong><span class="muted small">${groups.length} themes</span></span><b class="rtile-n">${live.length}</b></span>${bandBar(live)}
+      <span class="rtile-foot small"><span>${bands.map((b) => `${live.filter((r) => (r.residual_band || r.band) === b.name).length} ${b.name.toLowerCase()}`).join(' · ')} after action</span></span></button>
+    ${groups.map(([k, rs]) => themeTile(k, rs))}</div>`;
 
-  const list = () => {
-    const rows = (cat ? all.filter((r) => r.category_id === cat) : all).filter((r) => r.status !== 'closed' || cat);
-    return html`<ul class="risk-list">${rows.map((r) => html`<li><button type="button" class="risk-row ${r.id === selected ? 'sel' : ''}" data-pick="${r.id}">
+  const riskRows = (rows) => html`<ul class="risk-list">${rows.map((r) => html`<li><button type="button" class="risk-row ${r.id === selected ? 'sel' : ''}" data-pick="${r.id}">
         <span class="rr-ref">${r.ref}</span>
         <span class="rr-main"><strong>${r.title}</strong><span class="muted small">${r.actions[0]?.description || 'No further action'}</span></span>
         <span class="rr-scores">${scorePill(r.inherent_score, r.band)}<span class="muted" aria-hidden="true">→</span>${scorePill(r.residual_score, r.residual_band)}</span>
         <span class="rr-owner">${ownerOf(r) ? html`<span class="avatar-sm" title="${ownerOf(r)}">${initials(ownerOf(r))}</span>` : html`<span class="muted small">Unassigned</span>`}</span></button></li>`)}</ul>`;
+  // One theme: its risks, closed ones at the end. All themes: a short
+  // section per theme, the one holding the selected risk open.
+  const list = () => {
+    if (cat) {
+      const rows = all.filter((r) => (cat === 'none' ? !catOf(r) : r.category_id === cat));
+      return riskRows([...rows.filter((r) => r.status !== 'closed'), ...rows.filter((r) => r.status === 'closed')]);
+    }
+    return groups.filter(([, rs]) => rs.length).map(([k, rs]) => sectionGroup({ title: themeOf(k).short, meta: `${rs.length} risk${rs.length === 1 ? '' : 's'}${rs.filter((r) => r.band === top).length ? ` · ${rs.filter((r) => r.band === top).length} ${top.toLowerCase()} before action` : ''}`,
+      aside: bandBar(rs), open: rs.some((r) => r.id === selected), body: riskRows(rs) }));
   };
 
   const tile = (label, score, l, sv, band) => html`<div class="score-tile tone-${tone(band)}"><span class="small">${label}</span><b>${score ?? '–'}</b>
@@ -178,10 +214,10 @@ export default async function risks(ctx, el, [sub, id]) {
     render(el, html`${header()}${banners()}
       ${all.length ? html`${stats()}
         <div class="dgrid">
+          <section class="dcard full"><header class="dcard-head"><h2>Risks by theme</h2><p>Choose a theme to see its risks; bars show how they band once further action is done.</p></header>${themes()}
+            <div class="risk-split"><div class="risk-list-wrap">${list()}</div><div class="risk-detail" id="detail">${detail()}</div></div></section>
           <section class="dcard half"><header class="dcard-head"><h2>Heat map</h2><p>Each risk placed by likelihood and severity. Select one to see it.</p></header>${heat()}</section>
           <section class="dcard half"><header class="dcard-head"><h2>Effect of further action</h2><p>Risks by band, before and after the further action is complete.</p></header>${effect()}</section>
-          <section class="dcard full"><header class="dcard-head"><h2>Risks</h2></header>${pills()}
-            <div class="risk-split"><div class="risk-list-wrap">${list()}</div><div class="risk-detail" id="detail">${detail()}</div></div></section>
         </div>`
       : html`<section class="dcard" style="margin-top:24px">${admin ? html`<p>No risks yet. Upload your existing risk register and the portal will read it for you to check, or add risks one by one.</p>`
         : html`<p>The lead hasn't published the risk register yet.</p>`}</section>`}`);
@@ -200,9 +236,10 @@ export default async function risks(ctx, el, [sub, id]) {
     $$('[data-seg-for="hm"] [data-seg]', el).forEach((b) => b.addEventListener('click', () => { view = b.dataset.seg; const keep = window.scrollY; draw(); window.scrollTo(0, keep); }));
     $$('[data-cat]', el).forEach((b) => b.addEventListener('click', () => {
       cat = b.dataset.cat;
-      const rows = cat ? all.filter((r) => r.category_id === cat) : live;
+      const rows = cat ? all.filter((r) => (cat === 'none' ? !catOf(r) : r.category_id === cat)) : live;
       if (!rows.some((r) => r.id === selected)) selected = rows[0]?.id;
       const keep = window.scrollY; draw(); window.scrollTo(0, keep);
+      if (window.innerWidth < 900) $('.risk-list-wrap', el)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }));
     $('#refresh', el)?.addEventListener('click', redraw);
     $('#upload', el)?.addEventListener('click', () => uploadDialog(ctx, redraw));
