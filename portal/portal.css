@@ -1045,3 +1045,17 @@ details.tgroup .tg-body table thead th { background: transparent; color: var(--t
 }
 .rd-act-edit label.f { gap: 4px; }
 .rd-act-edit select, .rd-act-edit input { padding: 6px 10px; min-height: 36px; font-size: 13px; }
+/* Section headers: title with its summary line beneath, pill or bar on the right */
+details.tgroup > summary { grid-template-columns: minmax(0, 1fr) auto 20px; row-gap: 2px; column-gap: var(--s4); }
+details.tgroup > summary > .tg-title { grid-column: 1; grid-row: 1; }
+details.tgroup > summary > .tg-meta { grid-column: 1; grid-row: 2; }
+details.tgroup > summary > .tg-aside, details.tgroup > summary > .tg-bar { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+details.tgroup > summary > .tg-bar { width: clamp(90px, 18vw, 180px); }
+details.tgroup > summary > .tg-aside .tg-bar { width: clamp(90px, 18vw, 180px); }
+details.tgroup > summary > .tg-chev { grid-column: 3; grid-row: 1 / span 2; }
+details.tgroup > summary > .tg-aside:empty { display: none; }
+@media (max-width: 640px) {
+  details.tgroup > summary { grid-template-columns: minmax(0, 1fr) 20px; }
+  details.tgroup > summary > .tg-aside, details.tgroup > summary > .tg-bar { grid-column: 1; grid-row: 3; justify-content: flex-start; margin-top: 4px; }
+  details.tgroup > summary > .tg-chev { grid-column: 2; grid-row: 1 / span 3; }
+}
