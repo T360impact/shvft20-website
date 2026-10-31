@@ -873,3 +873,31 @@ tr.clickable:hover td { background: var(--surface-muted); }
   .targets-table button.t-label, .targets-table .t-meta, .targets-table .t-who span { white-space: normal; }
 }
 .stat .stat-value b { order: 0; } .stat .stat-value .stat-chip { order: 1; }
+
+/* Outcome theme tiles: a coloured numbered tab, the theme's progress, a bar
+   per outcome, and a breakdown. Theme colours are the website's gradient. */
+:root { --theme-1: #1fb57a; --theme-2: #7b4df5; --theme-3: #f2702e; --theme-4: #2d6cdf; }
+.otiles { display: grid; gap: var(--s5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: start; }
+.otile { display: grid; grid-template-columns: 56px minmax(0, 1fr); background: var(--surface); border: 1px solid var(--card-line); border-radius: var(--radius-card); overflow: hidden; }
+.otile-tab { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #fff), var(--accent)); display: flex; justify-content: center; padding-top: var(--s5); }
+.otile-tab span { font: 400 22px/1 var(--display); color: #fff; }
+.otile-body { padding: var(--s5); display: grid; gap: var(--s4); min-width: 0; }
+.otile header { display: flex; gap: var(--s3); align-items: center; }
+.otile h3 { font-size: 16px; font-weight: 600; line-height: 1.3; }
+.otile-icon { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 10px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.otile-fig { display: grid; gap: 2px; }
+.otile-fig b { font: 400 28px/1.1 var(--display); }
+.ochart { display: flex; align-items: flex-end; gap: 6px; height: 64px; padding-bottom: 2px; border-bottom: 1px solid var(--card-line); }
+.ocol { flex: 1; max-width: 28px; height: 100%; border-radius: 6px 6px 2px 2px; background: color-mix(in srgb, var(--accent) 12%, transparent); display: flex; align-items: flex-end; overflow: hidden; }
+.ocol i { display: block; width: 100%; background: var(--accent); border-radius: 6px 6px 0 0; }
+details.obreak > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text); list-style: none; display: inline-flex; align-items: center; gap: 6px; }
+details.obreak > summary::-webkit-details-marker { display: none; }
+details.obreak > summary::before { content: '+'; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--card-line); font-size: 13px; line-height: 1; }
+details.obreak[open] > summary::before { content: '−'; }
+.olist { list-style: none; margin: var(--s3) 0 0; padding: 0; display: grid; }
+.olist li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px var(--s2); padding: 10px 0; border-top: 1px solid var(--card-line); font-size: 14px; }
+.olist .ocode { font-size: 12px; font-weight: 600; color: var(--accent); min-width: 26px; padding-top: 1px; }
+.olist .oval { grid-column: 2; font-size: 13px; }
+.olist .slim { grid-column: 2; margin-top: 4px; }
+.olist .slim > span { background: var(--accent); }
+@media (max-width: 640px) { .otile { grid-template-columns: 44px minmax(0, 1fr); } .otile-tab span { font-size: 18px; } .otile-body { padding: var(--s4); } }

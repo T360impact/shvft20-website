@@ -262,13 +262,35 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
 
   // Outcomes: change per measure. Before and after scores come from
   // surveys; until then, results against the target.
-  const outcomeRows = outcomes.filter((o) => ctx.manages || o.reported);
-  const outcomesPanel = () => (outcomeRows.length ? html`<ul class="rows two-up">${outcomeRows.map((o) => {
-    const s = o.reported && o.target ? Math.min(100, (100 * o.actual) / o.target) : null;
-    return html`<li class="kv"><div><span title="${o.label}">${o.headline || shortLabel(o.label)}</span><span class="muted small" style="display:block">${[o.theme, o.code].filter(Boolean).join(' · ')}</span></div>
-      <div class="kv-end"><span class="small ${s == null && o.before == null ? 'muted' : ''}">${o.before != null ? `Before ${fmtNum(o.before)} · After ${fmtNum(o.after)}` : s != null ? `${fmtNum(o.actual)} of ${fmtNum(o.target)} · ${Math.round(s)}%` : 'No results yet'}</span>
-        ${s != null ? html`<span class="slim"><span style="width:${s}%"></span></span>` : ''}</div></li>`;
-  })}</ul><p class="muted small" style="margin-top:12px">Before and after scores appear here once the first surveys are back.</p>` : null);
+  // Outcomes grouped into their themes: one numbered tile per theme with its
+  // average progress and a small bar per outcome, and a breakdown that opens
+  // the individual outcomes. Before and after scores arrive with surveys.
+  const OUTCOME_ICON = (t) => (/safe|belong|access|space/i.test(t) ? 'compliance' : /skill|progress|work|employ|train|educat/i.test(t) ? 'outcomes'
+    : /well|health|relation|mental|emotion/i.test(t) ? 'surveys' : 'targets');
+  const pctOf = (o) => (o.reported && o.target ? Math.min(100, (100 * o.actual) / o.target) : null);
+  const outcomesPanel = () => {
+    if (!outcomes.length || (!ctx.manages && !outcomes.some((o) => o.reported))) return null;
+    return html`<div class="otiles">${themes.map((r, i) => {
+      const list = outcomes.filter((o) => (o.theme || 'Outcomes') === r.th);
+      return html`<article class="otile" style="--accent:var(--theme-${(i % 4) + 1})">
+        <div class="otile-tab" aria-hidden="true"><span>${String(i + 1).padStart(2, '0')}</span></div>
+        <div class="otile-body">
+          <header><span class="otile-icon">${raw(icon(OUTCOME_ICON(r.th), 20))}</span>
+            <div><h3>${r.th}</h3><span class="muted small">${r.n} outcome${r.n === 1 ? '' : 's'}</span></div></header>
+          <div class="otile-fig"><b>${r.avg == null ? '–' : `${Math.round(r.avg)}%`}</b>
+            <span class="muted small">${r.avg == null ? 'Results begin with the first survey' : 'average progress against target'}</span></div>
+          <div class="ochart" role="img" aria-label="${list.map((o) => `${o.headline || shortLabel(o.label)}: ${pctOf(o) == null ? 'no result' : `${Math.round(pctOf(o))}%`}`).join('; ')}">
+            ${list.map((o) => html`<span class="ocol" title="${o.code ? `${o.code} · ` : ''}${o.headline || shortLabel(o.label)}${pctOf(o) == null ? '' : ` · ${Math.round(pctOf(o))}%`}"><i style="height:${Math.max(pctOf(o) ?? 0, 0)}%"></i></span>`)}</div>
+          <details class="obreak"><summary>Break down ${r.n} outcome${r.n === 1 ? '' : 's'}</summary>
+            <ul class="olist">${list.map((o) => {
+              const sh = pctOf(o);
+              return html`<li><span class="ocode">${o.code || ''}</span><span class="oname" title="${o.label}">${o.headline || shortLabel(o.label)}</span>
+                <span class="oval">${o.before != null ? `Before ${fmtNum(o.before)} · After ${fmtNum(o.after)}` : sh != null ? `${fmtNum(o.actual)} of ${fmtNum(o.target)} · ${Math.round(sh)}%` : ctx.manages ? html`<span class="muted">No results yet</span>` : ''}</span>
+                ${sh != null ? html`<span class="slim"><span style="width:${sh}%"></span></span>` : ''}</li>`;
+            })}</ul></details></div></article>`;
+    })}</div>
+    <p class="muted small" style="margin-top:16px">Before and after scores appear here once the first surveys are back.</p>`;
+  };
 
   const sitesPanel = () => {
     const list = x.sites || [];
