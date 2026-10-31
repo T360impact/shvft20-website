@@ -50,7 +50,7 @@ export const ragTag = (r) => pill(r || 'grey', RAG_LABEL[r] || 'No profile yet',
 export function header(ctx, area, title, sub = '', actions = '') {
   const b = base(ctx);
   const roles = lw(ctx).roles.map((r) => ROLE[r]).join(', ') || 'Staff';
-  const tabs = [['week', 'This week'], ['operations', 'Operations'], ['consortium', 'Consortium'], ['meetings', 'Meetings']]
+  const tabs = [['week', 'This week'], ['operations', 'Operations'], ['consortium', 'Consortium'], ['todo', 'To do']]
     .filter(([k]) => lw(ctx).roles.length || k === 'mine');
   if (isSenior(ctx)) tabs.push(['plans', 'Plans']);
   if (isLead(ctx)) tabs.push(['team', 'Team and hubs']);
@@ -77,8 +77,8 @@ export function liveRefresh(ctx, rerender) {
 
 export const taskRow = (ctx, t) => html`<li><button type="button" class="lw-row" data-task="${t.id}">
   <span class="lw-row-main"><strong>${t.title}</strong>
-    <span class="muted small">${ownerText(ctx, t)}${t.hub_id ? ` · ${hubName(ctx, t.hub_id)}` : ''}${t.delegated ? ' · delegated' : ''}${t.meeting_id ? ' · meeting action' : ''}</span></span>
-  <span class="lw-row-tags">${t.visibility === 'lead_only' ? html`<span class="lw-lock" title="Lead and operations lead only">${raw(icon('safeguarding', 14))}</span>` : ''}
+    <span class="muted small">${ownerText(ctx, t)}${t.assigned_how === 'auto' ? ' (allocated automatically)' : ''}${t.hub_id ? ` · ${hubName(ctx, t.hub_id)}` : ''}${t.delegated ? ' · delegated' : ''}${t.meeting_id ? ' · meeting action' : ''}</span></span>
+  <span class="lw-row-tags">${!t.owner_profile_id && !t.owner_role && !['done', 'not_done'].includes(t.status) ? pill('amber', 'Unassigned') : ''}${t.visibility === 'lead_only' ? html`<span class="lw-lock" title="Lead and operations lead only">${raw(icon('safeguarding', 14))}</span>` : ''}
     ${dueTag(t.due_date, ['done', 'not_done'].includes(t.status))}${statusTag(t.status)}</span></button></li>`;
 
 // Add or edit a task. Hub roles can only place it at their own hub.
@@ -89,7 +89,8 @@ export function taskForm(ctx, t = {}, defaults = {}) {
     <label class="f">Detail <span class="muted small">(optional)</span><textarea name="detail" rows="3" maxlength="4000">${v.detail || ''}</textarea></label>
     <div class="fields">
       <label class="f">Tracker<select name="tracker"><option value="operations" ${raw(v.tracker === 'operations' ? 'selected' : '')}>Operations</option>
-        <option value="consortium" ${raw(v.tracker === 'consortium' ? 'selected' : '')}>Consortium</option></select></label>
+        <option value="consortium" ${raw(v.tracker === 'consortium' ? 'selected' : '')}>Consortium</option>
+        <option value="todo" ${raw(v.tracker === 'todo' ? 'selected' : '')}>To do</option></select></label>
       <label class="f">Area<input name="area" maxlength="80" value="${v.area || ''}" placeholder="For example Hiring" list="lw-areas"></label></div>
     <div class="fields"><label class="f">Owner${ownerSelect(ctx, 'owner', ownerValue(v))}</label>
       <label class="f">Hub${hubSelect(ctx, 'hub_id', v.hub_id || '')}</label></div>
@@ -137,6 +138,9 @@ export async function openTask(ctx, id, done) {
         ${t.hub_id ? ` · ${hubName(ctx, t.hub_id)}` : ''} · ${t.tracker === 'consortium' ? 'Consortium' : 'Operations'}${t.area ? ` · ${t.area}` : ''}
         ${t.due_text ? html`<br>Plan date: “${t.due_text}”` : ''}${t.source_reference ? html`<br>Source: ${t.source_reference}` : ''}</p>
       ${t.reason ? html`<p class="small"><strong>Reason:</strong> ${t.reason}</p>` : ''}</div>
+    <form class="form lw-assign" id="as-form"><label class="f">Assign to${ownerSelect(ctx, 'owner', ownerValue(t))}</label>
+      <button class="btn secondary small">Assign</button></form>
+    ${t.assigned_how === 'auto' ? html`<p class="small muted">Allocated automatically from the plan's “${t.owner_label}”.</p>` : ''}
     <form class="form" id="upd-form"><fieldset><legend>Update</legend>
       <div class="seg" role="radiogroup">${Object.entries(TASK_STATUS).map(([k, v]) => html`<label class="seg-btn lw-radio"><input type="radio" name="status" value="${k}" ${raw(k === t.status ? 'checked' : '')}>${v}</label>`)}</div>
       <label class="f" id="reason-f">Why <span class="muted small">(needed for not done)</span><input name="reason" maxlength="1000" value="${t.reason || ''}"></label>
@@ -144,6 +148,14 @@ export async function openTask(ctx, id, done) {
       <div class="btns"><button class="btn">Save update</button><button type="button" class="btn secondary" id="edit">Edit task</button>
         ${isSenior(ctx) ? html`<button type="button" class="btn secondary" id="del">Delete</button>` : ''}</div></form>
     ${sectionHistory(hist, who)}`);
+  $('#as-form', d).addEventListener('submit', (e) => {
+    e.preventDefault();
+    act(e.submitter, async () => {
+      const o = ownerFields(formData(e.target).owner || '');
+      must(await db.rpc('lw_assign_tasks', { p_tasks: [id], p_owner_profile: o.owner_profile_id, p_owner_role: o.owner_role }));
+      d.close(); toast(o.owner_profile_id || o.owner_role ? 'Assigned.' : 'Unassigned.'); done();
+    });
+  });
   const reasonF = $('#reason-f', d);
   const syncReason = () => { const s = $('input[name=status]:checked', d)?.value; reasonF.hidden = !['blocked', 'not_done'].includes(s); };
   $$('input[name=status]', d).forEach((r) => r.addEventListener('change', syncReason));

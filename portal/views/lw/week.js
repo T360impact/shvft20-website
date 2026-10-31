@@ -3,10 +3,13 @@
 // decisions, overdue tasks by owner, checklists for the last delivery day,
 // rota gaps, people blockers, agreements, outputs behind, delegated work.
 import { html, raw, render, $, $$, db, must, act, toast, icon, pill, openDrawer, fmtDate, fmtMonth, formData, today, emptyState, sectionGroup, statCard, headline } from '../../lib.js';
-import { hubName, isSenior, base, bindTasks, statusTag, dueTag, miniRing, ragTag, RHYTHM } from './common.js';
+import { hubName, isSenior, isWide, base, bindTasks, statusTag, dueTag, miniRing, ragTag, RHYTHM } from './common.js';
 
 export default async function week(ctx, el, refresh) {
-  const w = must(await db.rpc('lw_this_week', { p_consortium: ctx.consortium.id }));
+  const [w, wp] = await Promise.all([
+    db.rpc('lw_this_week', { p_consortium: ctx.consortium.id }).then(must),
+    db.rpc('lw_week_progress', { p_consortium: ctx.consortium.id }).then(must),
+  ]);
   const b = base(ctx);
   const overdueN = w.overdue.reduce((a, g) => a + g.tasks.length, 0);
   const gapsN = w.rota_gaps.length;
@@ -15,6 +18,34 @@ export default async function week(ctx, el, refresh) {
   const taskLine = (t) => html`<li><button type="button" class="lw-row" data-task="${t.id}"><span class="lw-row-main"><strong>${t.title}</strong>
     ${t.tracker ? html`<span class="muted small">${t.tracker === 'consortium' ? 'Consortium' : 'Operations'}${t.meeting_id ? ' · meeting action' : ''}</span>` : ''}</span>
     <span class="lw-row-tags">${dueTag(t.due_date, false)}${statusTag(t.status)}</span></button></li>`;
+
+  // Due this week: everything with a deadline Monday to Sunday, done or not,
+  // one bar for the week and the items day by day.
+  const KIND = { task: 'Task', delegated: 'Delegated', decision: 'Your decision', agreement: 'Agreement', milestone: 'Milestone',
+    activity_plan: 'Activity plan', checklist: 'Checklist', supervision: 'Supervision', money: 'Money' };
+  const bar = (done, total, extra = '') => html`<span class="lw-progress" role="img" aria-label="${done} of ${total} done"><i style="width:${total ? Math.round((done / total) * 100) : 0}%"></i>${extra}</span>`;
+  const due = wp.due;
+  const dueDone = due.filter((x) => x.done).length;
+  const dueLate = due.filter((x) => !x.done && x.due < today()).length;
+  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(`${wp.week_start}T12:00:00`); d.setDate(d.getDate() + i); return d.toISOString().slice(0, 10); });
+  const dueLine = (x) => html`<li>${x.kind === 'task' || x.kind === 'delegated' ? html`<button type="button" class="lw-row" data-task="${x.id}">${dueInner(x)}</button>` : html`<a class="lw-row" href="${{ decision: `${b}/week`, agreement: `${b}/consortium/agreements`, milestone: `${b}/consortium/milestones`,
+      activity_plan: `${b}/operations/delivery`, checklist: `${b}/operations/checklists`, supervision: `${b}/operations/people`, money: `${b}/consortium/money` }[x.kind] || `${b}/week`}">${dueInner(x)}</a>`}</li>`;
+  const dueInner = (x) => html`<span class="lw-check ${x.done ? 'on' : ''}" aria-hidden="true">${x.done ? raw(icon('check', 14)) : ''}</span>
+    <span class="lw-row-main"><strong class="${x.done ? 'lw-done' : ''}">${x.title}</strong><span class="muted small">${KIND[x.kind]}${x.owner ? ` · ${x.owner}` : ''}${x.blocks ? ' · blocks first session' : ''}</span></span>
+    <span class="lw-row-tags">${x.unassigned && !x.done ? pill('amber', 'Unassigned') : ''}${x.done ? pill('green', 'Done', 'approved') : x.due < today() ? pill('red', 'Overdue', 'overdue') : x.status ? statusTag(['not_started', 'in_progress', 'blocked', 'not_done', 'done'].includes(x.status) ? x.status : 'not_started') : ''}</span>`;
+  const weekPanel = html`<section class="panel lw-weekdue"><header><div><h2>Due this week</h2><span class="muted small">${fmtDate(wp.week_start)} to ${fmtDate(wp.week_end)}</span></div>
+      <span class="lw-weekfig"><b>${dueDone}</b> of ${due.length} done${dueLate ? html` · <span class="warn-text">${dueLate} overdue</span>` : ''}</span></header>
+    ${bar(dueDone, due.length)}
+    ${due.length ? days.filter((d) => due.some((x) => x.due === d)).map((d) => { const items = due.filter((x) => x.due === d); const n = items.filter((x) => x.done).length;
+      return sectionGroup({ title: new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }), meta: `${items.length} due · ${n} done`,
+        aside: bar(n, items.length), open: d === today() || (d > today() && !days.some((x) => x >= today() && x < d && due.some((y) => y.due === x))) || (items.some((x) => !x.done) && d < today()),
+        body: html`<ul class="lw-list">${items.map(dueLine)}</ul>` }); }) : html`<p class="muted small">Nothing has a deadline this week.</p>`}</section>`;
+  const trackerPanel = html`<section class="panel lw-trackers"><header><h2>Progress</h2><span class="muted small">All tasks in each tracker</span></header>
+    <div class="lw-trackgrid">${['operations', 'consortium'].map((k) => { const t = wp.trackers.find((x) => x.tracker === k) || { total: 0, done: 0, in_progress: 0, blocked: 0, overdue: 0, unassigned: 0, areas: [] };
+      return html`<div class="lw-track"><a class="lw-track-head" href="${b}/${k}/tasks"><strong>${k === 'operations' ? 'Operations' : 'Consortium'}</strong><span><b>${t.done}</b> of ${t.total} done</span></a>
+        ${bar(t.done, t.total)}
+        <p class="small muted">${t.in_progress} in progress${t.blocked ? ` · ${t.blocked} blocked` : ''}${t.overdue ? ` · ${t.overdue} overdue` : ''}${t.unassigned ? html` · <a href="${b}/${k}/tasks">${t.unassigned} unassigned</a>` : ''}</p>
+        ${t.areas?.length ? html`<details class="lw-areas"><summary class="small">By area</summary><ul>${t.areas.map((a) => html`<li><span class="small">${a.area}</span>${bar(a.done, a.total)}<span class="small muted">${a.done}/${a.total}</span></li>`)}</ul></details>` : ''}</div>`; })}</div></section>`;
 
   const sections = [];
   if (isSenior(ctx)) sections.push(sectionGroup({ title: 'Your decisions', meta: w.decisions.length ? `${w.decisions.length} open${w.decisions.some((d) => d.due_date && d.due_date < today()) ? ' · some past their date' : ''}` : 'None open',
@@ -68,6 +99,8 @@ export default async function week(ctx, el, refresh) {
       ${statCard({ icon: 'overdue', value: overdueN, label: 'Overdue tasks', trend: { dir: 'flat', tone: overdueN ? 'red' : 'green', text: 'across both trackers' } })}
       ${statCard({ icon: 'people', value: gapsN, label: 'Rotas with gaps', trend: { dir: 'flat', tone: gapsN ? 'amber' : 'green', text: 'next 14 days' } })}
       ${statCard({ icon: 'outcomes', value: behind, label: 'Behind profile', trend: { dir: 'flat', tone: behind ? 'amber' : 'green', text: 'outputs and partner targets' } })}</div>
+    <p class="lw-meetlinks small"><span class="muted">Meeting views:</span> <a href="${b}/meetings/weekly">Weekly operations</a>${isWide(ctx) ? html` · <a href="${b}/meetings/monthly">Monthly consortium</a>` : ''} · <a href="${b}/todo">To do list</a></p>
+    <div class="lw-weekgrid">${weekPanel}${trackerPanel}</div>
     <div class="lw-sections">${sections}</div>`);
   bindTasks(el, ctx, refresh);
   $$('[data-dec]', el).forEach((btn) => btn.addEventListener('click', () => {

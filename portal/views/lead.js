@@ -3,7 +3,8 @@
 //   operations/<section>    tasks, checklists, rota, people, delivery
 //   consortium/<section>    tasks, agreements, governance, partners, outputs,
 //                           assurance, referrals, money, milestones
-//   meetings/<weekly|monthly>, plans[/<id>], team, mine
+//   todo (ad hoc work), meetings/<weekly|monthly> (from Governance),
+//   plans[/<id>], team, mine
 // Only lead team roles reach it; staff with a portal account see "mine".
 import { html, render, $ } from '../lib.js';
 import { header, subNav, base, lw, isSenior, isLead, isWide, liveRefresh } from './lw/common.js';
@@ -15,6 +16,7 @@ import people from './lw/people.js';
 import delivery from './lw/delivery.js';
 import { agreements, assurance, governance, partners, outputs, referrals, money, milestones } from './lw/consortium.js';
 import meetings from './lw/meetings.js';
+import todo from './lw/todo.js';
 import plans from './lw/plan.js';
 import team from './lw/team.js';
 
@@ -50,6 +52,7 @@ export default async function lead(ctx, el, [area = 'week', sub, id] = []) {
     const views = { tasks: (x) => trackerTasks(ctx, x, 'consortium', rerun), agreements, assurance, governance, partners, outputs, referrals, money, milestones };
     return s === 'tasks' ? views.tasks(body) : views[s](ctx, body);
   }
+  if (area === 'todo') return todo(ctx, page('To do', 'Ad hoc work, yours and the team\'s'), rerun);
   if (area === 'meetings') return meetings(ctx, page('Meetings', 'One screen per meeting'), sub, rerun);
   if (area === 'plans' && isSenior(ctx)) return plans(ctx, page(sub ? 'Review a plan' : 'Plans', 'Import a mobilisation or operations plan'), sub, rerun);
   if (area === 'team' && isLead(ctx)) return team(ctx, page('Team and hubs', 'Who is in the Lead Workspace'), rerun);

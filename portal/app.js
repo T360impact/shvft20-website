@@ -265,7 +265,7 @@ function shell(ctx, active) {
   // The Lead Workspace section, only for the lead team (or staff, for their shifts).
   const lwSub = active === 'lw' ? (location.hash.split('/')[4] || 'week') : '';
   const lwLinks = navCtx && allowed('lw', navCtx) ? (navCtx.lw?.roles?.length
-    ? [['week', 'This week', 'home'], ['operations', 'Operations', 'sessions'], ['consortium', 'Consortium', 'governance'], ['meetings', 'Meetings', 'people']]
+    ? [['week', 'This week', 'home'], ['operations', 'Operations', 'sessions'], ['consortium', 'Consortium', 'governance'], ['todo', 'To do', 'check']]
     : [['mine', 'My shifts', 'sessions']]) : [];
   const lwNav = lwLinks.length ? html`<p class="side-group">Lead Workspace</p><ul>${lwLinks.map(([k, label, ic]) => html`<li><a href="#/c/${navCtx.consortium.id}/lw/${k}" class="m-brand" ${raw(lwSub === k ? 'aria-current="page"' : '')}>${raw(icon(ic, 20))}<span>${label}</span></a></li>`)}</ul>` : '';
   const link = ([k, v], short) => html`<a href="#/c/${navCtx.consortium.id}/${k}" class="m-${v.mod}" ${raw(active === k ? 'aria-current="page"' : '')}>

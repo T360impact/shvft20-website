@@ -4,7 +4,7 @@
 // referral pathways, money and milestones. Performance and money are for
 // the lead and operations lead only.
 import { html, raw, render, $, $$, db, must, act, toast, icon, pill, openDrawer, fmtDate, fmtMonth, fmtMoney, fmtNum, formData, today, emptyState, sectionGroup, segControl, bindSegments, headline } from '../../lib.js';
-import { isSenior, ragTag, personName, base } from './common.js';
+import { isSenior, isWide, ragTag, personName, base } from './common.js';
 
 // Picked hub, date and view survive a live refresh.
 const ui = (ctx) => ctx.lwUi || (ctx.lwUi = {});
@@ -109,7 +109,9 @@ export async function governance(ctx, el) {
   const escalationView = () => html`<ol class="lw-steps">${route.map((s, i) => html`<li><span class="lw-step-n">${i + 1}</span>${s}</li>`)}</ol>
     ${!route.length ? emptyState('governance', 'No escalation route set.') : ''}
     ${isSenior(ctx) ? html`<form class="form" id="esc-form"><label class="f">Escalation route, one step per line<textarea name="route" rows="5">${route.join('\n')}</textarea></label><div class="btns"><button class="btn secondary">Save route</button></div></form>` : ''}`;
-  render(el, html`${segControl('gv', [['meetings', 'Meetings'], ['log', 'Decision log'], ['conflicts', 'Conflicts of interest'], ['escalation', 'Escalation route']], view)}
+  render(el, html`<div class="lw-toolbar"><span class="btns"><a class="btn secondary small" href="${base(ctx)}/meetings/weekly">Weekly operations meeting view</a>
+      ${isWide(ctx) ? html`<a class="btn secondary small" href="${base(ctx)}/meetings/monthly">Monthly consortium meeting view</a>` : ''}</span></div>
+    ${segControl('gv', [['meetings', 'Meetings'], ['log', 'Decision log'], ['conflicts', 'Conflicts of interest'], ['escalation', 'Escalation route']], view)}
     ${view === 'meetings' ? meetingsView() : view === 'log' ? logView() : view === 'conflicts' ? conflictView() : escalationView()}`);
   $$('[data-seg-for="gv"] [data-seg]', el).forEach((b) => b.addEventListener('click', () => { ui(ctx)._gv = b.dataset.seg; again(); }));
   bindSegments(el);

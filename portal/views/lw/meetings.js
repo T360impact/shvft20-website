@@ -16,7 +16,8 @@ const hm = (t) => String(t || '').slice(0, 5);
 export default async function meetings(ctx, el, sub, refresh) {
   const kind = sub === 'monthly' && isWide(ctx) ? 'monthly' : 'weekly';
   const b = base(ctx);
-  const nav = subNav(`${b}/meetings`, [['weekly', 'Weekly operations'], ...(isWide(ctx) ? [['monthly', 'Monthly consortium']] : [])], kind);
+  const back = html`<p class="page-sub"><a class="linkbtn small" href="${b}/consortium/governance">${raw(icon('next', 14))} Governance</a></p>`;
+  const nav = html`${back}${subNav(`${b}/meetings`, [['weekly', 'Weekly operations'], ...(isWide(ctx) ? [['monthly', 'Monthly consortium']] : [])], kind)}`;
   if (kind === 'weekly') return weekly(ctx, el, nav, refresh);
   return monthly(ctx, el, nav, refresh);
 }
