@@ -187,6 +187,10 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
   let yearSel = String(p.commitments.find((k) => k.period === 'year' && k.year_start <= today && today < k.year_end)?.year ?? '');
   // One compact row per target: a short headline (the full wording is in
   // its details and on hover), who, the target, progress and status.
+  // In the first quarter of a period, a target with nothing recorded isn't
+  // behind yet: it reads "None recorded yet" rather than red.
+  const early = (k) => !Number(k.actual) && (k.elapsed ?? 0) < 0.25;
+  const statusOf = (k) => (!k.source || early(k) ? 'none' : k.rag || 'grey');
   const targetRow = (k) => {
     const s = shareOf(k);
     const short = shortLabel(k.label, 12);
@@ -199,7 +203,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
       <td class="t-prog" data-label="Progress">${k.source ? html`<span class="t-fig"><strong>${fmtNum(k.actual)}${pct(k)}</strong><span class="muted">${isPct(k) ? '' : ` · ${fmtNum(Math.round(s))}%`}</span></span>
         <span class="slim" role="img" aria-label="${isPct(k) ? `${fmtNum(k.actual)}%` : `${fmtNum(Math.round(s))}% of the target`}"><span style="width:${Math.min(100, isPct(k) ? k.actual : s)}%"></span>
           ${isPct(k) ? html`<i style="left:${Math.min(100, k.target)}%"></i>` : k.target ? html`<i style="left:${Math.min(100, (100 * k.expected) / k.target)}%"></i>` : ''}</span>` : html`<span class="muted">–</span>`}</td>
-      <td class="t-status" data-label="Status">${k.source ? rag(k.rag) : html`<span class="muted small">Not reported</span>`}</td></tr>`;
+      <td class="t-status" data-label="Status">${!k.source ? html`<span class="muted small">Not reported</span>` : early(k) ? html`<span class="muted small">None recorded yet</span>` : rag(k.rag)}</td></tr>`;
   };
   const groupNote = (rows) => {
     const onTrack = rows.filter((k) => k.source && k.rag === 'green').length;
@@ -208,20 +212,43 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     return [current ? `${Math.round(rows[0].elapsed * 100)}% of the way through` : rows[0].year_start > today ? 'Not started' : 'Finished',
       reported ? `${onTrack} of ${rows.length} on track` : 'nothing reported yet', reported && rows.length - reported ? `${rows.length - reported} not reported` : ''].filter(Boolean).join(' · ');
   };
+  // Targets in short sections: each year's targets grouped by section and
+  // type (Targeted outputs, Universal outcomes...). A section header shows
+  // its count, how many are reported and a status bar; it opens to its rows.
+  const SECTION_ORDER = (k) => [k.section || 'Other', k.kind === 'outcome' ? 'outcomes' : 'outputs'];
   const targetsTable = (list, withFilters) => {
-    const groups = periods.map((y) => [y, list.filter((k) => (y === 'lifetime' ? k.period === 'lifetime' : k.period !== 'lifetime' && k.year === y))]).filter(([, rows]) => rows.length);
-    if (!groups.length) return html`<p class="note">No targets confirmed yet.${ctx.manages ? html` <a href="#/c/${c.id}/targets">Set targets</a>` : ''}</p>`;
+    const years = periods.filter((y) => list.some((k) => (y === 'lifetime' ? k.period === 'lifetime' : k.period !== 'lifetime' && k.year === y)));
+    if (!years.length) return html`<p class="note">No targets confirmed yet.${ctx.manages ? html` <a href="#/c/${c.id}/targets">Set targets</a>` : ''}</p>`;
+    const inYear = (y) => list.filter((k) => (y === 'lifetime' ? k.period === 'lifetime' : k.period !== 'lifetime' && k.year === y));
+    const sectionsOf = (rows) => {
+      const keys = [...new Set(rows.map((k) => SECTION_ORDER(k).join('|')))]
+        .sort((a, b) => (a.startsWith('Targeted') ? 0 : a.startsWith('Universal') ? 1 : 2) - (b.startsWith('Targeted') ? 0 : b.startsWith('Universal') ? 1 : 2) || a.localeCompare(b));
+      return keys.map((key) => [key.split('|'), rows.filter((k) => SECTION_ORDER(k).join('|') === key)]);
+    };
+    const statusBar = (rows) => {
+      const n = (st) => rows.filter((k) => statusOf(k) === st).length;
+      const parts = [['green', n('green')], ['amber', n('amber')], ['red', n('red')], ['none', rows.length - n('green') - n('amber') - n('red')]].filter(([, v]) => v);
+      return html`<span class="tg-bar" role="img" aria-label="${parts.map(([t, v]) => `${v} ${t === 'none' ? 'not reported' : t}`).join(', ')}">${parts.map(([t, v]) => html`<i class="seg-${t}" style="flex:${v}"></i>`)}</span>`;
+    };
     return html`${withFilters ? html`<div class="target-tools"><div class="filters" role="group" aria-label="Filter targets">
         ${partnerIds.length > 1 ? html`<label class="f">Partner<select data-filter="org"><option value="">All partners</option>${partnerIds.map((id) => html`<option value="${id}">${ctx.org(id).name}</option>`)}</select></label>` : ''}
         ${programmes.length ? html`<label class="f">Programme<select data-filter="programme"><option value="">All programmes</option>${programmes.map((g) => html`<option value="${g.id}">${g.name}</option>`)}</select></label>` : ''}
         ${sites.length ? html`<label class="f">Site<select data-filter="site"><option value="">All sites</option>${sites.map((s) => html`<option>${s}</option>`)}</select></label>` : ''}
       </div>
       ${periods.length > 1 ? html`<div class="seg" role="group" aria-label="Year">${[...periods, ''].map((y) => html`<button type="button" class="seg-btn" data-year-tab="${y}" aria-pressed="${String(y) === yearSel}">${y === '' ? 'All years' : periodLabel(y)}</button>`)}</div>` : ''}</div>` : ''}
-      ${list.some((k) => k.source) ? html`<p class="muted small" style="margin-bottom:8px">Select a target for its details. The mark on each bar is where it should be by today.</p>` : html`<p class="muted small" style="margin-bottom:8px">Select a target for its details.</p>`}
-      <div class="table-wrap"><table class="cards targets-table">
-        <thead><tr><th>Measure</th><th>Partner</th><th class="num">Target</th><th>Progress</th><th>Status</th></tr></thead>
-        ${groups.map(([y, rows]) => html`<tbody data-group="${y}"><tr class="group-head"><th colspan="5" scope="rowgroup"><h3>${periodLabel(y)}</h3> <span class="muted small">${groupNote(rows)}</span></th></tr>
-          ${rows.map(targetRow)}</tbody>`)}</table></div>`;
+      <p class="muted small tg-help">Open a section to see its targets; select a target for its details.${list.some((k) => k.source) ? ' The mark on each bar is where it should be by today.' : ''}
+        <button type="button" class="linkbtn small" data-open-all>Open all</button></p>
+      ${years.map((y) => {
+        const rows = inYear(y);
+        return html`<div class="tyear" data-year="${y}"><div class="tyear-head"><h3>${periodLabel(y)}</h3><span class="muted small">${groupNote(rows)}</span></div>
+          ${sectionsOf(rows).map(([[section, kind], srows]) => html`<details class="tgroup">
+            <summary><span class="tg-title">${section} ${kind}</span>
+              <span class="tg-meta">${srows.length} target${srows.length === 1 ? '' : 's'} · ${srows.filter((k) => k.source).length} reported · ${srows.filter((k) => statusOf(k) === 'green').length} on track</span>
+              ${statusBar(srows)}<span class="tg-chev" aria-hidden="true"></span></summary>
+            <div class="table-wrap"><table class="cards targets-table">
+              <thead><tr><th>Measure</th><th>Partner</th><th class="num">Target</th><th>Progress</th><th>Status</th></tr></thead>
+              <tbody>${srows.map(targetRow)}</tbody></table></div></details>`)}</div>`;
+      })}`;
   };
 
   const reachPanel = () => {
@@ -436,7 +463,8 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     $$('tr[data-row]', el).forEach((r) => {
       r.hidden = !!((f.org && !r.dataset.orgs.split(' ').includes(f.org)) || (f.site && r.dataset.site !== f.site) || (f.year && r.dataset.year !== f.year));
     });
-    $$('tbody[data-group]', el).forEach((g) => { g.hidden = !$$('tr[data-row]', g).some((r) => !r.hidden); });
+    $$('details.tgroup', el).forEach((g) => { g.hidden = !$$('tr[data-row]', g).some((r) => !r.hidden); });
+    $$('.tyear', el).forEach((y) => { y.hidden = (f.year && y.dataset.year !== f.year) || !$$('details.tgroup', y).some((g) => !g.hidden); });
   };
   const changed = () => { dirty = true; };
 
@@ -448,6 +476,11 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
       applyFilters();
     }));
     applyFilters();
+    $$('[data-open-all]', el).forEach((b) => b.addEventListener('click', () => {
+      const open = b.textContent === 'Open all';
+      $$('details.tgroup', el).forEach((d) => { d.open = open; });
+      b.textContent = open ? 'Close all' : 'Open all';
+    }));
     $('[data-matrix]', el)?.addEventListener('click', () => openDrawer('Who the targets link to', linkMatrix(ctx, p)));
     $$('button[data-id]', el).forEach((b) => b.addEventListener('click', () => {
       const k = p.commitments.find((r) => r.id === b.dataset.id);
