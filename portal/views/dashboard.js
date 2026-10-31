@@ -336,9 +336,14 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
       ...(ret.awaiting_review ? [{ ic: 'submitted', text: html`<a href="#/c/${c.id}/returns">${ret.awaiting_review} return${ret.awaiting_review === 1 ? '' : 's'} awaiting your review</a>`, tone: 'blue' }] : []),
       ...(x.compliance || []).map((d) => ({ ic: 'expiry', text: html`<strong>${d.organisation}</strong>: ${d.title} expires ${fmtDate(d.expires_on)}`, tone: 'amber' })),
       ...(x.risks || []).map((r) => ({ ic: 'safeguarding', text: html`<strong>${r.organisation}</strong> flagged a risk in ${fmtMonth(r.period)}: ${r.text}`, tone: 'red' })),
+      ...(x.risk_actions?.overdue ? [{ ic: 'overdue', text: html`<a href="#/c/${c.id}/risks">${x.risk_actions.overdue} risk action${x.risk_actions.overdue === 1 ? ' is' : 's are'} overdue</a>`, tone: 'red' }] : []),
     ];
     const stories = x.stories || [];
-    return html`<div class="stack-col"><div><h3 class="small-head">Needs attention</h3>
+    const ra = x.risk_actions;
+    return html`<div class="stack-col">${ra?.total ? html`<div><h3 class="small-head">Risk register</h3>
+        <p><a href="#/c/${c.id}/risks"><strong>${ra.done} of ${ra.total}</strong> risk actions complete</a></p>
+        <span class="slim" role="img" aria-label="${ra.done} of ${ra.total} risk actions complete" style="margin-top:8px"><span style="width:${(100 * ra.done) / ra.total}%"></span></span></div>` : ''}
+      <div><h3 class="small-head">Needs attention</h3>
         ${items.length ? html`<ul class="rows alerts">${items.map((i) => html`<li><span class="alert-ic tone-${i.tone}">${raw(icon(i.ic, 16))}</span><span>${i.text}</span></li>`)}</ul>`
         : html`<p class="muted">Nothing needs attention.</p>`}</div>
       <div><h3 class="small-head">Latest stories</h3>

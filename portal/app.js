@@ -8,6 +8,7 @@ import agreements from './views/agreements.js';
 import register from './views/register.js';
 import sessions from './views/sessions.js';
 import returns from './views/returns.js';
+import risks from './views/risks.js';
 import dashboard from './views/dashboard.js';
 import team from './views/team.js';
 import admin from './views/admin.js';
@@ -42,6 +43,7 @@ const VIEWS = {
   sessions: { label: 'Sessions', short: 'Check in', icon: 'sessions', mod: 'delivery', view: sessions, roles: PD_ROLES },
   register: { label: 'Young people', short: 'People', icon: 'youngPeople', mod: 'delivery', view: register, roles: PD_ROLES },
   returns: { label: 'Returns', short: 'Returns', icon: 'returns', mod: 'compliance', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
+  risks: { label: 'Risks', short: 'Risks', icon: 'safeguarding', mod: 'compliance', view: risks, roles: ['lead', 'accountable_body', 'partner_manager', 'hub_worker'] },
   team: { label: 'People', short: 'Team', icon: 'people', mod: 'governance', view: team, roles: ['lead'] },
 };
 

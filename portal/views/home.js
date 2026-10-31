@@ -8,6 +8,7 @@ const MODULE = {
   bids: { label: 'Bids', icon: 'bids', mod: 'bids' },
   returns: { label: 'Returns', icon: 'returns', mod: 'compliance' },
   finance: { label: 'Targets and budget', icon: 'finance', mod: 'finance' },
+  risks: { label: 'Risks', icon: 'safeguarding', mod: 'compliance' },
 };
 
 export default async function home(main, state) {
@@ -30,6 +31,10 @@ export default async function home(main, state) {
     confirmers.length ? db.from('allocations').select('consortium_id').in('organisation_id', confirmers).is('confirmed_by_partner_at', null).is('superseded_by', null).is('retired_at', null).then(must) : [],
     live ? db.rpc('consortium_progress', { p_consortium: live.id }).then(must) : null,
   ]);
+  // Risk reminders: actions due within 14 days or overdue; for the lead, a
+  // review due, risks rescored into the top band and partner proposals.
+  const riskSets = await Promise.all(list.filter((c) => c.stage === 'live').map((c) => db.rpc('risk_reminders', { p_consortium: c.id })
+    .then(({ data }) => ({ c, r: data || {} }))));
   const name = (id) => list.find((c) => c.id === id)?.name || '';
 
   const tasks = {
@@ -39,6 +44,12 @@ export default async function home(main, state) {
       ...toReview.map((r) => ({ href: `#/c/${r.consortium_id}/returns/${r.id}`, title: `Review ${r.organisations?.name}'s ${fmtMonth(r.period_month)} return`, where: name(r.consortium_id), pill: statusPill('submitted') })),
     ],
     finance: [...new Set(toConfirm.map((a) => a.consortium_id))].map((id) => ({ href: `#/c/${id}/targets`, title: 'Confirm your budget', where: name(id), pill: pill('amber', 'Waiting for you', 'due') })),
+    risks: riskSets.flatMap(({ c, r }) => [
+      ...(r.actions || []).map((a) => ({ href: `#/c/${c.id}/risks`, title: `${a.risk_ref}: ${a.description}`, where: c.name, pill: duePill(a.due_date) })),
+      ...(r.review_due && daysUntil(r.review_due) <= 14 ? [{ href: `#/c/${c.id}/risks`, title: 'Review the risk register', where: c.name, pill: duePill(r.review_due) }] : []),
+      ...(r.into_top_band || []).map((x) => ({ href: `#/c/${c.id}/risks`, title: `${x.risk_ref} moved into the highest band`, where: c.name, pill: pill('red', 'Rescored', 'overdue') })),
+      ...(r.proposals ? [{ href: `#/c/${c.id}/risks`, title: `${r.proposals} risk proposal${r.proposals === 1 ? '' : 's'} to review`, where: c.name, pill: pill('blue', 'Waiting for you', 'submitted') }] : []),
+    ]),
   };
   const due = Object.values(tasks).flat().length;
   const overdue = items.filter((t) => t.consortia?.stage === 'bid' && t.due_on && daysUntil(t.due_on) < 0).length;
