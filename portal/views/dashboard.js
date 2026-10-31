@@ -8,7 +8,7 @@
 // headline cards, write a lead note, choose which panels the funder sees,
 // then save a draft or publish. Every publish is a version that can be
 // restored. Everyone else sees the published layout only.
-import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statusPill, fmtNum, fmtMoney, fmtDate, fmtDateTime, rag, fmtMonth, downloadCsv, statCard, openDrawer, headline as shortLabel, MEASURE_LABEL } from '../lib.js';
+import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statusPill, fmtNum, fmtMoney, fmtDate, fmtDateTime, rag, fmtMonth, downloadCsv, statCard, openDrawer, headline as shortLabel, MEASURE_LABEL, live, liveMark } from '../lib.js';
 import { chart, lineChart, initials, ring } from '../charts.js';
 
 const KIND = { output: 'Output', outcome: 'Outcome' };
@@ -443,7 +443,8 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     render(el, html`
       <div class="page-head"><div><span class="eyebrow">Dashboard</span><h1>${c.name}</h1>
         <p class="meta-line">${[sum.summary?.funder_name || c.funder, sum.summary?.programme_name || c.programme].filter(Boolean).join(' · ')}${c.start_date ? ` · ${fmtDate(c.start_date)} to ${fmtDate(c.end_date)}` : ''}</p>
-        <p>Are we on track? Progress against every target, from partner reports and the register.</p></div>
+        <p>Are we on track? Progress against every target, from partner reports and the register.</p>
+        <p style="margin-top:8px">${liveMark()}</p></div>
         <div class="btns">${ctx.role !== 'youth_voice' && !editing ? html`<button class="btn secondary" id="x-commit">Export targets</button>
           <button class="btn secondary" id="x-quarters">Quarters</button>` : ''}
           ${layout.editable ? (editing ? '' : html`<button class="btn secondary" id="edit">Edit</button>`) : ''}</div></div>
@@ -598,4 +599,11 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
   }
 
   draw();
+  // Live: figures partners add show here without a refresh. While the lead
+  // is editing the layout, the page waits and says so.
+  live(c.id, () => {
+    if (editing) { toast('New figures have arrived. They show when you finish editing.'); return; }
+    const y = window.scrollY;
+    dashboard(ctx, el, [tab]).then(() => window.scrollTo(0, y));
+  });
 }

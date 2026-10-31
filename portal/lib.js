@@ -267,3 +267,25 @@ export const toneBar = (parts) => {
   const shown = parts.filter(([, n]) => n);
   return shown.length ? html`<span class="tg-bar" role="img" aria-label="${shown.map(([t, n, label]) => `${n} ${label || t}`).join(', ')}">${shown.map(([t, n]) => html`<i class="seg-${t}" style="flex:${n}"></i>`)}</span>` : '';
 };
+
+// ------------------------------------------------------------- live pages
+// Pages that show delivery data reload when anything changes in the
+// workspace: a partner saving figures, uploading a spreadsheet, a return,
+// a session. The signal carries no data; the page fetches what the viewer
+// may see. One listener at a time, dropped when the page changes.
+let liveChannel = null;
+export function live(consortiumId, onChange) {
+  if (liveChannel) { db.removeChannel(liveChannel); liveChannel = null; }
+  let timer;
+  const ch = db.channel(`live:${consortiumId}:${crypto.randomUUID()}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'live_pings', filter: `consortium_id=eq.${consortiumId}` }, (payload) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => onChange(payload.new?.kind), 1200);
+    })
+    .subscribe((status) => document.querySelectorAll('.live-dot').forEach((d) => d.classList.toggle('on', status === 'SUBSCRIBED')));
+  liveChannel = ch;
+  const stop = () => { if (liveChannel === ch) { db.removeChannel(ch); liveChannel = null; } window.removeEventListener('hashchange', stop); };
+  window.addEventListener('hashchange', stop);
+}
+// The small "Live" mark for a page header, with when the figures last loaded.
+export const liveMark = () => html`<span class="live-mark" title="Updates by itself when partners add figures"><span class="live-dot"></span>Live · updated ${new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date())}</span>`;

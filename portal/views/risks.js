@@ -9,7 +9,7 @@
 // risks/import/<id>. Generic: scale, bands and categories come from the
 // workspace's own settings.
 import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statCard, openDrawer, fmtDate, fmtDateTime, uploadFile,
-  segControl, bindSegments, sectionGroup, today } from '../lib.js';
+  segControl, bindSegments, sectionGroup, today, live as liveUpdates, liveMark } from '../lib.js';
 import { initials } from '../charts.js';
 
 const STATUS = { open: 'Open', monitoring: 'Monitoring', escalated: 'Escalated', closed: 'Closed' };
@@ -61,6 +61,7 @@ export default async function risks(ctx, el, [sub, id]) {
   // ---------------------------------------------------------------- parts
   const header = () => html`<div class="page-head"><div><span class="eyebrow">Project risks</span><h1>Risk register</h1>
       <p class="meta-line">${s.source_title ? [s.source_title, s.source_signed ? `signed ${s.source_signed}` : '', s.register_version ? `version ${s.register_version}` : ''].filter(Boolean).join(' · ') : 'No register uploaded yet'}</p>
+      <p style="margin-top:8px">${liveMark()}</p>
       <p class="meta-line">${`Likelihood × severity, 1 to ${m} each`} · ${bands.map((b, i) => `${b.name} ${b.min_score}${bands[i + 1] ? `–${bands[i + 1].min_score - 1}` : '+'}`).join(', ')} · reviewed every ${s.review_frequency_months} months${reg.review_due ? ` · next review ${fmtDate(reg.review_due)}` : ''}</p></div>
     <div class="btns">${admin ? html`<button class="btn secondary" id="upload">${raw(icon('upload', 16))}Upload new version</button>
       <button class="btn" id="add">${raw(icon('add', 16))}Add risk</button>` : html`<button class="btn secondary" id="add">${raw(icon('add', 16))}Propose a risk</button>`}</div></div>`;
@@ -222,6 +223,12 @@ export default async function risks(ctx, el, [sub, id]) {
     $$('[data-complete]', el).forEach((b) => b.addEventListener('click', () => saveAction(b.dataset.complete, { p_status: 'complete' })));
   }
   draw();
+  // Live: updates from partners show without a refresh, unless a form is open.
+  liveUpdates(c.id, () => {
+    if (document.querySelector('dialog[open]')) return;
+    const y = window.scrollY;
+    risks(ctx, el, []).then(() => window.scrollTo(0, y));
+  });
 }
 
 // ---------------------------------------------------------------- dialogs

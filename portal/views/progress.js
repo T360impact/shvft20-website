@@ -3,7 +3,8 @@
 // consortium's shared ones. Figures go in on this page, or in a spreadsheet
 // downloaded from it and uploaded back. save_progress() checks every figure
 // before anything is saved, and the dashboard adds them up.
-import { db, html, render, $, $$, toast, act, must, fmtNum, fmtMonth, fmtDateTime, today, uploadFile, openFile, sectionGroup } from '../lib.js';
+import { db, html, raw, render, $, $$, toast, act, must, icon, fmtNum, fmtMonth, fmtDateTime, today, uploadFile, openFile, sectionGroup, statCard, live, liveMark } from '../lib.js';
+import { chart, donut, hbars, lineChart } from '../charts.js';
 import { periodText, figureText } from './targets.js';
 
 // SheetJS, loaded only when someone downloads or uploads a spreadsheet.
@@ -96,9 +97,25 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
     return { o, now: theirs.filter((e) => e.period_month.slice(0, 7) === month).length, latest: theirs.map((e) => e.period_month).sort().pop() };
   }) : [];
 
+  // At a glance: this month's lines filled, the organisation's figures month
+  // by month, and (for the lead) every partner's reporting this month.
+  const filled = rows.filter((r) => r.now).length;
+  const filledPct = rows.length ? Math.round((100 * filled) / rows.length) : 0;
+  const measureOf = Object.fromEntries(commits.map((k) => [k.id, k.measure]));
+  const series = [];
+  for (let m = first; m <= month; m = addMonths(m, 1)) series.push(m);
+  const monthSum = (measure, m) => entries.filter((e) => measureOf[e.commitment_id] === measure && e.period_month.slice(0, 7) === m).reduce((t, e) => t + Number(e.value), 0);
+  const monthCount = (m) => entries.filter((e) => e.period_month.slice(0, 7) === m).length;
+  const shortM = new Intl.DateTimeFormat('en-GB', { month: 'short', year: '2-digit' });
+  const label = (m) => shortM.format(new Date(`${m}-01T12:00:00`));
+  const anyTrend = series.some((m) => monthCount(m));
+  const reportedOrgs = roundup.filter((x) => x.now).length;
+  const lastUpload = uploads[0];
+
   render(el, html`
     <div class="page-head"><div><span class="eyebrow">Progress</span><h1>What ${org.name} delivered</h1>
-      <p class="muted">Report each month's figures against the targets. Type them in below, or download the spreadsheet, fill it in and upload it. Either way the portal checks every figure, keeps the record, and the dashboard adds them up.</p></div></div>
+      <p class="muted">Report each month's figures against the targets. Type them in below, or download the spreadsheet, fill it in and upload it. Either way the portal checks every figure, keeps the record, and the dashboard adds them up.</p>
+      <p style="margin-top:8px">${liveMark()}</p></div></div>
 
     <section class="panel"><form class="form" id="pick"><div class="fields">
       ${ctx.manages ? html`<label class="f">Organisation<select name="org">${delivering.map((o) => html`<option value="${o.id}" ${o.id === org.id ? 'selected' : ''}>${o.name}</option>`)}</select></label>` : ''}
@@ -110,6 +127,34 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
       <input type="file" id="sheet" accept=".xlsx,.xls,.csv" hidden></div>
       <div id="preview"></div>` : ''}
     </section>
+
+    <div class="stats stats-4">
+      ${statCard({ icon: 'targets', value: rows.length ? `${filled} of ${rows.length}` : '–', label: 'Lines filled', trend: rows.length ? { dir: filled === rows.length ? 'up' : 'flat', tone: filled === rows.length ? 'green' : filled ? 'amber' : 'grey', chip: `${filledPct}%`, text: `for ${monthName}` } : null })}
+      ${statCard({ icon: 'spreadsheet', value: monthCount(month), label: 'Figures saved', trend: { dir: 'flat', tone: 'grey', text: `for ${monthName} · ${entries.length} in total` } })}
+      ${ctx.manages ? statCard({ icon: 'partners', value: `${reportedOrgs} of ${roundup.length}`, label: 'Partners reported', trend: { dir: reportedOrgs === roundup.length ? 'up' : 'flat', tone: reportedOrgs === roundup.length ? 'green' : 'amber', text: `for ${monthName}` } })
+        : statCard({ icon: 'partners', value: entries.length ? fmtMonth(entries.map((e) => e.period_month).sort().pop()) : '–', label: 'Latest month reported', trend: { dir: 'flat', tone: 'grey', text: org.name } })}
+      ${statCard({ icon: 'upload', value: uploads.length, label: 'Spreadsheets', trend: { dir: 'flat', tone: 'grey', text: lastUpload ? `latest ${fmtDateTime(lastUpload.created_at)}` : 'none yet' } })}</div>
+
+    <div class="dgrid" style="margin-bottom:24px">
+      <section class="dcard half"><header class="dcard-head"><h2>${monthName} at a glance</h2><p>Lines ${org.name} has filled for the month.</p></header>
+        ${rows.length ? html`<div class="glance">${donut(filledPct, { size: 150, stroke: 18, color: 'var(--progress)', rest: 'var(--track)', label: 'filled' })}
+          <ul class="glance-key">${groups.map((g) => { const gr = rows.filter((r) => group(r) === g); const n = gr.filter((r) => r.now).length;
+            return html`<li><span>${g}</span><strong>${n} of ${gr.length}</strong><span class="slim"><span style="width:${gr.length ? (100 * n) / gr.length : 0}%"></span></span></li>`; })}</ul></div>`
+        : html`<p class="muted">No lines to report this month.</p>`}</section>
+      <section class="dcard half"><header class="dcard-head"><h2>Month by month</h2><p>Young people reached and attendances ${org.name} has reported.</p></header>
+        ${anyTrend && series.length < 2 ? html`<div class="two-figs"><div><b>${fmtNum(monthSum('reached', month))}</b><span>young people reached in ${monthName}</span></div>
+            <div><b>${fmtNum(monthSum('attendances', month))}</b><span>attendances in ${monthName}</span></div></div>
+            <p class="muted small" style="margin-top:12px">The month-by-month line starts once there are two months of figures.</p>`
+          : anyTrend ? chart(`${fmtNum(series.reduce((t, m) => t + monthSum('reached', m), 0))} young people and ${fmtNum(series.reduce((t, m) => t + monthSum('attendances', m), 0))} attendances reported so far.`, `${org.name}, by month`,
+          lineChart(series.map(label), [
+            { name: 'Attendances', color: 'var(--series-1)', values: series.map((m) => monthSum('attendances', m)) },
+            { name: 'Young people', color: 'var(--series-2)', values: series.map((m) => monthSum('reached', m)) }]))
+        : html`<p class="muted">The chart starts with the first month's figures.</p>`}</section>
+      ${roundup.length ? html`<section class="dcard full"><header class="dcard-head"><h2>Who has reported for ${monthName}</h2><p>Figures each organisation has saved for the month, and the latest month it reported. Select one to see its figures.</p></header>
+        ${hbars(roundup.map((x) => ({ id: x.o.id, label: x.o.name, sub: x.latest ? `Latest month reported: ${fmtMonth(x.latest)}` : 'Nothing reported yet',
+          value: x.now ? `${x.now} figure${x.now === 1 ? '' : 's'}` : '', pill: x.now ? '' : html` <span class="pill pill-proposed">None yet</span>`,
+          pct: x.now ? (100 * x.now) / Math.max(1, ...roundup.map((y) => y.now)) : 0, tone: x.now ? 'green' : 'grey' })))}</section>` : ''}
+    </div>
 
     ${!commits.length ? html`<section class="panel" style="margin-top:20px"><p>There are no confirmed targets to report against yet. Once the lead confirms the targets under Targets and budget, they appear here.</p></section>`
     : !rows.length ? html`<section class="panel" style="margin-top:20px"><p>No targets fall in ${monthName}.</p></section>`
@@ -127,15 +172,11 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
       <p class="small muted" style="margin-top:10px">Leave a figure empty if there's nothing to report. Emptying a figure you saved before removes it.${rows.some((r) => r.locked) ? ' Percentages are reported by the consortium lead.' : ''}</p>
       <div class="btns" style="margin-top:14px"><button class="btn">Save ${monthName}</button></div></form></section>`}
 
-    ${roundup.length ? html`<section class="panel" style="margin-top:20px"><h2>Who has reported for ${monthName}</h2>
-      <div class="table-wrap"><table><thead><tr><th>Organisation</th><th class="num">Figures for ${monthName}</th><th>Latest month reported</th></tr></thead>
-      <tbody>${roundup.map((x) => html`<tr><td><a href="#/c/${c.id}/progress/${x.o.id}/${month}">${x.o.name}</a></td>
-        <td class="num">${x.now ? x.now : html`<span class="pill pill-proposed">None yet</span>`}</td><td>${x.latest ? fmtMonth(x.latest) : '–'}</td></tr>`)}</tbody></table></div></section>` : ''}
 
-    ${uploads.length ? html`<section class="panel" style="margin-top:20px"><h2>Spreadsheets ${org.name} uploaded</h2>
+    ${uploads.length ? html`<section class="panel" style="margin-top:20px">${sectionGroup({ title: `Spreadsheets ${org.name} uploaded`, meta: `${uploads.length} file${uploads.length === 1 ? '' : 's'} · latest ${fmtDateTime(uploads[0].created_at)}`, body: html`
       <div class="table-wrap"><table><thead><tr><th>File</th><th>Month</th><th class="num">Figures</th><th>Uploaded</th></tr></thead>
       <tbody>${uploads.map((u) => html`<tr><td><button type="button" class="linkbtn" data-path="${u.storage_path}">${u.file_name || 'Spreadsheet'}</button></td>
-        <td>${fmtMonth(u.period_month)}</td><td class="num">${u.rows_saved}</td><td class="small">${fmtDateTime(u.created_at)}</td></tr>`)}</tbody></table></div></section>` : ''}`);
+        <td>${fmtMonth(u.period_month)}</td><td class="num">${u.rows_saved}</td><td class="small">${fmtDateTime(u.created_at)}</td></tr>`)}</tbody></table></div>` })}</section>` : ''}`);
 
   const again = () => progress(ctx, el, [org.id, month]);
   $('#pick').addEventListener('change', (e) => go(e.currentTarget.elements.org?.value || org.id, e.currentTarget.elements.month.value));
@@ -146,6 +187,20 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
     e.currentTarget.textContent = open ? 'Close all' : 'Open all';
   });
   $$('[data-path]').forEach((b) => b.addEventListener('click', () => openFile(b, 'documents', b.dataset.path)));
+  $$('.hbar[data-id]').forEach((b) => { const open = () => go(b.dataset.id, month); b.addEventListener('click', open); b.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); }); });
+  // Live: new figures from anyone reload the page, unless figures are being
+  // typed here, in which case a banner offers the refresh instead.
+  let typing = false;
+  $('#entry')?.addEventListener('input', () => { typing = true; });
+  live(c.id, () => {
+    if (typing) {
+      if (!$('.fresh-banner', el)) el.insertAdjacentHTML('afterbegin', '<div class="lead-banner fresh-banner"><span><strong>New figures have arrived.</strong> Save yours first, then refresh to see them.</span><button class="btn secondary" type="button" data-fresh>Refresh</button></div>');
+      $('[data-fresh]', el)?.addEventListener('click', again);
+      return;
+    }
+    const y = window.scrollY;
+    again().then(() => window.scrollTo(0, y));
+  });
 
   const call = (p_rows, p_dry_run, file) => db.rpc('save_progress', {
     p_consortium: c.id, p_org: org.id, p_month: `${month}-01`, p_rows, p_dry_run, p_file_path: file?.path ?? null, p_file_name: file?.name ?? null,
