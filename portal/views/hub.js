@@ -58,13 +58,13 @@ export default async function hub(ctx, el, [sub]) {
       <p class="meta-line">${[sum.area_served, sum.age_range ? `Ages ${sum.age_range}` : `Ages ${w.min_age} to ${w.max_age}`, start ? `${fmtDate(start)} to ${fmtDate(end)}` : ''].filter(Boolean).join(' · ')}</p>
       ${sum.purpose ? html`<p class="lead-para">${firstSentence(sum.purpose)}</p>` : ''}</div>
       ${s.editable ? html`<div class="btns" style="align-items:center">
-        ${s.published ? (s.draft_changed ? pill('amber', `Unpublished changes`, 'due') : pill('green', `Published · version ${s.version}`, 'approved')) : pill('grey', 'Draft', 'waiting')}
+        ${s.published ? (s.draft_changed ? pill('amber', `Unpublished changes · version ${s.version} is live`, 'due') : pill('green', `Published · version ${s.version}`, 'approved')) : pill('grey', 'Draft', 'waiting')}
         <a class="btn secondary" href="#/c/${c.id}/hub/edit">Edit</a>
         ${s.summary && (!s.published || s.draft_changed) ? html`<button class="btn" id="publish">${raw(icon('submitted', 16))}Publish</button>` : ''}</div>` : ''}</div>
     ${!s.summary ? html`<p class="note">${s.editable ? 'Start the summary from what the bid already holds, then edit and publish it.' : 'The lead hasn\'t published the summary yet. Partners, sites and outcomes below are live.'}</p>` : ''}
 
     ${sum.purpose || sum.aims?.length ? html`<section class="sec"><div class="sec-head"><h2>About the project</h2></div>
-      <div class="two-col"><p>${sum.purpose}</p>
+      <div class="two-col"><div><p class="muted" style="margin-bottom:8px">Purpose</p><p>${sum.purpose}</p></div>
         ${sum.aims?.length ? html`<div><p class="muted" style="margin-bottom:8px">Aims</p><ul class="plain">${sum.aims.map((a) => html`<li>${a}</li>`)}</ul></div>` : ''}</div></section>` : ''}
 
     <section class="sec"><div class="sec-head"><h2>Partners</h2><p>Who is in the partnership and what each organisation does.</p></div>
@@ -88,7 +88,8 @@ export default async function hub(ctx, el, [sub]) {
             ${x.days || x.notes ? html`<div class="muted">${[x.days, x.notes].filter(Boolean).join(' · ')}</div>` : ''}</li>`)}</ul>` : html`<p class="not-yet">No sites added yet.</p>`}</div>
         <div><h3 style="margin-bottom:4px">Targeted share</h3>
           ${share == null ? html`<p class="not-yet" style="padding-top:20px">Not yet reported${min != null ? `. The funder's minimum is ${fmtNum(min)}%.` : '.'}</p>`
-          : html`<div style="padding-top:20px"><div class="figure" style="display:flex;justify-content:space-between;align-items:baseline"><strong style="font:400 30px/1 var(--display)">${fmtNum(share)}%</strong>
+          : html`<p style="margin-top:12px;font-weight:600">${min == null ? `${fmtNum(share)}% of young people are from targeted groups.` : share >= min ? `${fmtNum(share)}%, at or above the ${fmtNum(min)}% minimum.` : `${fmtNum(share)}%, below the ${fmtNum(min)}% minimum.`}</p>
+            <div style="padding-top:12px"><div class="figure" style="display:flex;justify-content:space-between;align-items:baseline"><strong style="font:400 30px/1 var(--display)">${fmtNum(share)}%</strong>
               ${min != null ? (share >= min ? pill('green', `At or above ${fmtNum(min)}%`, 'approved') : pill('amber', `Below ${fmtNum(min)}%`, 'overdue')) : ''}</div>
             <span class="slim" style="margin-top:12px" role="img" aria-label="${fmtNum(share)}% targeted${min != null ? `, minimum ${fmtNum(min)}%` : ''}"><span style="width:${Math.min(100, share)}%"></span>${min != null ? html`<i style="left:${min}%"></i>` : ''}</span>
             <p class="muted small" style="margin-top:8px">Share of young people from targeted groups${min != null ? '; the mark is the funder\'s minimum' : ''}.</p></div>`}

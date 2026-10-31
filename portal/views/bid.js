@@ -45,7 +45,7 @@ export default async function bid(ctx, el, [itemId]) {
   const itemTable = (rows, showOrg) => html`<div class="table-wrap"><table class="cards">
     <thead><tr><th>Item</th>${showOrg ? html`<th>Owner</th>` : ''}<th>Due</th><th>Status</th></tr></thead>
     <tbody>${rows.map((i) => html`<tr class="${i.mandatory && i.status !== 'approved' ? 'blocking' : ''}">
-      <td><a href="#/c/${c.id}/bid/${i.id}">${i.name}</a>${i.mandatory ? html` ${pill('grey', 'Required', 'requirements')}` : ''}
+      <td><a href="#/c/${c.id}/bid/${i.id}">${i.name}</a>${i.mandatory ? html` ${pill('grey', 'Required')}` : ''}
         ${i.status === 'returned' && i.review_comment ? html`<br><span class="small muted">${i.review_comment}</span>` : ''}</td>
       ${showOrg ? html`<td data-label="Owner">${ctx.org(i.organisation_id)?.name}</td>` : ''}
       <td data-label="Due">${duePill(i.due_on, i.status) || html`<span class="muted small">No date</span>`}</td><td data-label="Status">${statusPill(i.status)}</td></tr>`)}</tbody></table></div>`;
@@ -66,7 +66,7 @@ export default async function bid(ctx, el, [itemId]) {
 
     <div class="grid2 split" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)">
       <section class="panel m-bids" style="display:grid;justify-items:center;gap:12px;text-align:center">
-        ${ring(pct, { size: 168, stroke: 16, color: pct === 100 ? 'var(--green)' : 'var(--m-bids)', label: 'required approved' })}
+        ${ring(pct, { size: 168, stroke: 16, color: 'var(--progress)', track: 'var(--track)', label: 'required approved' })}
         <p class="small muted">${summary.blocking ? `${summary.blocking} required item${summary.blocking === 1 ? '' : 's'} still open` : 'Every required item is approved'}</p></section>
       <div class="stats">
         ${statCard({ icon: 'requirements', mod: 'bids', value: summary.blocking, label: 'Required items open', trend: summary.blocking ? { dir: 'flat', tone: 'amber', text: 'Blocks submission' } : { dir: 'up', tone: 'green', text: 'Ready' } })}

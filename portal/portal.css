@@ -597,6 +597,22 @@ details.wording > p { color: var(--text-2); font-size: 14px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .band { background: var(--brand-tint); } }
 :root[data-theme="dark"] .band { background: var(--brand-tint); }
 
+/* Banners are neutral notes; only their icon carries the status colour. */
+.banner, .banner.info, .banner.warn, .banner.bad, .banner.ok { background: var(--paper-2); color: var(--text); border-color: transparent; }
+.banner.warn > .icon { color: var(--amber); }
+.banner.bad > .icon { color: var(--red); }
+.banner.ok > .icon { color: var(--progress); }
+.banner.info > .icon { color: var(--text-2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .banner { background: var(--brand-tint); } }
+:root[data-theme="dark"] .banner { background: var(--brand-tint); }
+
+/* Bars and rings show progress in the site's green; status goes in pills. */
+.hbar .track > span { background: var(--progress); }
+.meter > span, .bar-fill { background: var(--progress); }
+/* Outputs and outcomes stay distinguishable: navy and the lighter slate. */
+.org-bar .seg-output { background: var(--series-1); }
+.org-bar .seg-outcome { background: var(--slate-light); }
+
 @media (max-width: 899px) {
   :root { --page-pad: 20px; --section-gap: 48px; }
   main { padding-top: var(--s5); }

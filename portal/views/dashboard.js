@@ -3,7 +3,7 @@
 // share against the funder's minimum, reach over time and a tile per
 // partner. Figures come from consortium_progress(), which returns counts
 // only; a target's details open in a drawer.
-import { db, html, raw, render, $, $$, must, icon, pill, headline as shortLabel, fmtNum, fmtMoney, rag, fmtMonth, downloadCsv, statCard, emptyState, openDrawer, MEASURE_LABEL } from '../lib.js';
+import { db, html, raw, render, $, $$, must, icon, pill, fmtNum, fmtMoney, rag, fmtMonth, downloadCsv, statCard, emptyState, openDrawer, MEASURE_LABEL } from '../lib.js';
 import { chart, lineChart, initials } from '../charts.js';
 
 const KIND = { output: 'Output', outcome: 'Outcome' };
@@ -88,10 +88,9 @@ export default async function dashboard(ctx, el) {
   // against target with a mark where it should be by today. Status shows
   // only as a small pill.
   const targetRow = (x) => {
-    const short = shortLabel(x.label);
     const share = x.target ? (100 * x.actual) / x.target : 0;
     return html`<li class="row">
-      <div>${short !== x.label ? html`<details class="wording"><summary>${short}</summary><p>${x.label}</p></details>` : html`<span>${x.label}</span>`}
+      <div><span>${x.label}</span>
         <span class="muted">${[KIND[x.kind], x.section, x.organisation || 'Whole consortium', x.site, x.source ? SOURCE[x.source].toLowerCase() : 'nothing reported yet'].filter(Boolean).join(' · ')}</span>
         ${x.by_org?.length ? html`<span class="muted">Reported: ${reportedBy(x)}</span>` : ''}</div>
       <div class="row-end"><span class="figure"><span class="${x.source ? '' : 'not-yet'}">${x.source ? `${fmtNum(x.actual)}${pct(x)} of ${fmtNum(x.target)}${pct(x)}${isPct(x) ? '' : ` · ${fmtNum(Math.round(share))}%`}` : `Target ${fmtNum(x.target)}${pct(x)} · not yet reported`}</span>
@@ -131,6 +130,7 @@ export default async function dashboard(ctx, el) {
     <div class="band" role="group" aria-label="Headline figures">${headline(p).map((f) => html`<div><b>${f.value}</b><span>${f.label}</span>
       ${f.trend ? html`<span class="${TREND[f.trend.tone] || 'trend-flat'}">${f.trend.text}</span>` : ''}</div>`)}</div>
 
+    <section class="sec"><div class="sec-head"><h2>Targets</h2><p>Every commitment to the funder, by year, with what has been achieved.</p></div></section>
     ${periods.length ? periods.map(targetSection)
     : html`<section class="sec"><p class="note">No targets confirmed yet.${ctx.manages ? html` <a href="#/c/${c.id}/targets">Set targets</a>` : ''}</p></section>`}
 
@@ -138,12 +138,13 @@ export default async function dashboard(ctx, el) {
       <div class="two-col">
         <div><h3 style="margin-bottom:4px">Targeted share</h3>
           ${share == null ? html`<p class="not-yet" style="padding-top:20px">Not yet reported${min != null ? `. The funder's minimum is ${fmtNum(min)}%.` : '.'}</p>`
-          : html`<div style="padding-top:20px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><strong style="font:400 30px/1 var(--display)">${fmtNum(share)}%</strong>
+          : html`<p class="takeaway" style="margin-top:12px;font-weight:600">${min == null ? `${fmtNum(share)}% of young people are from targeted groups.` : share >= min ? `${fmtNum(share)}% targeted, at or above the ${fmtNum(min)}% minimum.` : `${fmtNum(share)}% targeted, below the ${fmtNum(min)}% minimum.`}</p>
+            <div style="padding-top:12px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><strong style="font:400 30px/1 var(--display)">${fmtNum(share)}%</strong>
               ${min != null ? (share >= min ? pill('green', `At or above ${fmtNum(min)}%`, 'approved') : pill('amber', `Below ${fmtNum(min)}%`, 'overdue')) : ''}</div>
             <span class="slim" style="margin-top:12px" role="img" aria-label="${fmtNum(share)}% targeted${min != null ? `, minimum ${fmtNum(min)}%` : ''}"><span style="width:${Math.min(100, share)}%"></span>${min != null ? html`<i style="left:${min}%"></i>` : ''}</span>
             <p class="muted small" style="margin-top:8px">Targeted ${fmtNum(share)}% · Universal ${fmtNum(100 - share)}%${min != null ? ` · Minimum ${fmtNum(min)}% (the mark)` : ''}.</p></div>`}</div>
         <div><h3 style="margin-bottom:4px">Reach over time</h3>
-          ${anyMonths ? chart(`${fmtNum(totalNew)} new young people and ${fmtNum(totalAtt)} attendances so far.`, '',
+          ${anyMonths ? chart(`${fmtNum(totalNew)} new young people and ${fmtNum(totalAtt)} attendances so far.`, 'New young people and attendances by month',
             lineChart(months.map((m) => shortMonth.format(new Date(`${m.month.slice(0, 10)}T12:00:00`))), [
               { name: 'Attendances', color: 'var(--series-1)', values: months.map((m) => m.attendances || 0) },
               { name: 'New young people', color: 'var(--series-2)', values: months.map((m) => m.reached || 0) }]))
@@ -163,7 +164,7 @@ export default async function dashboard(ctx, el) {
 
     <section class="sec"><div class="sec-head"><h2>Who the targets link to</h2><p>Outputs and outcomes each organisation is named against in the programme documents.</p></div>
       ${byOrganisation(ctx, p, budgets)}</section>
-    <section class="sec" style="margin-top:32px"><details class="wording"><summary><h2 style="display:inline">Quarterly view</h2> <span class="muted small">Show</span></summary>
+    <section class="sec" style="margin-top:32px"><details class="wording"><summary><h2 style="display:inline">Quarterly view for the funder's return</h2> <span class="muted small">Show</span></summary>
       ${p.quarters.length ? html`<div class="table-wrap" style="margin-top:16px"><table class="cards">
         <thead><tr><th>Quarter</th><th class="num">New young people</th><th class="num">Targeted %</th><th class="num">Sessions</th><th class="num">Attendances</th><th class="num">Outcomes</th></tr></thead>
         <tbody>${p.quarters.map((q) => html`<tr><td class="nowrap"><strong>${q.label}</strong></td>

@@ -1,7 +1,7 @@
 // Monthly partner returns: drafted by the partner, numbers filled from the
 // register on submission, reviewed by the lead with a red, amber or green
 // rating. Every step is stamped with who and when.
-import { db, html, raw, render, $, formData, toast, act, must, icon, fmtMonth, fmtDateTime, fmtNum, rag, statusPill, emptyState, downloadCsv } from '../lib.js';
+import { db, html, raw, render, $, formData, toast, act, must, icon, pill, fmtMonth, fmtDateTime, fmtNum, rag, statusPill, emptyState, downloadCsv } from '../lib.js';
 import { chart, hbars } from '../charts.js';
 
 // The steps of a return, each with its icon.
@@ -79,7 +79,9 @@ async function detail(ctx, el, id) {
     const share = t ? (100 * n) / t : null;
     return { label, sub: t ? `Monthly target ${fmtNum(Math.round(t))}` : 'No monthly target for this organisation', pct: share,
       tone: share == null ? 'grey' : share >= 95 ? 'green' : share >= 80 ? 'amber' : 'red', marker: t ? 100 : null,
-      value: share == null ? fmtNum(n) : `${fmtNum(n)} · ${fmtNum(Math.round(share))}%` };
+      value: share == null ? fmtNum(n) : `${fmtNum(n)} · ${fmtNum(Math.round(share))}%`,
+      // Bars are green; a shortfall shows as a pill, not a bar colour.
+      pill: share != null && share < 95 ? pill(share >= 80 ? 'amber' : 'red', 'Below target', 'overdue') : '' };
   });
   const withTarget = rows.filter((x) => x.marker != null);
   const met = withTarget.filter((x) => x.tone === 'green').length;
