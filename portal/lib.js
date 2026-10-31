@@ -2,6 +2,9 @@
 // escaping, formatting, small UI helpers and CSV export.
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+import { icon } from './icons.js';
+
+export { icon };
 
 export const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'shvft-portal-auth' },
@@ -138,15 +141,62 @@ export function downloadCsv(filename, rows) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export const rag = (r) => html`<span class="rag rag-${r || 'grey'}">${{ green: 'Green', amber: 'Amber', red: 'Red' }[r] || 'Not started'}</span>`;
-export const statusPill = (s) => html`<span class="pill pill-${s}">${{
-  draft: 'Draft', submitted: 'Submitted', changes_requested: 'Changes requested', approved: 'Approved',
-  issued: 'Awaiting partner', partner_signed: 'Awaiting countersignature', countersigned: 'Signed',
-  requested: 'Requested', returned: 'Returned',
-  bid: 'Bid in progress', live: 'Live', lost: 'Not won', closed: 'Closed',
-  running: 'Reading documents', needs_review: 'Needs review', confirmed: 'Confirmed', failed: 'Failed',
-  proposed: 'To review', accepted: 'Accepted', edited: 'Edited', rejected: 'Rejected',
-}[s] || s}</span>`;
+// A status is always a tinted pill with an icon and words, never colour alone.
+export const pill = (tone, text, iconName) => html`<span class="pill tone-${tone}">${iconName ? raw(icon(iconName, 14)) : ''}${text}</span>`;
+export const rag = (r) => pill(r || 'grey', { green: 'Green', amber: 'Amber', red: 'Red' }[r] || 'Not started',
+  { green: 'approved', amber: 'overdue', red: 'rejected' }[r] || 'waiting');
+const STATUS = {
+  draft: ['grey', 'Draft', 'waiting'], submitted: ['blue', 'Submitted', 'submitted'], changes_requested: ['amber', 'Changes requested', 'returned'],
+  approved: ['green', 'Approved', 'approved'], issued: ['blue', 'Awaiting partner', 'submitted'], partner_signed: ['amber', 'Awaiting countersignature', 'due'],
+  countersigned: ['green', 'Signed', 'approved'], requested: ['amber', 'Requested', 'due'], returned: ['amber', 'Returned', 'returned'],
+  bid: ['blue', 'Bid in progress', 'bids'], live: ['green', 'Live', 'approved'], lost: ['grey', 'Not won', 'rejected'], closed: ['grey', 'Closed', 'waiting'],
+  running: ['blue', 'Reading documents', 'due'], needs_review: ['blue', 'Needs review', 'info'], confirmed: ['green', 'Confirmed', 'approved'],
+  failed: ['red', 'Failed', 'rejected'], proposed: ['blue', 'To review', 'waiting'], accepted: ['green', 'Accepted', 'approved'],
+  edited: ['green', 'Edited', 'approved'], rejected: ['red', 'Rejected', 'rejected'], overdue: ['red', 'Overdue', 'overdue'],
+  paid: ['green', 'Paid', 'paid'], due: ['amber', 'Due', 'due'],
+};
+export const statusPill = (s) => { const [tone, text, ic] = STATUS[s] || ['grey', s, 'info']; return pill(tone, text, ic); };
+
+// A due date as a pill: overdue in red, within a week in amber, later in blue.
+export const duePill = (d, status) => {
+  if (!d) return '';
+  if (status === 'approved') return pill('green', fmtDate(d), 'approved');
+  const n = daysUntil(d);
+  if (n < 0) return pill('red', `${-n} day${n === -1 ? '' : 's'} overdue`, 'overdue');
+  if (n <= 7) return pill('amber', n === 0 ? 'Due today' : `Due in ${n} day${n === 1 ? '' : 's'}`, 'due');
+  return pill('blue', `Due ${fmtDate(d)}`, 'due');
+};
+
+// Days to a deadline as a chip with an alarm clock: amber under a week, red
+// under three days.
+export const countdown = (d) => {
+  if (!d) return '';
+  const n = daysUntil(d);
+  const tone = n < 3 ? 'red' : n < 7 ? 'amber' : 'blue';
+  return html`<span class="pill tone-${tone} countdown">${raw(icon('expiry', 14))}${n < 0 ? 'Deadline passed' : n === 0 ? 'Deadline today' : `${n} day${n === 1 ? '' : 's'} to the deadline`}</span>`;
+};
+
+// Big number, short label, and a trend in status colour.
+export const statCard = ({ icon: ic, mod = 'brand', value, label, trend }) => html`<div class="stat m-${mod}">
+  ${ic ? html`<span class="stat-icon">${raw(icon(ic, 20))}</span>` : ''}<b>${value}</b><span>${label}</span>
+  ${trend ? html`<span class="trend ${trend.tone}">${raw(icon({ up: 'up', down: 'down', flat: 'flat' }[trend.dir] || 'flat', 16))}${trend.text}</span>` : ''}</div>`;
+
+// Icon, one sentence, one button.
+export const emptyState = (ic, text, action = '', mod = '') => html`<div class="empty-state ${mod ? `m-${mod}` : ''}">${raw(icon(ic, 48))}<p>${text}</p>${action}</div>`;
+
+// Row details in a side drawer, so tables keep to the columns that matter.
+export function openDrawer(title, body) {
+  const d = document.createElement('dialog');
+  d.className = 'drawer';
+  d.setAttribute('aria-label', title);
+  render(d, html`<div class="drawer-in"><header><h2>${title}</h2>
+    <button type="button" class="icon-btn" data-close aria-label="Close">${raw(icon('close', 20))}</button></header>${body}</div>`);
+  document.body.append(d);
+  d.addEventListener('close', () => d.remove());
+  d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('[data-close]')) d.close(); });
+  d.showModal();
+  return d;
+}
 
 export const daysUntil = (d) => (d ? Math.round((new Date(`${d}T12:00:00`) - new Date(`${today()}T12:00:00`)) / 864e5) : null);
 

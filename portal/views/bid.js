@@ -2,7 +2,8 @@
 // item, and how close the bid is to being submittable. Partners see only
 // their own items plus the bid's overall percentage; the lead sees all,
 // reviews uploads and converts the workspace when the bid is won.
-import { db, html, render, $, $$, formData, toast, act, must, fmtDate, fmtDateTime, fmtMoney, statusPill, daysUntil, uploadFile, openFile, today } from '../lib.js';
+import { db, html, raw, render, $, $$, formData, toast, act, must, icon, pill, duePill, countdown, statCard, emptyState, fmtDate, fmtDateTime, fmtMoney, statusPill, daysUntil, uploadFile, openFile, today } from '../lib.js';
+import { chart, ring, stackedBars } from '../charts.js';
 
 // Standard reasons for returning an item, so the same quality bar applies
 // to every partner and every bid.
@@ -35,85 +36,94 @@ export default async function bid(ctx, el, [itemId]) {
   ]);
   items.sort(byRank);
   const mine = items.filter((i) => i.organisation_id === ctx.orgId);
-  const left = daysUntil(c.bid_deadline);
   const open = c.stage === 'bid';
   const decidable = ['bid', 'submitted'].includes(c.stage);
   const owners = ctx.orgs.filter((o) => ['lead', 'accountable_body', 'delivery_partner'].includes(o.kind));
 
-  const itemTable = (rows, showOrg) => html`<div class="table-wrap"><table>
+  // Items as a table on a desktop and cards on a phone; due dates and
+  // statuses as pills.
+  const itemTable = (rows, showOrg) => html`<div class="table-wrap"><table class="cards">
     <thead><tr><th>Item</th>${showOrg ? html`<th>Owner</th>` : ''}<th>Due</th><th>Status</th></tr></thead>
     <tbody>${rows.map((i) => html`<tr class="${i.mandatory && i.status !== 'approved' ? 'blocking' : ''}">
-      <td><a href="#/c/${c.id}/bid/${i.id}">${i.name}</a>${i.mandatory ? html` <span class="pill pill-mandatory">Required</span>` : ''}
+      <td><a href="#/c/${c.id}/bid/${i.id}">${i.name}</a>${i.mandatory ? html` ${pill('grey', 'Required', 'requirements')}` : ''}
         ${i.status === 'returned' && i.review_comment ? html`<br><span class="small muted">${i.review_comment}</span>` : ''}</td>
-      ${showOrg ? html`<td>${ctx.org(i.organisation_id)?.name}</td>` : ''}
-      <td class="small nowrap">${dueText(i.due_on, i.status)}</td><td>${statusPill(i.status)}</td></tr>`)}</tbody></table></div>`;
+      ${showOrg ? html`<td data-label="Owner">${ctx.org(i.organisation_id)?.name}</td>` : ''}
+      <td data-label="Due">${duePill(i.due_on, i.status) || html`<span class="muted small">No date</span>`}</td><td data-label="Status">${statusPill(i.status)}</td></tr>`)}</tbody></table></div>`;
+
+  // Items by status for each organisation (the lead's view).
+  const KEYS = [['approved', 'Approved'], ['submitted', 'Submitted'], ['returned', 'Returned'], ['requested', 'Requested']];
+  const perOrg = owners.map((o) => {
+    const theirs = items.filter((i) => i.organisation_id === o.id);
+    return { o, total: theirs.length, open: theirs.filter((i) => i.status !== 'approved').length, segs: KEYS.map(([key, label]) => ({ key, label, n: theirs.filter((i) => i.status === key).length })) };
+  }).filter((r) => r.total).sort((a, b) => b.open - a.open);
+  const pct = summary.pct ?? 0;
 
   render(el, html`
-    <div class="page-head"><div><span class="eyebrow">${c.stage === 'live' ? 'Bid record' : 'Bid workspace'} · ${c.funder || 'Funder to confirm'}</span><h1>${c.name}</h1>
-      <p style="margin-top:8px">${statusPill(c.stage)}
-        ${c.bid_deadline ? html` <strong>Deadline ${fmtDate(c.bid_deadline)}</strong>${open && left != null ? html` <span class="muted">(${left < 0 ? 'passed' : `${left} day${left === 1 ? '' : 's'} left`})</span>` : ''}` : ''}
-        ${c.grant_value ? html` · ${fmtMoney(c.grant_value)}` : ''}</p></div></div>
+    <div class="page-head"><div><span class="eyebrow m-bids">${raw(icon('bids', 16))}${c.stage === 'live' ? 'Bid record' : 'Bid workspace'} · ${c.funder || 'Funder to confirm'}</span><h1>${c.name}</h1>
+      <p style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${statusPill(c.stage)}${open ? countdown(c.bid_deadline) : ''}
+        ${c.bid_deadline ? html`<span class="small muted">Deadline ${fmtDate(c.bid_deadline)}${c.grant_value ? ` · ${fmtMoney(c.grant_value)}` : ''}</span>` : ''}</p></div>
+      ${ctx.manages && open ? html`<div class="btns"><a class="btn" href="#add-item-card">${raw(icon('add', 18))}Add item</a></div>` : ''}</div>
 
-    <div class="stats">
-      <div class="stat"><b>${summary.pct == null ? '–' : `${summary.pct}%`}</b><span>Required items approved</span>
-        <span class="meter"><span style="width:${summary.pct || 0}%"></span></span></div>
-      <div class="stat"><b>${summary.blocking}</b><span>Required items still open</span></div>
-      <div class="stat"><b>${summary.overdue}</b><span>Overdue</span></div>
-      ${ctx.seesAll ? html`<div class="stat"><b>${items.filter((i) => i.status === 'submitted').length}</b><span>Waiting for your review</span></div>` : ''}
-    </div>
-    ${summary.blocking && open ? html`<div class="banner warn" style="margin-top:16px"><strong>Not yet eligible to submit.</strong> ${summary.blocking} required item${summary.blocking === 1 ? ' is' : 's are'} still open. Any one of them could make the application ineligible.</div>` : ''}
+    <div class="grid2 split" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)">
+      <section class="panel m-bids" style="display:grid;justify-items:center;gap:12px;text-align:center">
+        ${ring(pct, { size: 168, stroke: 16, color: pct === 100 ? 'var(--green)' : 'var(--m-bids)', label: 'required approved' })}
+        <p class="small muted">${summary.blocking ? `${summary.blocking} required item${summary.blocking === 1 ? '' : 's'} still open` : 'Every required item is approved'}</p></section>
+      <div class="stats">
+        ${statCard({ icon: 'requirements', mod: 'bids', value: summary.blocking, label: 'Required items open', trend: summary.blocking ? { dir: 'flat', tone: 'amber', text: 'Blocks submission' } : { dir: 'up', tone: 'green', text: 'Ready' } })}
+        ${statCard({ icon: 'overdue', mod: 'bids', value: summary.overdue, label: 'Overdue', trend: summary.overdue ? { dir: 'down', tone: 'red', text: 'Chase these first' } : { dir: 'flat', tone: 'green', text: 'None overdue' } })}
+        ${ctx.seesAll ? statCard({ icon: 'submitted', mod: 'bids', value: items.filter((i) => i.status === 'submitted').length, label: 'Waiting for your review' }) : ''}
+      </div></div>
+    ${summary.blocking && open ? html`<div class="banner warn" style="margin-top:24px">${raw(icon('overdue', 20))}<span><strong>Not yet eligible to submit.</strong> Any open required item could make the application ineligible.</span></div>` : ''}
 
-    ${!ctx.seesAll ? html`<section class="panel" style="margin-top:20px"><header><h2>${ctx.orgName}'s items</h2></header>
-      <p class="muted small">Upload against each item. The lead reviews it and either approves it or returns it with a comment.</p>
-      ${mine.length ? itemTable(mine, false) : html`<p class="empty">Nothing has been asked of ${ctx.orgName} yet.</p>`}</section>` : ''}
+    ${!ctx.seesAll ? html`<section class="panel m-bids section"><header><h2>${raw(icon('requirements', 20))}${ctx.orgName}'s items</h2></header>
+      <p class="helper">Upload against each item; the lead approves it or returns it with a comment.</p>
+      ${mine.length ? itemTable(mine, false) : emptyState('requirements', `Nothing has been asked of ${ctx.orgName} yet.`, '', 'bids')}</section>` : ''}
 
-    ${ctx.seesAll && summary.by_org?.length ? html`<section class="panel" style="margin-top:20px"><h2>By organisation</h2>
-      <div class="table-wrap"><table><thead><tr><th>Organisation</th><th class="num">Approved</th><th class="num">Required still open</th><th class="num">Waiting review</th></tr></thead>
-      <tbody>${summary.by_org.map((o) => html`<tr><td><strong>${ctx.org(o.organisation_id)?.name}</strong></td>
-        <td class="num">${o.approved} of ${o.total}</td><td class="num">${o.blocking ? html`<span class="rag rag-red">${o.blocking}</span>` : '0'}</td><td class="num">${o.waiting}</td></tr>`)}</tbody></table></div></section>` : ''}
+    ${ctx.seesAll && perOrg.length ? html`<section class="panel m-bids section"><header><h2>${raw(icon('partners', 20))}By organisation</h2></header>
+      ${chart(perOrg[0].open ? `${perOrg[0].o.name} has the most open items: ${perOrg[0].open} of ${perOrg[0].total}.` : 'Every organisation\'s items are approved.',
+        'Items by status for each organisation', stackedBars(perOrg.map((r) => ({ label: r.o.name, value: `${r.total - r.open} of ${r.total} approved`, segs: r.segs })), KEYS))}</section>` : ''}
 
-    ${ctx.seesAll ? html`<section class="panel" style="margin-top:20px"><header><h2>Every item</h2>
-      <label class="f" style="min-width:200px">Show<select id="filter">
+    ${ctx.seesAll ? html`<section class="panel m-bids section"><header><h2>${raw(icon('requirements', 20))}Every item</h2>
+      <label class="f" style="min-width:200px"><span class="sr-only">Show</span><select id="filter">
         <option value="">Everything</option><option value="open">Still open</option><option value="submitted">Waiting for review</option>
         ${owners.map((o) => html`<option value="${o.id}">${o.name}</option>`)}</select></label></header>
-      ${items.length ? html`<div id="all-items">${itemTable(items, true)}</div>` : html`<p class="empty">No items yet. Start from a template or add them one by one.</p>`}
+      ${items.length ? html`<div id="all-items">${itemTable(items, true)}</div>` : emptyState('requirements', 'No items yet. Start from a template or add one.', '', 'bids')}
     </section>` : ''}
 
-    ${c.eligibility_rules ? html`<section class="panel" style="margin-top:20px"><h2>Eligibility rules</h2><p class="prose">${c.eligibility_rules}</p>
-      <p class="small muted" style="margin-top:10px">The application form and guidance are under Agreements.</p></section>` : ''}
+    ${c.eligibility_rules ? html`<section class="panel m-compliance section"><h2>${raw(icon('compliance', 20))}Eligibility rules</h2><p class="prose">${c.eligibility_rules}</p></section>` : ''}
 
-    ${ctx.manages && open ? html`<div class="grid2" style="margin-top:20px">
-      <section class="panel"><h2>Start from a template</h2>
+    ${ctx.manages && open ? html`<div class="grid2 section">
+      <section class="panel m-bids"><h2>${raw(icon('requirements', 20))}Start from a template</h2>
         ${templates.length ? html`<form class="form" id="apply"><div class="fields">
           <label class="f">Template<select name="template" required>${templates.map((t) => html`<option value="${t.id}">${t.name}</option>`)}</select></label>
-          <label class="f">Items for one organisation go to<select name="owner" required>${owners.map((o) => html`<option value="${o.id}" ${o.kind === 'lead' ? 'selected' : ''}>${o.name}</option>`)}</select></label></div>
-          <p class="muted small">Per-partner items go to every delivery partner and the accountable body. Anything a partner already has approved and in date in the library is reused.</p>
-          <div class="btns"><button class="btn">Add the checklist</button></div></form>`
-        : html`<p class="muted">No templates yet. Create one in the Library.</p>`}
+          <label class="f">One-off items go to<select name="owner" required>${owners.map((o) => html`<option value="${o.id}" ${o.kind === 'lead' ? 'selected' : ''}>${o.name}</option>`)}</select></label></div>
+          <details class="learn"><summary>${raw(icon('info', 16))}Learn more</summary><p>Per-partner items go to every delivery partner and the accountable body. Anything already approved and in date in the library is reused.</p></details>
+          <div class="btns"><button class="btn">${raw(icon('add', 18))}Add checklist</button></div></form>`
+        : emptyState('library', 'No templates yet.', html`<a class="btn secondary" href="#/library">${raw(icon('library', 18))}Library</a>`, 'bids')}
       </section>
-      <section class="panel"><h2>Add an item</h2>
+      <section class="panel m-bids" id="add-item-card"><h2>${raw(icon('add', 20))}Add an item</h2>
         <form class="form" id="add-item">
-          <label class="f">Item<input name="name" required placeholder="e.g. Site agreement and confirmation of places"></label>
+          <label class="f">Item<input name="name" required placeholder="e.g. Site agreement"></label>
           <label class="f">What good looks like<textarea name="description"></textarea></label>
           <div class="fields">
             <label class="f">Owner<select name="organisation_id" required>${owners.map((o) => html`<option value="${o.id}">${o.name}</option>`)}</select></label>
             <label class="f">Due<input type="date" name="due_on" max="${c.bid_deadline || ''}"></label></div>
           <label class="check"><input type="checkbox" name="mandatory" checked> Required for submission</label>
-          <label class="f">Example or template file<span class="hint">Optional. The partner can download it.</span><input type="file" name="example"></label>
-          <div class="btns"><button class="btn">Add item</button></div></form>
+          <label class="f">Example file<span class="hint">Optional. The partner can download it.</span><input type="file" name="example"></label>
+          <div class="btns"><button class="btn">${raw(icon('add', 18))}Add item</button></div></form>
       </section></div>` : ''}
 
-    ${ctx.manages ? html`<section class="panel" style="margin-top:20px"><h2>Outcome</h2>
-      ${open ? html`<div class="banner info" style="margin-bottom:14px">When the application has gone in, mark the bid as submitted. That needs every partner to have confirmed their targets and budget under Targets and budget.
-        <div class="btns" style="margin-top:10px"><button class="btn small" type="button" id="submitted">Mark as submitted</button></div></div>` : ''}
-      ${decidable ? html`<p class="muted small">If the bid is won, this workspace becomes the consortium: every partner, login, document and commitment carries across. If it's lost, everything stays on file.</p>
-        <form class="form" id="won" style="margin-top:12px"><div class="fields">
+    ${ctx.manages ? html`<section class="panel m-governance section"><h2>${raw(icon('governance', 20))}Outcome</h2>
+      ${open ? html`<div class="banner info" style="margin-bottom:16px">${raw(icon('submitted', 20))}<span>Once the application has gone in, mark it submitted. Every partner must have confirmed their targets and budget first.
+        <span class="btns" style="margin-top:12px;display:flex"><button class="btn small" type="button" id="submitted">${raw(icon('submitted', 16))}Mark submitted</button></span></span></div>` : ''}
+      ${decidable ? html`<p class="helper">If won, this workspace becomes the consortium and everything carries across.</p>
+        <form class="form" id="won" style="margin-top:16px"><div class="fields">
           <label class="f">Programme starts<input type="date" name="start" required></label>
           <label class="f">Programme ends<input type="date" name="end" required></label></div>
-          <div class="btns"><button class="btn">We won: open the consortium</button><button class="btn secondary" type="button" id="lost">We didn't win</button></div></form>`
-      : c.stage === 'lost' ? html`<p class="muted">Marked as not won${c.decided_at ? ` on ${fmtDate(c.decided_at)}` : ''}. Documents stay on file, and approved ones are in the partner library.</p>
-        <div class="btns" style="margin-top:12px"><button class="btn secondary" id="reopen-bid">Reopen the bid</button></div>`
-      : html`<p class="muted">Won and converted${c.decided_at ? ` on ${fmtDate(c.decided_at)}` : ''}. This is the record of what went into the submission.</p>`}
+          <div class="btns"><button class="btn">${raw(icon('approved', 18))}We won</button><button class="btn secondary" type="button" id="lost">We didn't win</button></div></form>`
+      : c.stage === 'lost' ? html`<p class="muted">Marked as not won${c.decided_at ? ` on ${fmtDate(c.decided_at)}` : ''}. Everything stays on file.</p>
+        <div class="btns" style="margin-top:12px"><button class="btn secondary" id="reopen-bid">${raw(icon('returned', 18))}Reopen bid</button></div>`
+      : html`<p class="muted">Won and converted${c.decided_at ? ` on ${fmtDate(c.decided_at)}` : ''}. This is the record of what went in.</p>`}
     </section>` : ''}`);
 
   const again = () => bid(ctx, el, []);

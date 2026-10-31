@@ -1,7 +1,8 @@
 // Consortium Portal: sign-in, two-step verification, the page shell and the
 // router. Each screen lives in views/ and receives a context describing the
 // consortium and the signed-in person's role in it.
-import { db, html, render, raw, $, formData, toast, errorText, act, must, fmtDate, statusPill, daysUntil, ROLE_LABEL, PD_ROLES } from './lib.js';
+import { db, html, render, raw, $, formData, toast, errorText, act, must, icon, PD_ROLES } from './lib.js';
+import homePage from './views/home.js';
 import hub from './views/hub.js';
 import agreements from './views/agreements.js';
 import register from './views/register.js';
@@ -25,17 +26,20 @@ const linkError = /[#&]error_description=([^&]+)/.exec(startHash)?.[1];
 
 const state = { user: null, profile: null, memberships: [], ctx: null, ready: false };
 
+const TAB_ORDER = ['dashboard', 'sessions', 'progress', 'returns', 'bid', 'targets', 'hub'];
+
+// Each page belongs to a module, which sets its icon and accent colour.
 const VIEWS = {
-  bid: { label: 'Bid readiness', view: bid, roles: ['lead', 'accountable_body', 'partner_manager'] },
-  dashboard: { label: 'Dashboard', view: dashboard, roles: 'all' },
-  hub: { label: 'Consortium', view: hub, roles: 'all' },
-  agreements: { label: 'Agreements', view: agreements, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
-  targets: { label: 'Targets and budget', view: targets, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance'] },
-  progress: { label: 'Progress', view: progress, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
-  sessions: { label: 'Sessions', view: sessions, roles: PD_ROLES },
-  register: { label: 'Young people', view: register, roles: PD_ROLES },
-  returns: { label: 'Returns', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
-  team: { label: 'People', view: team, roles: ['lead'] },
+  bid: { label: 'Bid readiness', short: 'Bid', icon: 'bids', mod: 'bids', view: bid, roles: ['lead', 'accountable_body', 'partner_manager'] },
+  dashboard: { label: 'Dashboard', short: 'Dashboard', icon: 'dashboard', mod: 'brand', view: dashboard, roles: 'all' },
+  hub: { label: 'Summary', short: 'Summary', icon: 'partners', mod: 'governance', view: hub, roles: 'all' },
+  agreements: { label: 'Agreements', short: 'Agreements', icon: 'governance', mod: 'governance', view: agreements, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
+  targets: { label: 'Targets and budget', short: 'Budget', icon: 'finance', mod: 'finance', view: targets, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance'] },
+  progress: { label: 'Progress', short: 'Progress', icon: 'outcomes', mod: 'delivery', view: progress, roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
+  sessions: { label: 'Sessions', short: 'Check in', icon: 'sessions', mod: 'delivery', view: sessions, roles: PD_ROLES },
+  register: { label: 'Young people', short: 'People', icon: 'youngPeople', mod: 'delivery', view: register, roles: PD_ROLES },
+  returns: { label: 'Returns', short: 'Returns', icon: 'returns', mod: 'compliance', view: returns, roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
+  team: { label: 'People', short: 'Team', icon: 'people', mod: 'governance', view: team, roles: ['lead'] },
 };
 
 // Administrators see every page except the delivery ones, which need an
@@ -233,63 +237,56 @@ async function loadCtx(consortiumId) {
   return state.ctx;
 }
 
+// The page frame: a sidebar on a desktop, a top bar and bottom tab bar on a
+// phone. Pages outside a consortium (home, account, library) keep showing the
+// last consortium's pages so moving between them stays one tap.
 function shell(ctx, active) {
-  const nav = ctx
-    ? Object.entries(VIEWS).filter(([k]) => allowed(k, ctx) && (k !== 'team' || ctx.manages))
-      .map(([k, v]) => html`<li><a href="#/c/${ctx.consortium.id}/${k}" ${raw(active === k ? 'aria-current="page"' : '')}>${k === 'hub' && ctx.consortium.stage !== 'live' ? 'Workspace' : v.label}</a></li>`)
-    : [];
+  const navCtx = ctx || state.ctx;
+  const pages = navCtx ? Object.entries(VIEWS).filter(([k]) => allowed(k, navCtx) && (k !== 'team' || navCtx.manages)) : [];
+  const link = ([k, v], short) => html`<a href="#/c/${navCtx.consortium.id}/${k}" class="m-${v.mod}" ${raw(active === k ? 'aria-current="page"' : '')}>
+    ${raw(icon(v.icon, 20))}<span>${short ? v.short : v.label}</span></a>`;
+  const homeLink = () => html`<a href="#/" class="m-brand" ${raw(active === 'home' ? 'aria-current="page"' : '')}>${raw(icon('home', 20))}<span>Home</span></a>`;
+  const extras = html`${isConvenor() ? html`<a href="#/library">${raw(icon('library', 20))}<span>Library</span></a>` : ''}
+    ${state.profile.is_platform_admin ? html`<a href="#/admin">${raw(icon('admin', 20))}<span>Admin</span></a>` : ''}
+    <a href="#/account">${raw(icon('people', 20))}<span>Account</span></a>`;
+  const where = navCtx ? html`<strong>${navCtx.consortium.name}</strong>${navCtx.orgName}` : '';
+  // The phone's tab bar holds the most used pages; the rest go under More.
+  const tabs = TAB_ORDER.map((k) => pages.find(([key]) => key === k)).filter(Boolean).slice(0, 3);
+  const rest = pages.filter((p) => !tabs.includes(p));
   render(app, html`
-    <header class="bar"><div class="bar-in">
-      <a class="wordmark" href="#/">SHVFT<span class="two">2.0</span><small>Portal</small></a>
-      <span class="bar-c">${ctx ? `${ctx.consortium.name}${ctx.orgName ? ` · ${ctx.orgName}` : ''}` : ''}</span>
-      <div class="bar-user">
-        ${isConvenor() ? html`<a href="#/library">Library</a>` : ''}
-        ${state.profile.is_platform_admin ? html`<a href="#/admin">Admin</a>` : ''}
-        <a href="#/account">Account</a>
-        <button type="button" id="signout">Sign out</button>
+    <div class="app">
+      <aside class="side">
+        <a class="wordmark" href="#/">SHVFT<span class="two">2.0</span><small>Portal</small></a>
+        ${where ? html`<p class="where">${where}</p>` : ''}
+        <nav aria-label="Portal"><ul><li>${homeLink()}</li>${pages.map((p) => html`<li>${link(p)}</li>`)}</ul></nav>
+        <div class="foot">${extras}<button type="button" data-signout>${raw(icon('logout', 20))}<span>Sign out</span></button></div>
+      </aside>
+      <div class="main-col">
+        <header class="topbar"><a class="wordmark" href="#/">SHVFT<span class="two">2.0</span></a><span class="where">${navCtx ? navCtx.consortium.name : ''}</span></header>
+        <main id="main"></main>
       </div>
-    </div>
-    ${nav.length ? html`<nav class="nav" aria-label="Portal"><ul>${nav}</ul></nav>` : ''}
-    </header>
-    <main id="main"></main>`);
-  $('#signout').addEventListener('click', signOut);
+      <nav class="tabbar" aria-label="Portal shortcuts">${homeLink()}${tabs.map((p) => link(p, true))}
+        <button type="button" id="more" aria-haspopup="dialog">${raw(icon('more', 20))}<span>More</span></button></nav>
+      <dialog class="more-sheet" id="more-sheet" aria-label="More pages"><ul>
+        ${rest.map((p) => html`<li>${link(p)}</li>`)}
+        <li>${extras}</li>
+        <li><button type="button" class="row" data-signout>${raw(icon('logout', 20))}<span>Sign out</span></button></li>
+        <li><button type="button" class="row" data-close-sheet>${raw(icon('close', 20))}<span>Close</span></button></li></ul></dialog>
+    </div>`);
+  document.querySelectorAll('[data-signout]').forEach((b) => b.addEventListener('click', signOut));
+  const sheet = $('#more-sheet');
+  $('#more').addEventListener('click', () => sheet.showModal());
+  sheet.addEventListener('click', (e) => { if (e.target === sheet || e.target.closest('a, [data-close-sheet]')) sheet.close(); });
   return $('#main');
 }
 
 async function home() {
-  const main = shell(null);
-  let list = state.memberships.map((m) => ({ id: m.consortium_id, name: m.consortia?.name, stage: m.consortia?.stage, deadline: m.consortia?.bid_deadline, role: m.role, org: m.organisations?.name }));
-  if (state.profile.is_platform_admin) {
-    const all = must(await db.from('consortia').select('id, name, stage, bid_deadline').order('name'));
-    for (const c of all) if (!list.some((l) => l.id === c.id)) list.push({ id: c.id, name: c.name, stage: c.stage, deadline: c.bid_deadline, role: 'platform_admin' });
-  }
-  // Reminders: open bid items assigned to the user's organisations that are
-  // due within a week or overdue.
-  const myOrgs = state.memberships.map((m) => m.organisation_id);
-  const soon = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
-  const tasks = myOrgs.length ? must(await db.from('bid_items').select('id, consortium_id, name, due_on, status, consortia(name, stage)')
-    .in('organisation_id', myOrgs).in('status', ['requested', 'returned']).lte('due_on', soon).order('due_on')).filter((t) => t.consortia?.stage === 'bid') : [];
-  if (list.length === 1 && !tasks.length) { location.replace(`#/c/${list[0].id}/${list[0].stage === 'live' ? 'dashboard' : 'bid'}`); return; }
-  const card = (c) => html`<a class="panel" href="#/c/${c.id}/${c.stage === 'live' ? 'dashboard' : 'bid'}" style="text-decoration:none">
-    <h2>${c.name}</h2><p style="margin-top:8px">${statusPill(c.stage)}${c.stage === 'bid' && c.deadline ? html` <span class="small muted">Deadline ${fmtDate(c.deadline)}</span>` : ''}</p>
-    <p class="muted small" style="margin-top:6px">${ROLE_LABEL[c.role]}${c.org ? ` · ${c.org}` : ''}</p></a>`;
-  const bids = list.filter((c) => c.stage !== 'live');
-  const live = list.filter((c) => c.stage === 'live');
-  render(main, html`
-    <div class="page-head"><div><span class="eyebrow">Welcome</span><h1>${state.profile.full_name ? `Hello, ${state.profile.full_name.split(' ')[0]}` : 'Your workspaces'}</h1></div></div>
-    ${tasks.length ? html`<section class="panel" style="margin-bottom:20px"><h2>Due soon</h2>
-      <div class="table-wrap"><table><tbody>${tasks.map((t) => {
-        const n = daysUntil(t.due_on);
-        return html`<tr><td><a href="#/c/${t.consortium_id}/bid/${t.id}">${t.name}</a><br><span class="small muted">${t.consortia?.name}</span></td>
-          <td>${statusPill(t.status)}</td><td class="small nowrap">${n < 0 ? html`<span class="rag rag-red">${-n} day${n === -1 ? '' : 's'} overdue</span>` : n === 0 ? 'Due today' : `Due in ${n} day${n === 1 ? '' : 's'}`}</td></tr>`;
-      })}</tbody></table></div></section>` : ''}
-    ${live.length ? html`<h2 style="margin-bottom:12px">Consortia</h2><div class="grid2">${live.map(card)}</div>` : ''}
-    ${bids.length ? html`<h2 style="margin:24px 0 12px">Bids</h2><div class="grid2">${bids.map(card)}</div>` : ''}
-    ${!list.length ? html`<div class="panel"><p>You're not part of a bid or consortium yet. Your lead adds you, and you'll see it here.</p></div>` : ''}`);
+  const main = shell(null, 'home');
+  await homePage(main, state);
 }
 
 function account() {
-  const main = shell(null);
+  const main = shell(null, 'account');
   render(main, html`
     <div class="page-head"><div><span class="eyebrow">Account</span><h1>${state.profile.full_name || state.user.email}</h1>
     <p class="muted">${state.user.email}</p></div></div>

@@ -140,9 +140,22 @@ async function leadHome(ctx, el) {
       : html`<p class="empty">Nothing allocated to partners yet.</p>`}
     </section>
     <section class="panel" style="margin-top:20px"><h2>Current targets</h2>${targetTable(ctx, commit, true)}</section>
-    <section class="panel" style="margin-top:20px"><h2>Current budget</h2>${budgetView(ctx, budget, { project: true })}</section>`);
+    <section class="panel" style="margin-top:20px"><header><h2>Current budget</h2>
+        ${ctx.manages ? html`<form id="grant" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><label class="f">Grant value (£)<input type="number" name="grant_value" min="0" step="1" value="${c.grant_value ?? ''}" style="width:160px"></label>
+          <button class="btn secondary small">Save</button></form>` : ''}</header>
+      ${budgetView(ctx, budget, { project: true })}</section>`);
 
   const again = () => leadHome(ctx, el);
+  // The grant value lives here, with the rest of the money, not on the summary.
+  $('#grant')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    act(e.submitter, async () => {
+      const v = e.target.elements.grant_value.value;
+      must(await db.from('consortia').update({ grant_value: v === '' ? null : Number(v) }).eq('id', c.id));
+      toast('Grant value saved.');
+      await ctx.reload();
+    });
+  });
   if (running) setTimeout(() => { if (location.hash.endsWith('/targets')) again(); }, 6000);
 
   $$('[data-new-version]').forEach((b) => b.addEventListener('click', () => {

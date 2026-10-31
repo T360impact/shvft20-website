@@ -1,6 +1,15 @@
 // Sessions and attendance, built for a phone at the hub: start a session,
 // tap each young person who came, register newcomers on the spot.
-import { db, html, render, $, $$, formData, toast, act, must, fmtDate, ageOn, today, errorText } from '../lib.js';
+import { db, html, raw, render, $, $$, formData, toast, act, must, icon, emptyState, fmtDate, ageOn, today, errorText } from '../lib.js';
+
+// A big tick that fades, so staff checking people in at the door can see it worked.
+const tick = () => {
+  const t = document.createElement('div');
+  t.className = 'tick-pop';
+  t.innerHTML = `<span>${icon('check', 56, 'Checked in')}</span>`;
+  document.body.append(t);
+  setTimeout(() => t.remove(), 900);
+};
 import { registerForm, submitRegistration } from './register.js';
 
 export default async function sessions(ctx, el, [sessionId]) {
@@ -12,23 +21,23 @@ export default async function sessions(ctx, el, [sessionId]) {
   const mine = list.filter((s) => s.organisation_id === ctx.orgId);
 
   render(el, html`
-    <div class="page-head"><div><span class="eyebrow">Sessions</span><h1>Sessions and attendance</h1>
-      <p class="muted">Start a session, then tick everyone who came. Each visit counts as an attendance; only a first registration counts as a new young person.</p></div></div>
+    <div class="page-head"><div><span class="eyebrow m-delivery">${raw(icon('sessions', 16))}Sessions</span><h1>Check in</h1>
+      <p>Start a session, then check in everyone who comes.</p></div></div>
     <div class="grid2">
-      <section class="panel"><h2>Start a session</h2>
+      <section class="panel m-delivery"><h2>${raw(icon('add', 20))}Start a session</h2>
         <form class="form" id="new-session"><div class="fields">
           <label class="f">Date<input type="date" name="session_date" value="${today()}" max="${today()}" required></label>
           <label class="f">Site<select name="site_id" required><option value="">Choose…</option>${mySites.map((s) => html`<option value="${s.id}">${s.name}</option>`)}</select></label></div>
           <label class="f">Session<input name="title" required placeholder="e.g. Tuesday youth club"></label>
           <label class="f">Run by<input name="run_by" value="${ctx.profile.full_name || ''}"></label>
-          <div class="btns"><button class="btn">Start and take the register</button></div></form>
+          <div class="btns"><button class="btn">${raw(icon('checkin', 18))}Start session</button></div></form>
       </section>
-      <section class="panel"><h2>Recent sessions</h2>
+      <section class="panel m-delivery"><h2>${raw(icon('sessions', 20))}Recent sessions</h2>
         ${mine.length ? html`<div class="table-wrap"><table><thead><tr><th>Date</th><th>Session</th><th class="num">Came</th></tr></thead>
           <tbody>${mine.map((s) => html`<tr><td class="nowrap">${fmtDate(s.session_date)}</td>
             <td><a href="#/c/${c.id}/sessions/${s.id}">${s.title}</a><br><span class="muted small">${ctx.site(s.site_id)?.name || ''}</span></td>
             <td class="num">${s.attendance?.[0]?.count ?? 0}</td></tr>`)}</tbody></table></div>`
-        : html`<p class="empty">No sessions yet.</p>`}
+        : emptyState('sessions', 'No sessions yet. Start one to check people in.', '', 'delivery')}
         ${ctx.seesAll && list.length > mine.length ? html`<p class="muted small" style="margin-top:10px">${list.length - mine.length} sessions run by other partners are counted on the dashboard.</p>` : ''}
       </section>
     </div>`);
@@ -58,21 +67,23 @@ async function attendance(ctx, el, sessionId) {
 
   render(el, html`
     <p class="small" style="margin-bottom:10px"><a href="#/c/${c.id}/sessions">← All sessions</a></p>
-    <div class="page-head"><div><span class="eyebrow">${fmtDate(s.session_date)} · ${ctx.site(s.site_id)?.name || ''}</span><h1>${s.title}</h1>
-      <p class="muted"><strong id="count">${present.size}</strong> attended${s.run_by ? ` · run by ${s.run_by}` : ''}</p></div></div>
-    ${own ? '' : html`<div class="banner info" style="margin-bottom:16px">Only the partner that ran this session can change its register.</div>`}
+    <div class="page-head"><div><span class="eyebrow m-delivery">${raw(icon('sites', 16))}${fmtDate(s.session_date)} · ${ctx.site(s.site_id)?.name || ''}</span><h1>${s.title}</h1>
+      ${s.run_by ? html`<p>Run by ${s.run_by}</p>` : ''}</div>
+      <div class="big-count" aria-live="polite"><b id="count">${present.size}</b><span class="small muted">checked in</span></div></div>
+    ${own ? '' : html`<div class="banner info" style="margin-bottom:24px">${raw(icon('info', 20))}<span>Only the partner that ran this session can change who's checked in.</span></div>`}
     <div class="grid2">
-      <section class="panel"><h2>Who came</h2>
-        <label class="f" style="margin-top:12px">Find someone<input type="search" id="find" placeholder="Start typing a name"></label>
+      <section class="panel m-delivery"><h2>${raw(icon('checkin', 20))}Who's here</h2>
+        <label class="f">Find someone<input type="search" id="find" placeholder="Start typing"></label>
         ${people.length ? html`<div class="att-list" style="margin-top:12px">${people.map((p) => html`
           <label class="att-row ${present.has(p.id) ? 'on' : ''}" data-q="${`${p.first_name} ${p.last_name}`.toLowerCase()}">
             <input type="checkbox" data-yp="${p.id}" ${present.has(p.id) ? 'checked' : ''} ${own ? '' : 'disabled'}>
             <span><strong>${p.first_name} ${p.last_name}</strong> <span class="muted small">age ${ageOn(p.date_of_birth)}</span></span>
+            <span class="here">${raw(icon('approved', 16))}Here</span>
           </label>`)}</div>`
-        : html`<p class="empty">No young people registered with ${ctx.orgName} yet. Register them here as they arrive.</p>`}
+        : emptyState('youngPeople', 'No one registered yet. Register people as they arrive.', '', 'delivery')}
       </section>
-      ${own ? html`<section class="panel"><h2>Someone new?</h2>
-        <p class="muted small">Register them and they're marked as here. If they're already registered with another partner, they're linked to you and not counted twice.</p>
+      ${own ? html`<section class="panel m-delivery"><h2>${raw(icon('add', 20))}Someone new?</h2>
+        <p class="helper">Register them and they're checked in. Nobody is counted twice.</p>
         ${registerForm(ctx, { id: 'quick-reg', compact: true })}</section>` : ''}
     </div>`);
 
@@ -96,6 +107,7 @@ async function attendance(ctx, el, sessionId) {
       return;
     }
     $('#count').textContent = $$('[data-yp]:checked').length;
+    if (box.checked) tick();
   }));
 
   $('#quick-reg').addEventListener('submit', (e) => {
