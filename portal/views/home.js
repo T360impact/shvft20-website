@@ -5,9 +5,11 @@
 // status; bids show the deadline, readiness and items waiting for me.
 // Tabs for Live, Bids and Closed; search; demo workspaces can be hidden.
 // Programme figures stay inside each workspace. Below the cards, what's
-// waiting for the person across their workspaces.
-import { db, html, raw, render, $, $$, must, icon, pill, duePill, statusPill, emptyState, fmtMonth, fmtDate, daysUntil, segControl, bindSegments, sectionGroup, ROLE_LABEL } from '../lib.js';
+// waiting for the person across their workspaces. A project's consortium
+// lead (or Shvft staff) can archive it, or delete it after typing its name.
+import { db, html, raw, render, $, $$, must, act, toast, icon, pill, duePill, statusPill, emptyState, openDrawer, fmtMonth, fmtDate, daysUntil, segControl, bindSegments, sectionGroup, ROLE_LABEL } from '../lib.js';
 import { ring } from './profile.js';
+import { adminCall } from './team.js';
 
 const MODULE = {
   bids: { label: 'Bids', icon: 'bids', mod: 'bids' },
@@ -75,8 +77,11 @@ export default async function home(main, state) {
     const q = ($('#ws-q', main)?.value || '').trim().toLowerCase();
     const demo = $('#ws-demo', main)?.checked ?? true;
     const ws = all.filter((w) => w.tab === tab && (demo || !w.is_demo) && (!q || w.name.toLowerCase().includes(q)));
-    render(list, ws.length ? html`<div class="ws-grid">${ws.map(tab === 'live' ? liveCard : tab === 'bids' ? bidCard : closedCard)}</div>`
+    const card = tab === 'live' ? liveCard : tab === 'bids' ? bidCard : closedCard;
+    render(list, ws.length ? html`<div class="ws-grid">${ws.map((w) => html`<div class="ws-card-wrap ${w.can_delete ? 'can-manage' : ''}">${card(w)}
+      ${w.can_delete ? html`<button type="button" class="ws-manage" data-manage="${w.id}" aria-label="Archive or delete ${w.name}" title="Archive or delete">${raw(icon('more', 18))}</button>` : ''}</div>`)}</div>`
       : html`<p class="muted" style="margin-top:12px">${q ? 'Nothing matches that name.' : tab === 'closed' ? 'Nothing closed or archived.' : `No ${tab === 'live' ? 'live consortia' : 'bids in progress'}${demo ? '' : ' (demo workspaces are hidden)'}.`}</p>`);
+    $$('[data-manage]', list).forEach((b) => b.addEventListener('click', () => act(b, () => manage(all.find((w) => w.id === b.dataset.manage), () => home(main, state)))));
   };
   bindSegments(main);
   $$('[data-seg-for="htab"] [data-seg]', main).forEach((b) => b.addEventListener('click', () => { save({ tab: b.dataset.seg }); paint(); }));
@@ -119,4 +124,44 @@ async function waiting(el, state, all) {
   if (!groups.length) return;
   render(el, html`<div class="section"><h2>Waiting for you</h2>${groups.map(([k, t], i) => sectionGroup({ title: MODULE[k].label, meta: `${t.length}`, open: i === 0,
     body: html`<ul class="tasks">${t.map((x) => html`<li><a href="${x.href}"><span><strong>${x.title}</strong><span class="small muted">${x.where}</span></span>${x.pill}</a></li>`)}</ul>` }))}</div>`);
+}
+
+// Archive (reversible) or delete (for good) a project. Deleting shows what
+// goes, then asks "are you sure" with the project's name typed in.
+async function manage(w, again) {
+  const p = must(await db.rpc('workspace_delete_preview', { p_consortium: w.id }));
+  const k = p.counts;
+  const what = [[k.organisations, 'organisation'], [k.people, 'person\'s access', 'people\'s access'], [k.targets, 'target'], [k.returns, 'monthly return'], [k.weekly, 'week of figures', 'weeks of figures'],
+    [k.documents, 'document'], [k.risks, 'risk'], [k.bid_items, 'bid checklist item'], [k.tasks, 'Lead Workspace task']]
+    .filter(([n]) => n > 0).map(([n, one, many]) => `${n} ${n === 1 ? one : many || `${one}s`}`);
+  const d = openDrawer(p.name, html`
+    <section><h3 class="small-head">${p.archived ? 'Restore' : 'Archive'}</h3>
+      <p class="small muted">${p.archived ? 'Moves it back from Closed and archived.' : 'Moves it to Closed and archived. Nothing is deleted, and you can restore it any time.'}</p>
+      <div class="btns"><button type="button" class="btn secondary" id="arch">${p.archived ? 'Restore it' : 'Archive it'}</button></div></section>
+    <section style="margin-top:24px"><h3 class="small-head">Delete permanently</h3>
+      <p class="small">This deletes ${p.name} and everything in it${what.length ? `: ${what.join(', ')}` : ''}, and its uploaded files. Partners' own profiles and documents are kept, as they're shared with other projects.</p>
+      <p class="small"><strong>It can't be undone.</strong></p>
+      ${p.stage === 'live' && !p.is_demo ? html`<div class="banner warn small">This is a live consortium. If the programme has finished, archiving keeps its records for audit and the funder.</div>` : ''}
+      <div id="del-step" style="margin-top:12px"><div class="btns"><button type="button" class="btn danger" id="del-1">Delete this project…</button></div></div></section>`);
+  $('#arch', d).addEventListener('click', (e) => act(e.currentTarget, async () => {
+    must(await db.rpc('archive_workspace', { p_consortium: w.id, p_archive: !p.archived }));
+    d.close(); toast(p.archived ? `${p.name} restored.` : `${p.name} archived. It's under Closed and archived.`); again();
+  }));
+  $('#del-1', d).addEventListener('click', () => {
+    const step = $('#del-step', d);
+    render(step, html`<div class="banner bad"><div><strong>Are you sure?</strong> ${p.name} and everything in it will be deleted for everyone, permanently.</div></div>
+      <label class="f" style="margin-top:12px">Type <strong>${p.name}</strong> to confirm<input id="del-name" autocomplete="off" spellcheck="false"></label>
+      <div class="btns"><button type="button" class="btn danger" id="del-2" disabled>Delete permanently</button><button type="button" class="btn secondary" id="del-no">Keep it</button></div>`);
+    const input = $('#del-name', step); const go = $('#del-2', step);
+    input.focus();
+    input.addEventListener('input', () => { go.disabled = input.value.trim().toLowerCase() !== p.name.trim().toLowerCase(); });
+    $('#del-no', step).addEventListener('click', () => d.close());
+    go.addEventListener('click', () => act(go, async () => {
+      const res = await adminCall({ action: 'delete_workspace', consortium_id: w.id, confirm: input.value });
+      d.close();
+      toast(res.files_left ? `${p.name} deleted. Some files couldn't be removed; Shvft staff have a record.` : `${p.name} deleted.`);
+      // The person's list of workspaces has changed: start afresh.
+      setTimeout(() => { location.hash = '#/'; location.reload(); }, 900);
+    }));
+  });
 }

@@ -1497,3 +1497,8 @@ ul.lw-nd { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1
 /* In the top bar the notifications button is the icon and its count only. */
 .platform-bar .icon-btn > span { display: inline-flex; align-items: center; font-size: 0; }
 .platform-bar .icon-btn .notif-count { font-size: 12px; margin-left: 2px; }
+/* Home: archive or delete a project */
+.ws-card-wrap { position: relative; min-width: 0; display: grid; }
+.ws-card-wrap.can-manage .ws-pills { padding-right: 44px; }
+.ws-manage { position: absolute; right: 10px; bottom: 10px; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text-2); cursor: pointer; }
+.ws-manage:hover, .ws-manage:focus-visible { color: var(--text); border-color: var(--navy); }
