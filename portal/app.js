@@ -228,17 +228,25 @@ async function boot(skipLink = false) {
   }
 
   state.user = session.user;
+  // Two-step sign-in first: the database refuses everything else to a
+  // password-only session of anyone who needs it, so ask it before loading.
+  const { data: required, error: notYet } = await db.rpc('mfa_required');
+  const needsMfa = async () => {
+    if (!notYet) return required;
+    // Before the database has mfa_required: decide from the roles, as before.
+    const p = must(await db.from('profiles').select('is_platform_admin').eq('id', session.user.id).maybeSingle());
+    const ms = must(await db.from('memberships').select('role').eq('user_id', session.user.id).eq('active', true));
+    return !!p?.is_platform_admin || ms.some((m) => PD_ROLES.includes(m.role));
+  };
+  if (await needsMfa()) {
+    const aal = must(await db.auth.mfa.getAuthenticatorAssuranceLevel());
+    if (aal.currentLevel !== 'aal2') return mfaView();
+  }
   state.profile = must(await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle()) || {};
   applyTheme(state.profile.theme);
   state.memberships = must(await db.from('memberships')
     .select('id, role, onboarding, consortium_id, organisation_id, consortia(name, stage, bid_deadline), organisations(name)')
     .eq('user_id', session.user.id).eq('active', true));
-
-  const needsMfa = state.profile.is_platform_admin || state.memberships.some((m) => PD_ROLES.includes(m.role));
-  if (needsMfa) {
-    const aal = must(await db.auth.mfa.getAuthenticatorAssuranceLevel());
-    if (aal.currentLevel !== 'aal2') return mfaView();
-  }
   state.ready = true;
   if (!location.hash.startsWith('#/')) location.hash = '#/';
   else route();

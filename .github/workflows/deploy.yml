@@ -29,7 +29,7 @@ jobs:
       - name: Every portal script parses
         run: for f in $(find portal site.js -name '*.js' -not -path '*/vendor/*'); do node --check --input-type=module < "$f" || { echo "Syntax error in $f"; exit 1; }; done
       - name: Portal tests
-        run: node --test portal/tests/
+        run: node --test 'portal/tests/*.test.mjs'
   database:
     name: Database rebuild and access tests
     runs-on: ubuntu-latest
