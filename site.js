@@ -25,7 +25,7 @@ const setEasyRead = on => {
     font.href = 'https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap';
     document.head.appendChild(font);
   }
-  try { on ? localStorage.setItem('shvft-easy-read', '1') : localStorage.removeItem('shvft-easy-read'); } catch {}
+  try { on ? localStorage.setItem('shvft-easy-read', '1') : localStorage.removeItem('shvft-easy-read'); } catch { /* storage blocked */ }
 };
 setEasyRead(document.documentElement.classList.contains('easy-read'));
 readToggle?.addEventListener('click', () => setEasyRead(!document.documentElement.classList.contains('easy-read')));

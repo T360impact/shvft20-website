@@ -83,6 +83,7 @@ export const taskRow = (ctx, t) => html`<li><button type="button" class="lw-row"
 
 // Add or edit a task. Hub roles can only place it at their own hub.
 export function taskForm(ctx, t = {}, defaults = {}) {
+  /** @type {any} */
   const v = { tracker: 'operations', ...defaults, ...t };
   return html`<form class="form" id="task-form">
     <label class="f">What needs doing<input name="title" required maxlength="200" value="${v.title || ''}"></label>

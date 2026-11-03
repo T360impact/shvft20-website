@@ -12,6 +12,7 @@ const steps = (n, all) => html`<ol class="wiz-steps" aria-label="Steps">${all.ma
 const BID_STEPS = ['Details', 'Application form and guidance', 'Invite partners', 'Requirements from the documents'];
 const CON_STEPS = ['Start', 'Funder profile and details', 'Settings', 'Partners and roles', 'Documents and extraction', 'Targets and budget', 'Publish the Summary'];
 
+/** @param {HTMLElement} el @param {any} state @param {string[]} parts @param {(id: string) => Promise<void>} created */
 export default async function wizard(el, state, [kind, fromId], created) {
   const profiles = must(await db.from('funder_profiles').select('id, name').order('name'));
   const profileSelect = html`<label class="f">Funder profile<span class="hint">Sets the funder's reporting rules, budget headings and outcome framework. Choose none if it's a new funder.</span>

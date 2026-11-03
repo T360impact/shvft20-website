@@ -2,7 +2,7 @@
 // workspace it joins, with its compliance documents. The organisation's own
 // admins edit it; the consortium lead and lead organisation review its
 // documents; other partners see only its name, logo, description and role.
-import { db, html, raw, render, $, $$, must, act, toast, icon, pill, openDrawer, formData, fmtDate, sectionGroup, uploadFile, openFile, KIND_LABEL } from '../lib.js';
+import { db, html, raw, render, $, $$, must, act, toast, pill, openDrawer, formData, fmtDate, sectionGroup, uploadFile, openFile, KIND_LABEL } from '../lib.js';
 
 const GROUPS = [['governance', 'Governance'], ['safeguarding', 'Safeguarding'], ['insurance', 'Insurance'], ['policies', 'Policies'], ['evidence', 'Evidence']];
 const FORMS = [['charity', 'Registered charity'], ['charitable_company', 'Charitable company'], ['cio', 'CIO'], ['cic', 'Community interest company'],
@@ -85,7 +85,7 @@ export default async function profile(ctx, el, [orgId]) {
   $('#pf', el).addEventListener('submit', (e) => { e.preventDefault(); act(e.submitter, async () => {
     const f = formData(e.target);
     const list = (s) => (s || '').split(',').map((x) => x.trim()).filter(Boolean);
-    const contacts = Object.fromEntries(CONTACTS.map(([k]) => [k, { name: f[`c_${k}_name`] || '', role: f[`c_${k}_role`] || '', email: f[`c_${k}_email`] || '' }]).filter(([, v]) => v.name));
+    const contacts = Object.fromEntries(CONTACTS.map(([k]) => /** @type {[string, any]} */ ([k, { name: f[`c_${k}_name`] || '', role: f[`c_${k}_role`] || '', email: f[`c_${k}_email`] || '' }])).filter(([, v]) => v.name));
     const logo = e.target.logo.files[0];
     const logo_path = logo ? await uploadFile('library', `partners/${p.id}/logo`, logo) : p.logo_path;
     must(await db.from('partners').update({ legal_name: f.legal_name || null, trading_name: f.trading_name || null, legal_form: f.legal_form || null,

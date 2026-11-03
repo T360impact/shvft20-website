@@ -2,7 +2,7 @@
 // needs no chart library. Every chart sits under a one line takeaway and a
 // title, values are labelled on the chart rather than in a legend, and
 // meaning never rests on colour alone. Groups under five are suppressed.
-import { html, raw, fmtNum } from './lib.js';
+import { html, fmtNum } from './lib.js';
 
 export const SMALL = 5;
 export const tooSmall = (n) => n != null && n > 0 && n < SMALL;

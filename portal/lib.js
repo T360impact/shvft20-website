@@ -47,15 +47,24 @@ export const PD_ROLES = ['lead', 'accountable_body', 'partner_manager', 'hub_wor
 // Tagged template that escapes every interpolated value unless it is
 // wrapped in raw().
 const RAW = Symbol('raw');
+/** Markup that is already safe: html`` output, icons. @typedef {{ [RAW]: string }} Html */
+/** Anything a template or a text slot accepts: plain text (escaped) or markup. @typedef {string | number | Html | null | undefined | false | Array<any>} Content */
+/** @param {unknown} s @returns {Html} */
 export const raw = (s) => ({ [RAW]: String(s) });
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const part = (v) => (v && v[RAW] !== undefined ? v[RAW] : Array.isArray(v) ? v.map(part).join('') : esc(v));
+/** @param {TemplateStringsArray} strings @param {...any} values @returns {Html} */
 export function html(strings, ...values) {
   return raw(strings.reduce((out, s, i) => out + s + (i < values.length ? part(values[i]) : ''), ''));
 }
+/** @param {Element} el @param {Content} view */
 export const render = (el, view) => { el.innerHTML = part(view); };
 
+// DOM lookups. They return any: the pages read .value, .checked, .elements
+// and the like straight off what they find.
+/** @param {string} sel @param {ParentNode} [root] @returns {any} */
 export const $ = (sel, root = document) => root.querySelector(sel);
+/** @param {string} sel @param {ParentNode} [root] @returns {any[]} */
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 const dateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -75,9 +84,12 @@ export const ageOn = (dob, on = new Date()) => {
 };
 
 // Read a form into a plain object; empty strings become null.
+/** @param {HTMLFormElement} form @returns {Record<string, any>} */
 export function formData(form) {
+  /** @type {Record<string, any>} */
   const out = {};
-  for (const el of form.elements) {
+  // Form controls: inputs, selects and textareas all carry name, value and type.
+  for (const el of /** @type {Iterable<HTMLInputElement>} */ (form.elements)) {
     if (!el.name || el.disabled) continue;
     if (el.type === 'checkbox') {
       if (el.dataset.multi) { (out[el.name] ||= []); if (el.checked) out[el.name].push(el.value); }
@@ -103,6 +115,7 @@ export function errorText(error) {
 }
 
 let toastTimer;
+/** @param {string} message @param {string} [kind] */
 export function toast(message, kind = 'ok') {
   const el = $('#toast');
   el.textContent = message;
@@ -112,6 +125,7 @@ export function toast(message, kind = 'ok') {
 }
 
 // Run an async action from a form or button, showing errors inline.
+/** @param {any} button @param {() => Promise<unknown> | unknown} fn */
 export async function act(button, fn) {
   const label = button?.textContent;
   if (button) { button.disabled = true; button.textContent = 'Working…'; }
@@ -144,7 +158,10 @@ export function downloadCsv(filename, rows) {
 }
 
 // A status is always a tinted pill with an icon and words, never colour alone.
-export const pill = (tone, text, iconName) => html`<span class="pill tone-${tone}">${iconName ? raw(icon(iconName, 14)) : ''}${text}</span>`;
+// pill(tone, text, icon); the pages also spread a [tone, text, icon] entry from a lookup table into it.
+/** @param {...any} args */
+export const pill = (...args) => { const [tone, text, iconName] = args; return pillOf(tone, text, iconName); };
+const pillOf = (tone, text, iconName) => html`<span class="pill tone-${tone}">${iconName ? raw(icon(iconName, 14)) : ''}${text}</span>`;
 export const rag = (r) => pill(r || 'grey', { green: 'Green', amber: 'Amber', red: 'Red' }[r] || 'Not started',
   { green: 'approved', amber: 'overdue', red: 'rejected' }[r] || 'waiting');
 const STATUS = {
@@ -193,15 +210,18 @@ export const countdown = (d) => {
 };
 
 // Big number, short label, and a trend in status colour.
+/** @param {{ icon?: string, mod?: string, value: Content, label: Content, trend?: { dir?: string, tone?: string, text?: Content, chip?: Content } }} card */
 export const statCard = ({ icon: ic, mod = 'brand', value, label, trend }) => html`<div class="stat m-${mod}">
   <div class="stat-top"><span class="stat-label">${label}</span>${ic ? html`<span class="stat-icon">${raw(icon(ic, 18))}</span>` : ''}</div>
   <div class="stat-value"><b>${value}</b>${trend?.chip ? html`<span class="stat-chip ${trend.tone}">${trend.chip}</span>` : ''}</div>
   ${trend ? html`<div class="stat-foot ${trend.tone}">${raw(icon({ up: 'up', down: 'down', flat: 'flat' }[trend.dir] || 'flat', 14))}<span>${trend.text}</span></div>` : ''}</div>`;
 
 // Icon, one sentence, one button.
+/** @param {string} ic @param {Content} text @param {Content} [action] @param {string} [mod] */
 export const emptyState = (ic, text, action = '', mod = '') => html`<div class="empty-state ${mod ? `m-${mod}` : ''}">${raw(icon(ic, 48))}<p>${text}</p>${action}</div>`;
 
 // Row details in a side drawer, so tables keep to the columns that matter.
+/** @param {string} title @param {Content} body @returns {HTMLDialogElement} */
 export function openDrawer(title, body) {
   const d = document.createElement('dialog');
   d.className = 'drawer';
@@ -210,16 +230,16 @@ export function openDrawer(title, body) {
     <button type="button" class="icon-btn" data-close aria-label="Close">${raw(icon('close', 20))}</button></header>${body}</div>`);
   document.body.append(d);
   d.addEventListener('close', () => d.remove());
-  d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('[data-close]')) d.close(); });
+  d.addEventListener('click', (e) => { if (e.target === d || /** @type {Element} */ (e.target).closest('[data-close]')) d.close(); });
   d.showModal();
   return d;
 }
 
-export const daysUntil = (d) => (d ? Math.round((new Date(`${d}T12:00:00`) - new Date(`${today()}T12:00:00`)) / 864e5) : null);
+export const daysUntil = (d) => (d ? Math.round((+new Date(`${d}T12:00:00`) - +new Date(`${today()}T12:00:00`)) / 864e5) : null);
 
 // Upload a file to private storage under a folder, keeping a readable name.
 export async function uploadFile(bucket, folder, file) {
-  const safe = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
+  const safe = file.name.replace(/[^\w.-]+/g, '_').slice(-80);
   const path = `${folder}/${crypto.randomUUID()}-${safe}`;
   must(await db.storage.from(bucket).upload(path, file, { contentType: file.type || undefined }));
   return path;
@@ -246,6 +266,7 @@ export function openFile(button, bucket, path, hash = '') {
 
 // A segmented switch. Panes marked data-seg-pane="name:value" show for their
 // value; the empty value ('') shows them all.
+/** @param {string} name @param {Array<Array<any>>} options @param {any} selected */
 export const segControl = (name, options, selected) => html`<div class="seg" role="group" data-seg-for="${name}">${options.map(([v, label]) => html`<button type="button" class="seg-btn" data-seg="${v}" aria-pressed="${String(v) === String(selected)}">${label}</button>`)}</div>`;
 export function bindSegments(root = document) {
   $$('[data-seg-for]', root).forEach((bar) => {
@@ -261,11 +282,13 @@ export function bindSegments(root = document) {
 
 // A collapsible section: a title, a one-line summary, an optional bar or pill
 // on the right, and the rows inside.
+/** @param {{ title: Content, meta?: Content, aside?: Content, body: Content, open?: boolean }} g */
 export const sectionGroup = ({ title, meta = '', aside = '', body, open = false }) => html`<details class="tgroup" ${raw(open ? 'open' : '')}>
   <summary><span class="tg-title">${title}</span><span class="tg-meta">${meta}</span><span class="tg-aside">${aside}</span><span class="tg-chev" aria-hidden="true"></span></summary>
   <div class="tg-body">${body}</div></details>`;
 
 // A thin bar of counts by tone, for a section's summary line.
+/** @param {Array<[string, number, string?]>} parts */
 export const toneBar = (parts) => {
   const shown = parts.filter(([, n]) => n);
   return shown.length ? html`<span class="tg-bar" role="img" aria-label="${shown.map(([t, n, label]) => `${n} ${label || t}`).join(', ')}">${shown.map(([t, n]) => html`<i class="seg-${t}" style="flex:${n}"></i>`)}</span>` : '';
@@ -284,7 +307,7 @@ export function live(consortiumId, onChange, table = 'live_pings') {
   const ch = db.channel(`live:${consortiumId}:${crypto.randomUUID()}`)
     .on('postgres_changes', { event: '*', schema: 'public', table, filter: `consortium_id=eq.${consortiumId}` }, (payload) => {
       clearTimeout(timer);
-      timer = setTimeout(() => onChange(payload.new?.kind), 1200);
+      timer = setTimeout(() => onChange(/** @type {any} */ (payload.new)?.kind), 1200);
     })
     .subscribe((status) => document.querySelectorAll('.live-dot').forEach((d) => d.classList.toggle('on', status === 'SUBSCRIBED')));
   liveChannel = ch;

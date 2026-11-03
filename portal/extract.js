@@ -58,7 +58,7 @@ async function readDocx(buf) {
       cur.text += `${line}\n`;
     } else if (el.localName === 'tbl') {
       const rows = [...el.getElementsByTagNameNS(W, 'tr')].filter((tr) => tr.parentNode === el)
-        .map((tr) => [...tr.childNodes].filter((c) => c.localName === 'tc').map((tc) => [...tc.getElementsByTagNameNS(W, 'p')].map(text).join(' ').trim()));
+        .map((tr) => [...tr.childNodes].filter((c) => /** @type {Element} */ (c).localName === 'tc').map((tc) => [.../** @type {Element} */ (tc).getElementsByTagNameNS(W, 'p')].map(text).join(' ').trim()));
       if (!rows.some((r) => r.some(Boolean))) continue;
       // Keep the document's order: the text before the table, the table, then the text after.
       const label = cur?.label || '';

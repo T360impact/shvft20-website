@@ -81,7 +81,7 @@ async function detail(ctx, el, id) {
       .is('superseded_by', null).is('retired_at', null).eq('period', 'year').then(must),
   ]);
   // This month against a monthly share of the organisation's own yearly target.
-  const year = c.start_date ? Math.floor(((new Date(`${r.period_month}T12:00:00`) - new Date(`${c.start_date}T12:00:00`)) / 864e5) / 365.25) + 1 : null;
+  const year = c.start_date ? Math.floor(((+new Date(`${r.period_month}T12:00:00`) - +new Date(`${c.start_date}T12:00:00`)) / 864e5) / 365.25) + 1 : null;
   const monthly = (k) => { const t = targets.filter((x) => x.measure === k && x.year === year).reduce((s, x) => s + Number(x.target), 0); return t ? t / 12 : null; };
   const rows = COUNTS.filter(([k]) => k !== 'outcomes' || counts?.outcomes).map(([k, label]) => {
     const n = Number(counts?.[k] || 0);

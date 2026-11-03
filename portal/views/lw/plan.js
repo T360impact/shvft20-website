@@ -45,7 +45,7 @@ export default async function plans(ctx, el, id, refresh) {
     act(e.submitter, async () => {
       const file = e.target.file.files[0];
       if (!/\.(docx|pdf)$/i.test(file.name)) throw new Error('Choose a Word (.docx) or PDF file.');
-      const path = `${ctx.consortium.id}/plans/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]+/g, '_').slice(-80)}`;
+      const path = `${ctx.consortium.id}/plans/${crypto.randomUUID()}-${file.name.replace(/[^\w.-]+/g, '_').slice(-80)}`;
       must(await db.storage.from('lead-workspace').upload(path, file, { contentType: file.type || undefined }));
       const { data, error } = await db.functions.invoke('extract-plan', { body: { consortium_id: ctx.consortium.id, storage_path: path, file_name: file.name, title: file.name.replace(/\.[^.]+$/, ''), mime_type: file.type || null } });
       if (error) { let m = error.message; try { m = (await error.context.json()).error || m; } catch { /* keep */ } throw new Error(m); }

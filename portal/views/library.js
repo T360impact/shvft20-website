@@ -12,6 +12,7 @@ const docState = (d) => {
   return html`<span class="pill pill-approved">Valid to ${fmtDate(d.expires_on)}</span>`;
 };
 
+/** @param {HTMLElement} el @param {string[]} [parts] */
 export default async function library(el, [templateId] = []) {
   if (templateId) return template(el, templateId);
   const [partners, docs, orgs, templates] = await Promise.all([

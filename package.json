@@ -1,0 +1,19 @@
+{
+  "name": "shvft20-website",
+  "private": true,
+  "description": "Static site and Consortium Portal. No build step: these tools only check the code.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p jsconfig.json",
+    "test": "node --test 'portal/tests/*.test.mjs'",
+    "check": "npm run lint && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.14.0",
+    "@supabase/supabase-js": "2.45.4",
+    "eslint": "9.14.0",
+    "globals": "15.12.0",
+    "typescript": "5.6.3"
+  }
+}

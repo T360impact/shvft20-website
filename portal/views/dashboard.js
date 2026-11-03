@@ -27,7 +27,6 @@ const PANELS = {
 // Each panel is a card: full width, or half so two sit side by side.
 const SIZE = { note: 'full', stats: 'full', targets: 'full', outcomes: 'full', programmes: 'full', quarters: 'full' };
 const ORDER = Object.keys(PANELS);
-const METRICS = { reached: 'Young people reached', attendances: 'Attendances', targeted: 'Targeted share', sessions: 'Sessions', surveys: 'Survey response rate', returns: 'Returns on time' };
 
 // Until there are records in the register, the headline figures are what
 // partners have reported.
@@ -122,7 +121,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
 
   const today = new Date().toISOString().slice(0, 10);
   const periods = [...new Set(p.commitments.map((k) => (k.period === 'lifetime' ? 'lifetime' : k.year)))]
-    .sort((a, b) => (a === 'lifetime') - (b === 'lifetime') || a - b);
+    .sort((a, b) => Number(a === 'lifetime') - Number(b === 'lifetime') || a - b);
   const pct = (m) => (isPct(m) ? '%' : '');
   const reportedBy = (k) => (k.by_org || []).map((b) => `${ctx.org(b.organisation_id)?.name} ${fmtNum(b.value)}${pct(k)}`).join(' · ');
   const whoOf = (k) => k.organisation || (k.links || []).map((id) => ctx.org(id)?.name).filter(Boolean).join(', ') || 'Whole consortium';

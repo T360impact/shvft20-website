@@ -8,6 +8,7 @@ import { db, html, raw, render, $, $$, formData, toast, act, must, icon, pill, e
 import { initials, ring } from '../charts.js';
 
 // How an outcome is evidenced, read from the document's own evidence text.
+/** @type {Array<[RegExp, ...string[]]>} */
 const METHOD = [
   [/survey|scale|self[- ]?report|questionnaire|pre and post|warwick|ucla/i, 'Survey', 'surveys', 'surveys'],
   [/register|attendance|session log|logs|records|registration/i, 'Session data', 'attendance', 'delivery'],
@@ -22,7 +23,8 @@ const themeIcon = (t) => (/safe|belong|access|space/i.test(t) ? 'compliance' : /
   : /well|health|relation|mental|emotion/i.test(t) ? 'surveys' : 'targets');
 const DOC_KIND = { delivery_model: 'Delivery model', monitoring_framework: 'Outcome framework', consortium_agreement: 'Consortium agreement', policy: 'Policy', other: 'Document' };
 
-export default async function hub(ctx, el, [sub]) {
+/** @param {any} ctx @param {HTMLElement} el @param {string[]} [parts] */
+export default async function hub(ctx, el, [sub] = []) {
   if (sub === 'edit' && ctx.manages) return edit(ctx, el);
   if (sub === 'inline' && ctx.manages) return inline(ctx, el);
   if (sub === 'methods' && ctx.manages) return methods(ctx, el);

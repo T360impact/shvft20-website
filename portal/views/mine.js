@@ -10,8 +10,7 @@
 import { docPill } from './profile.js';
 import { loadGaps, gapList, bindGapList, canUpload } from './reporting.js';
 import { dbsSettings } from './dbs.js';
-import { db, html, raw, render, $, $$, must, act, toast, icon, pill, rag, statusPill, statCard, openDrawer, formData, fmtDate, fmtDateTime, fmtMonth, fmtMoney, fmtNum,
-  today, emptyState, sectionGroup, segControl, bindSegments, headline, uploadFile, ROLE_LABEL, live, liveMark } from '../lib.js';
+import { db, html, raw, render, $, $$, must, act, toast, icon, pill, rag, statusPill, statCard, openDrawer, formData, fmtDate, fmtMonth, fmtMoney, fmtNum, today, emptyState, sectionGroup, segControl, bindSegments, headline, uploadFile, ROLE_LABEL, live, liveMark } from '../lib.js';
 
 const PAY = { scheduled: ['grey', 'Scheduled'], awaiting_return: ['amber', 'Awaiting return'], on_hold: ['red', 'On hold'], return_approved: ['blue', 'Return approved'],
   approved_for_payment: ['blue', 'Approved for payment'], paid: ['green', 'Paid'] };
@@ -278,7 +277,7 @@ export async function master(ctx, el) {
   const body = $('#mbody', el);
   const again = () => master(ctx, el);
   if (tab === 'programme') return programme(ctx, body, [], v.programme);
-  if (tab === 'health') return health(ctx, body, v, again);
+  if (tab === 'health') return health(ctx, body, v);
   if (tab === 'settings') return settings(ctx, body, v.settings || {}, again);
   if (tab === 'viewas') return viewAs(ctx, body, partners);
   return drive(ctx, body, v, partners, again);
@@ -445,6 +444,7 @@ function viewAs(ctx, el, partners) {
     } else {
       must(await db.rpc('log_view_as', { p_consortium: ctx.consortium.id, p_kind: 'funder' }));
       const [fin, layout] = await Promise.all([db.rpc('funder_finance', { p_consortium: ctx.consortium.id }).then(must), db.rpc('dashboard_layout', { p_consortium: ctx.consortium.id }).then(must)]);
+      /** @type {any} */
       const settings = (await db.from('workspace_settings').select('funder_can_see_finance, funder_can_see_partner_detail').eq('consortium_id', ctx.consortium.id).maybeSingle()).data || {};
       render(out, html`<div class="viewas-frame"><div class="lead-banner viewas"><span><strong>Viewing as the funder.</strong> Read only.</span></div>
         <section class="panel"><h2>What the funder sees</h2>

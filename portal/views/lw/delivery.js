@@ -45,7 +45,7 @@ export default async function delivery(ctx, el, refresh) {
           const bs = blocks.filter((b) => b.hub_id === h.id && b.start_date <= we && end(b) >= w);
           const ts = trips.filter((t) => t.hub_id === h.id && t.trip_date >= w && t.trip_date <= we);
           const sc = blocks.filter((b) => b.hub_id === h.id && b.showcase_date && b.showcase_date >= w && b.showcase_date <= we);
-          return html`<td>${bs.map((b) => html`<button type="button" class="lw-chip ${b.kind}" data-block="${b.id}">${b.kind === 'reset' ? 'Reset' : b.name} · wk ${Math.floor((new Date(`${w}T12:00:00`) - new Date(`${monday(b.start_date)}T12:00:00`)) / 6048e5) + 1}/${b.weeks}</button>`)}
+          return html`<td>${bs.map((b) => html`<button type="button" class="lw-chip ${b.kind}" data-block="${b.id}">${b.kind === 'reset' ? 'Reset' : b.name} · wk ${Math.floor((+new Date(`${w}T12:00:00`) - +new Date(`${monday(b.start_date)}T12:00:00`)) / 6048e5) + 1}/${b.weeks}</button>`)}
             ${sc.map((b) => html`<span class="lw-chip show">Showcase ${fmtDate(b.showcase_date)}</span>`)}
             ${ts.map((t) => html`<span class="lw-chip trip">Trip · ${t.destination}</span>`)}</td>`;
         })}</tr>`; })}</tbody></table></div>`;
@@ -125,7 +125,7 @@ export default async function delivery(ctx, el, refresh) {
     const p = plans.find((y) => y.hub_id === hub && y.month === month) || {};
     const running = blocks.filter((b) => b.hub_id === hub && b.kind === 'block' && b.start_date <= addDays(firstOf(month, 1), -1) && end(b) >= month);
     const d = openDrawer(`${hubName(ctx, hub)} · ${fmtMonth(month)}`, html`<form class="form" id="ap-form">
-      ${running.length ? html`<p class="small"><strong>Blocks running:</strong> ${running.map((b) => `${b.name} (weeks ${Math.max(1, Math.floor((new Date(`${month}T12:00:00`) - new Date(`${b.start_date}T12:00:00`)) / 6048e5) + 1)}–${Math.min(b.weeks, Math.floor((new Date(`${addDays(firstOf(month, 1), -1)}T12:00:00`) - new Date(`${b.start_date}T12:00:00`)) / 6048e5) + 1)})`).join('; ')}</p>` : html`<p class="small muted">No blocks running this month. Add them on the calendar.</p>`}
+      ${running.length ? html`<p class="small"><strong>Blocks running:</strong> ${running.map((b) => `${b.name} (weeks ${Math.max(1, Math.floor((+new Date(`${month}T12:00:00`) - +new Date(`${b.start_date}T12:00:00`)) / 6048e5) + 1)}–${Math.min(b.weeks, Math.floor((+new Date(`${addDays(firstOf(month, 1), -1)}T12:00:00`) - +new Date(`${b.start_date}T12:00:00`)) / 6048e5) + 1)})`).join('; ')}</p>` : html`<p class="small muted">No blocks running this month. Add them on the calendar.</p>`}
       <label class="f">Specialists<textarea name="specialists" rows="2" maxlength="2000">${p.specialists || ''}</textarea></label>
       <label class="f">Trips and events<textarea name="trips" rows="2" maxlength="2000">${p.trips || ''}</textarea></label>
       <label class="f">Menu<textarea name="menu" rows="2" maxlength="2000">${p.menu || ''}</textarea></label>

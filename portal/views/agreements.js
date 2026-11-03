@@ -34,7 +34,7 @@ export default async function agreements(ctx, el) {
     || (s.status === 'partner_signed' && ctx.role === 'accountable_body');
   const signed = schedules.filter((s) => s.status === 'countersigned').length;
   const mine = schedules.filter(waiting).length;
-  const periods = [...new Set(commitments.map(periodKey))].sort((a, b) => (a === 'lifetime') - (b === 'lifetime') || a - b);
+  const periods = [...new Set(commitments.map(periodKey))].sort((a, b) => Number(a === 'lifetime') - Number(b === 'lifetime') || a - b);
   // Open on the programme year we're in.
   const currentYear = String(c.start_date ? Math.max(1, Math.floor((Date.now() - Date.parse(c.start_date)) / (365.25 * 864e5)) + 1) : 1);
   const firstPeriod = periods.includes(currentYear) ? currentYear : periods[0];

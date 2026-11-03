@@ -3,7 +3,7 @@
 // consortium's shared ones. Figures go in on this page, or in a spreadsheet
 // downloaded from it and uploaded back. save_progress() checks every figure
 // before anything is saved, and the dashboard adds them up.
-import { db, html, raw, render, $, $$, toast, act, must, icon, fmtNum, fmtMonth, fmtDateTime, today, uploadFile, openFile, sectionGroup, statCard, live, liveMark } from '../lib.js';
+import { db, html, render, $, $$, toast, act, must, fmtNum, fmtMonth, fmtDateTime, today, uploadFile, openFile, sectionGroup, statCard, live, liveMark } from '../lib.js';
 import { chart, donut, hbars, lineChart } from '../charts.js';
 import { periodText, figureText } from './targets.js';
 
@@ -75,21 +75,13 @@ export default async function progress(ctx, el, [orgParam, monthParam]) {
   const group = (r) => [r.k.section, KIND[r.k.kind] || 'Targets'].filter(Boolean).join(' · ');
   // As the documents list them: by section, outputs before outcomes, yearly
   // before lifetime, lines linked to this organisation first.
-  rows.sort((a, b) => (a.k.section || '').localeCompare(b.k.section || '') || (a.k.kind === 'outcome') - (b.k.kind === 'outcome')
-    || (a.k.period === 'lifetime') - (b.k.period === 'lifetime') || b.linked - a.linked || a.k.label.localeCompare(b.k.label));
+  rows.sort((a, b) => (a.k.section || '').localeCompare(b.k.section || '') || Number(a.k.kind === 'outcome') - Number(b.k.kind === 'outcome')
+    || Number(a.k.period === 'lifetime') - Number(b.k.period === 'lifetime') || b.linked - a.linked || a.k.label.localeCompare(b.k.label));
   const groups = [...new Set(rows.map(group))];
-  const anyLinked = rows.some((r) => r.linked && !r.own);
   const monthName = fmtMonth(`${month}-01`);
   const months = [];
   for (let m = last; m >= first; m = addMonths(m, -1)) months.push(m);
 
-  const row = (r) => html`<tr class="entry-row" data-k="${r.k.id}" data-had="${r.now ? '1' : ''}" data-linked="${r.linked ? '1' : ''}">
-    <td><strong>${r.k.label}</strong><br><span class="small muted">${[periodText(r.k), r.own ? `${org.name}'s own target` : r.linked ? `Linked to ${org.name}` : 'Whole consortium'].join(' · ')}</span></td>
-    <td class="num">${figureText(r.k.target, r.k.unit)}</td>
-    <td class="num">${r.prior == null ? '–' : figureText(r.prior, r.k.unit)}</td>
-    <td class="num"><input name="v" inputmode="decimal" value="${r.now?.value ?? ''}" ${r.locked ? 'disabled' : ''} aria-label="${r.k.label}, ${monthName}"
-      placeholder="${r.locked ? 'Lead' : ''}">${r.k.unit === '%' || r.k.measure === 'targeted_pct' ? ' %' : ''}</td>
-    <td><input name="n" value="${r.now?.note ?? ''}" maxlength="500" ${r.locked ? 'disabled' : ''} aria-label="Note for ${r.k.label}"></td></tr>`;
 
   // For the lead: who has reported this month, and their latest month.
   const roundup = ctx.manages ? delivering.map((o) => {

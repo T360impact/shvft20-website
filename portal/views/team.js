@@ -179,6 +179,7 @@ export default async function team(ctx, el, parts = []) {
     const form = $('#invite', el);
     const q = $('#org-q', form); const list = $('#org-results', form); const chosen = $('#org-chosen', form); const panel = $('#new-org', form);
     // { type: 'workspace' | 'platform' | 'new', organisation_id, partner_id, name, relationship }
+    /** @type {any} */
     let pick = pre ? { type: 'workspace', organisation_id: pre.id, name: pre.name, relationship: pre.relationship || 'delivery_partner' } : null;
     let found = { workspace: [], platform: [] };
     let dupOk = false;

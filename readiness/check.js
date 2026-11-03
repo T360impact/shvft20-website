@@ -17,9 +17,9 @@
   try {
     const saved = JSON.parse(localStorage.getItem(DRAFT) || 'null');
     if (saved && saved.version === R.version) state = saved;
-  } catch {}
-  const save = () => { try { localStorage.setItem(DRAFT, JSON.stringify({ ...state, version: R.version })); } catch {} };
-  const clearDraft = () => { try { localStorage.removeItem(DRAFT); } catch {} };
+  } catch { /* no saved draft, or storage blocked: start fresh */ }
+  const save = () => { try { localStorage.setItem(DRAFT, JSON.stringify({ ...state, version: R.version })); } catch { /* storage blocked: the draft lives for this visit only */ } };
+  const clearDraft = () => { try { localStorage.removeItem(DRAFT); } catch { /* nothing stored */ } };
 
   const sections = () => R.sections.filter(s => !s.when || s.when(state.org));
   const totalSteps = () => sections().length + 1; // profile + sections

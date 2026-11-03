@@ -46,7 +46,7 @@ let paneCount = 0;
 const targetTable = (ctx, rows, showOrg) => {
   if (!rows.length) return html`<p class="empty">No targets yet.</p>`;
   const name = `tp${++paneCount}`;
-  const periods = [...new Set(rows.map(periodKey))].sort((a, b) => (a === 'lifetime') - (b === 'lifetime') || a - b);
+  const periods = [...new Set(rows.map(periodKey))].sort((a, b) => Number(a === 'lifetime') - Number(b === 'lifetime') || a - b);
   const table = (list) => html`<div class="table-wrap"><table>
     <thead><tr><th>Output or outcome</th>${showOrg ? html`<th>Who</th>` : ''}<th>Linked organisations</th><th class="num">Target</th><th>Version</th><th>Partner confirmed</th></tr></thead>
     <tbody>${list.map((r) => html`<tr><td><strong>${r.label}</strong><br><span class="small muted">${periodText(r)} · ${context(r)}${r.site_id ? ` · ${ctx.site(r.site_id)?.name}` : r.site_name ? ` · ${r.site_name}` : ''}</span></td>

@@ -8,8 +8,7 @@
 // Imports from an existing register are read, reviewed and confirmed under
 // risks/import/<id>. Generic: scale, bands and categories come from the
 // workspace's own settings.
-import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statCard, openDrawer, fmtDate, fmtDateTime, uploadFile,
-  segControl, bindSegments, sectionGroup, today, live as liveUpdates, liveMark } from '../lib.js';
+import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statCard, openDrawer, fmtDate, fmtDateTime, uploadFile, segControl, sectionGroup, today, live as liveUpdates, liveMark } from '../lib.js';
 import { initials } from '../charts.js';
 
 const STATUS = { open: 'Open', monitoring: 'Monitoring', escalated: 'Escalated', closed: 'Closed' };
@@ -20,6 +19,7 @@ const FEATURE = { compliance_vault: 'Compliance vault', safeguarding_flags: 'Saf
 const TONE = { green: 'green', amber: 'amber', red: 'red' };
 // A short theme name and icon for each category, read from the register's
 // own heading so any workspace's categories get a sensible tile.
+/** @type {Array<[RegExp, string, string]>} */
 const THEMES = [[/premis|building|site|venue|fire/i, 'Buildings', 'sites'], [/arriv|depart|travel|transport|journey/i, 'Travel', 'next'],
   [/activit|programme|session|trip|sport|event/i, 'Programmes', 'sessions'], [/safeguard|young people|welfare/i, 'Safeguarding', 'safeguarding'],
   [/staff|workforce|supervis|recruit|volunteer/i, 'Staffing', 'people'], [/data|privacy|information|cyber/i, 'Data', 'compliance'],
@@ -28,7 +28,8 @@ const THEMES = [[/premis|building|site|venue|fire/i, 'Buildings', 'sites'], [/ar
 const themeOf = (k) => { if (!k) return { short: 'Other', icon: 'info' }; const t = THEMES.find(([re]) => re.test(k.name)); return t ? { short: t[1], icon: t[2] } : { short: k.name, icon: 'compliance' }; };
 const errText = async (error) => { try { return (await error.context.json()).error || error.message; } catch { return error.message; } };
 
-export default async function risks(ctx, el, [sub, id]) {
+/** @param {any} ctx @param {HTMLElement} el @param {string[]} [parts] */
+export default async function risks(ctx, el, [sub, id] = []) {
   if (sub === 'import' && id) return review(ctx, el, id);
   const c = ctx.consortium;
   const [reg, members, profiles] = await Promise.all([
@@ -248,7 +249,7 @@ export default async function risks(ctx, el, [sub, id]) {
     }));
     $('#refresh', el)?.addEventListener('click', redraw);
     $('#upload', el)?.addEventListener('click', () => uploadDialog(ctx, redraw));
-    $('#add', el)?.addEventListener('click', () => riskForm(ctx, { admin, settings: s, cats, all, people, members, personName }, null, redraw));
+    $('#add', el)?.addEventListener('click', () => riskForm(ctx, { admin, settings: s, cats, all, members, personName }, null, redraw));
     $('#rv-accept', el)?.addEventListener('click', (e) => act(e.target, async () => { must(await db.rpc('review_risk', { p_risk: selected, p_accept: true })); toast('On the register.'); await redraw(); }));
     $('#rv-reject', el)?.addEventListener('click', () => {
       const d = openDrawer('Don\'t add this risk', html`<form class="form" id="rj-form"><label class="f">Why it isn't going on the register<textarea name="note" rows="3" required></textarea></label>
@@ -256,7 +257,7 @@ export default async function risks(ctx, el, [sub, id]) {
       $('#rj-form', d).addEventListener('submit', (ev) => { ev.preventDefault(); act(ev.submitter, async () => {
         must(await db.rpc('review_risk', { p_risk: selected, p_accept: false, p_note: ev.target.note.value })); d.close(); await redraw(); }); });
     });
-    $('#edit-risk', el)?.addEventListener('click', () => riskForm(ctx, { admin, settings: s, cats, all, people, members, personName }, all.find((r) => r.id === selected), redraw));
+    $('#edit-risk', el)?.addEventListener('click', () => riskForm(ctx, { admin, settings: s, cats, all, members, personName }, all.find((r) => r.id === selected), redraw));
     $('#assign', el)?.addEventListener('click', () => assignDialog(ctx, unowned, members, personName, redraw));
     $('#assign-one', el)?.addEventListener('click', () => assignDialog(ctx, [all.find((r) => r.id === selected)], members, personName, redraw));
     $('#review-now', el)?.addEventListener('click', () => reviewDialog(ctx, s, redraw));

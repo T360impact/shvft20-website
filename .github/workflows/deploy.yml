@@ -28,6 +28,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Install the checking tools
+        run: npm ci --no-audit --no-fund
+      - name: ESLint
+        run: npm run lint
+      - name: Type check (tsc --checkJs)
+        run: npm run typecheck
       - name: Every portal script parses
         run: for f in $(find portal site.js -name '*.js' -not -path '*/vendor/*'); do node --check --input-type=module < "$f" || { echo "Syntax error in $f"; exit 1; }; done
       - name: Portal tests

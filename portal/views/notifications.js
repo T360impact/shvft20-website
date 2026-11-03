@@ -2,7 +2,7 @@
 // due or sent back, payments, actions and risks assigned, documents
 // expiring, chases). The same notices go by email, straight away or as a
 // digest, as set under Account.
-import { db, html, raw, render, $, $$, must, act, toast, icon, openDrawer, fmtDateTime } from '../lib.js';
+import { db, html, raw, $, $$, must, act, toast, icon, openDrawer, fmtDateTime } from '../lib.js';
 
 export async function unreadCount() {
   const { count } = await db.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);

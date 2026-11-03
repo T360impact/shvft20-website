@@ -26,7 +26,8 @@ const dueText = (d, status) => {
 const rank = (i) => [i.mandatory && i.status !== 'approved' ? 0 : 1, i.status === 'approved' ? 1 : 0, i.due_on || '9999'];
 const byRank = (a, b) => { const x = rank(a); const y = rank(b); return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2]); };
 
-export default async function bid(ctx, el, [itemId]) {
+/** @param {any} ctx @param {HTMLElement} el @param {string[]} [parts] */
+export default async function bid(ctx, el, [itemId] = []) {
   if (itemId) return item(ctx, el, itemId);
   const c = ctx.consortium;
   const [items, summary, templates] = await Promise.all([
