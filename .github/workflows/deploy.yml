@@ -1,11 +1,13 @@
 # Every push: run the portal's JavaScript tests, and rebuild the portal's
 # database from its private repository (T360impact/consortium-portal-db)
-# and run every SQL access test against it. The site deploys to GitHub Pages
-# only from main, and only if every check passed.
+# and run every SQL access test against it. Pushes to main that pass deploy
+# to staging (https://staging.shvft20.org, its own Supabase project). The
+# live site changes only when someone runs "Promote to production"
+# (promote.yml) for a commit that reached staging.
 #
-# Reading the private repository needs the PORTAL_DB_DEPLOY_KEY secret (a
-# read-only deploy key on that repository). Without it the database job
-# fails and nothing deploys.
+# Secrets: PORTAL_DB_DEPLOY_KEY (read-only deploy key on
+# consortium-portal-db) and STAGING_SITE_DEPLOY_KEY (write deploy key on
+# shvft20-portal-staging). Without them the jobs fail and nothing deploys.
 name: Test and deploy
 on:
   push:
@@ -50,22 +52,31 @@ jobs:
       - name: Access tests
         if: success() || failure()
         run: scripts/run-sql-tests.sh
-  deploy:
-    name: Deploy to GitHub Pages
+  staging:
+    name: Deploy to staging
     needs: [portal, database]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency: { group: staging-site, cancel-in-progress: false }
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Build the staging copy
+        run: |
+          mkdir -p /tmp/site && rsync -a --exclude .git --exclude .github --exclude CNAME ./ /tmp/site/
+          cat > /tmp/site/portal/config.js <<'JS'
+          // STAGING. Written by the deploy workflow: the staging Supabase project.
+          export const SUPABASE_URL = 'https://xsefiubsnfrtxlcbbtki.supabase.co';
+          export const SUPABASE_KEY = 'sb_publishable_YEBBC-jA8eOTQIT1g3l0dg_fCWhZm7D';
+          export const ENVIRONMENT = 'staging';
+          JS
+          printf 'User-agent: *\nDisallow: /\n' > /tmp/site/robots.txt
+          for f in $(find /tmp/site -name '*.html'); do sed -i 's#<head>#<head><meta name="robots" content="noindex, nofollow">#' "$f"; done
+      - name: Publish to the staging site
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: .
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          deploy_key: ${{ secrets.STAGING_SITE_DEPLOY_KEY }}
+          external_repository: T360impact/shvft20-portal-staging
+          publish_branch: gh-pages
+          publish_dir: /tmp/site
+          cname: staging.shvft20.org
+          full_commit_message: Staging build of ${{ github.repository }}@${{ github.sha }}

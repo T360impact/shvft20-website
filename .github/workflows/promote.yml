@@ -1,0 +1,42 @@
+# Put one commit live on www.shvft20.org, by hand: Actions > Promote to
+# production > Run workflow. Refuses any commit that didn't pass every check
+# and reach staging first.
+name: Promote to production
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit to promote (leave empty for the latest on main)
+        required: false
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+concurrency: { group: pages-production, cancel-in-progress: false }
+jobs:
+  production:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Which commit
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="${{ inputs.sha }}"
+          [ -n "$sha" ] || sha=$(gh api "repos/${{ github.repository }}/commits/main" --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          ok=$(gh api "repos/${{ github.repository }}/actions/workflows/deploy.yml/runs?head_sha=$sha&status=success&event=push" --jq '.total_count')
+          if [ "$ok" = "0" ]; then echo "::error::$sha hasn't passed its checks and reached staging. Push it to main first."; exit 1; fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pick.outputs.sha }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
