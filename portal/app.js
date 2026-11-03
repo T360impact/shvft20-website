@@ -159,8 +159,9 @@ function setPasswordView(kind) {
   });
 }
 
-// Two-step sign-in with an authenticator app, required for anyone who can
-// see young people's personal data.
+// Two-step sign-in with an authenticator app, required for platform
+// administrators, consortium leads, lead organisations, partner managers and
+// hub workers. The database refuses their password-only sessions too.
 async function mfaView() {
   const factors = must(await db.auth.mfa.listFactors());
   const verified = factors.totp.find((f) => f.status === 'verified');
@@ -185,7 +186,7 @@ async function mfaView() {
     const enrolled = must(await db.auth.mfa.enroll({ factorType: 'totp', friendlyName: `Portal ${new Date().toISOString().slice(0, 10)}` }));
     authCard(html`
       <div><h1>Set up two-step sign-in</h1>
-      <p class="muted small" style="margin-top:6px">You can see young people's personal details, so the portal needs a second check when you sign in. Scan this with an authenticator app such as Microsoft Authenticator or Google Authenticator, then enter the code it shows.</p></div>
+      <p class="muted small" style="margin-top:6px">You can see safeguarding, DBS and financial details, so the portal needs a second check when you sign in. Scan this with an authenticator app such as Microsoft Authenticator or Google Authenticator, then enter the code it shows.</p></div>
       <div class="qr"><img src="${enrolled.totp.qr_code}" alt="QR code for your authenticator app"></div>
       <details><summary class="small">Can't scan it?</summary><p class="small muted" style="margin:8px 0 4px">Enter this key in the app instead:</p><code class="secret">${enrolled.totp.secret}</code></details>
       <form class="form" id="mfa">

@@ -38,7 +38,7 @@ export default async function returns(ctx, el, [returnId]) {
 
   render(el, html`
     <div class="page-head"><div><span class="eyebrow m-compliance">${raw(icon('returns', 16))}Returns</span><h1>Monthly returns</h1>
-      <p>${ctx.role === 'funder_observer' ? 'Returns the consortium lead has approved.' : 'One return per partner a month, with numbers taken from the register.'}</p></div>
+      <p>${ctx.role === 'funder_observer' ? 'Returns the consortium lead has approved.' : 'One return per partner a month, with numbers taken from your confirmed weekly uploads.'}</p></div>
       ${ctx.seesAll || ctx.role === 'funder_observer' ? html`<div class="btns"><button class="btn secondary" id="export">${raw(icon('download', 18))}Export</button></div>` : ''}</div>
     ${ctx.manages && queue.length ? html`<section class="panel m-compliance" style="margin-bottom:24px"><h2>${raw(icon('submitted', 20))}Waiting for your review (${queue.length})</h2>${table(queue, true)}</section>` : ''}
     ${canDraft ? html`<section class="panel m-compliance" style="margin-bottom:24px"><header><h2>${raw(icon('returns', 20))}${ctx.orgName}'s returns</h2></header>
@@ -137,7 +137,7 @@ async function detail(ctx, el, id) {
         body: html`<ul class="lw-list">${xs.map((q) => html`<li class="lw-row static"><span class="lw-row-main"><strong>${q.label}</strong><span class="muted small">${q.instruction || (q.mandatory ? 'Required' : 'Optional')}</span></span>
           <span class="lw-row-tags">${pill(...REQ_ST[q.status])}</span></li>`)}</ul>` }))}
       ${editable && reqs.some((q) => q.status !== 'provided') ? html`<p class="small" style="margin-top:8px"><a href="#/c/${c.id}/reporting">Upload a report or enter these on Reporting</a></p>` : ''}</section>` : ''}
-    <section class="panel m-compliance"><header><h2>${raw(icon('attendance', 20))}Numbers for the month</h2>${editable ? html`<span class="small muted">Live from the register, fixed when you submit</span>` : ''}</header>
+    <section class="panel m-compliance"><header><h2>${raw(icon('attendance', 20))}Numbers for the month</h2>${editable ? html`<span class="small muted">Live from your confirmed weekly uploads, fixed when you submit</span>` : ''}</header>
       ${chart(withTarget.length ? `${met} of ${withTarget.length} measure${withTarget.length === 1 ? '' : 's'} at or above the monthly target.` : `${ctx.org(r.organisation_id)?.name} has no monthly targets of its own, so these are counts.`,
         withTarget.length ? 'This month against a twelfth of the yearly target. The tick is the monthly target.' : '', hbars(rows))}
     </section>

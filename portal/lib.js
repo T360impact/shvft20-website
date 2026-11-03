@@ -41,7 +41,8 @@ export const MEASURE_LABEL = {
   other: 'Other',
 };
 
-// Roles that handle young people's personal data, and so need two-step sign-in.
+// Roles that see safeguarding, DBS, risk and money details, so the portal asks
+// them for two-step sign-in. The database enforces the same list (private.needs_mfa).
 export const PD_ROLES = ['lead', 'accountable_body', 'partner_manager', 'hub_worker'];
 
 // Tagged template that escapes every interpolated value unless it is
@@ -76,12 +77,6 @@ export const fmtDateTime = (d) => (d ? dtFmt.format(new Date(d)) : '');
 export const fmtMoney = (n) => (n == null ? '' : new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(n));
 export const fmtNum = (n) => (n == null ? '–' : new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 }).format(n));
 export const today = () => new Date().toISOString().slice(0, 10);
-export const ageOn = (dob, on = new Date()) => {
-  const b = new Date(`${dob}T12:00:00`);
-  let a = on.getFullYear() - b.getFullYear();
-  if (on.getMonth() < b.getMonth() || (on.getMonth() === b.getMonth() && on.getDate() < b.getDate())) a -= 1;
-  return a;
-};
 
 // Read a form into a plain object; empty strings become null.
 /** @param {HTMLFormElement} form @returns {Record<string, any>} */

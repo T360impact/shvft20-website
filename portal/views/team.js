@@ -23,8 +23,9 @@ export async function adminCall(body) {
 
 const ENTITY = {
   consortia: 'consortium details', organisations: 'an organisation', memberships: 'a member', key_dates: 'a key date', sites: 'a site',
-  commitments: 'a commitment', documents: 'a document', partner_schedules: 'a schedule', young_people: 'a young person\'s record',
-  yp_links: 'a register link', sessions: 'a session', attendance: 'attendance', outcome_measures: 'the outcome framework',
+  commitments: 'a commitment', documents: 'a document', partner_schedules: 'a schedule', // The young person register was removed on 31 October 2026; these names stay for older log entries.
+  young_people: 'a young person\'s record (old register)',
+  yp_links: 'a register link (old register)', sessions: 'a session (old register)', attendance: 'attendance (old register)', outcome_measures: 'the outcome framework',
   outcomes: 'an outcome', returns: 'a return', invitations: 'an invitation',
 };
 // Extra roles a person can hold on top of their main one.

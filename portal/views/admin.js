@@ -4,18 +4,18 @@
 import { db, html, render, $, formData, toast, act, must, fmtDate, fmtMoney, statusPill } from '../lib.js';
 
 export default async function admin(el) {
-  const list = must(await db.from('consortia').select('id, name, funder, programme, grant_value, start_date, end_date, stage, bid_deadline, allow_real_records').order('start_date', { ascending: false }));
+  const list = must(await db.from('consortia').select('id, name, funder, programme, grant_value, start_date, end_date, stage, bid_deadline, is_demo').order('start_date', { ascending: false }));
   render(el, html`
     <div class="page-head"><div><span class="eyebrow">Platform administration</span><h1>All consortia</h1>
       <p class="muted">Each consortium is walled off from the others. Set one up here, then add its partners, sites and targets from its own pages.</p></div></div>
     <section class="panel">
       ${list.length ? html`<div class="table-wrap"><table>
-        <thead><tr><th>Workspace</th><th>Stage</th><th>Funder</th><th>Dates</th><th class="num">Value</th><th>Records</th></tr></thead>
+        <thead><tr><th>Workspace</th><th>Stage</th><th>Funder</th><th>Dates</th><th class="num">Value</th><th>Kind</th></tr></thead>
         <tbody>${list.map((c) => html`<tr><td><a href="#/c/${c.id}/hub">${c.name}</a><br><span class="muted small">${c.programme || ''}</span></td>
           <td>${statusPill(c.stage)}</td><td>${c.funder || ''}</td>
           <td class="small nowrap">${c.stage === 'live' ? `${fmtDate(c.start_date)} to ${fmtDate(c.end_date)}` : c.bid_deadline ? `Deadline ${fmtDate(c.bid_deadline)}` : ''}</td>
           <td class="num">${fmtMoney(c.grant_value)}</td>
-          <td>${c.allow_real_records ? html`<span class="pill pill-approved">Live</span>` : html`<span class="pill pill-demo">Demo only</span>`}</td></tr>`)}</tbody></table></div>`
+          <td>${c.is_demo ? html`<span class="pill pill-demo">Demo</span>` : html`<span class="pill pill-approved">Real</span>`}</td></tr>`)}</tbody></table></div>`
       : html`<p class="empty">No consortia yet.</p>`}
     </section>
     <section class="panel" style="margin-top:20px"><h2>Open a bid or set up a consortium</h2>

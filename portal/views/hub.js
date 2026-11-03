@@ -272,7 +272,7 @@ async function edit(ctx, el) {
             ${isBid ? html`<label class="f">Eligibility rules<span class="hint">Shown at the top of bid readiness.</span><textarea name="eligibility_rules">${c.eligibility_rules || ''}</textarea></label>` : ''}
             <label class="f">Funder's requirements<textarea name="funder_requirements">${c.funder_requirements || ''}</textarea></label>
             <label class="f">Delivery model<textarea name="delivery_model">${c.delivery_model || ''}</textarea></label>
-            <label class="f">Who counts as targeted<span class="hint">One per line. These become the options when a young person is registered.</span>
+            <label class="f">Who counts as targeted<span class="hint">One per line. Partners count a young person as targeted when one of these applies, and report the totals in their weekly uploads.</span>
               <textarea name="targeted_criteria">${c.targeted_criteria.join('\n')}</textarea></label>
             <div class="btns"><button class="btn">Save details</button></div></form></section>
       </div>

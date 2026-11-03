@@ -12,7 +12,7 @@ import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statusPill,
 import { chart, lineChart, initials, ring } from '../charts.js';
 
 const KIND = { output: 'Output', outcome: 'Outcome' };
-const SOURCE = { reported: 'From partner reports', records: 'From the register' };
+const SOURCE = { reported: 'From partner reports', weekly: 'From weekly uploads' };
 const isPct = (x) => x.unit === '%' || x.measure === 'targeted_pct';
 const TONE = { green: 'green', amber: 'amber', red: 'red', grey: 'grey' };
 const shortMonth = new Intl.DateTimeFormat('en-GB', { month: 'short', year: '2-digit' });
@@ -28,8 +28,8 @@ const PANELS = {
 const SIZE = { note: 'full', stats: 'full', targets: 'full', outcomes: 'full', programmes: 'full', quarters: 'full' };
 const ORDER = Object.keys(PANELS);
 
-// Until there are records in the register, the headline figures are what
-// partners have reported.
+// Until weekly uploads have figures, the headline figures are what partners
+// have reported.
 const fromReports = (p) => p.reported?.any && !p.totals.reached && !p.totals.sessions && !p.totals.attendances;
 const figure = (p, k) => (fromReports(p) ? p.reported[k] : p.totals[k]);
 
@@ -328,7 +328,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     return html`<ul class="rows">${list.map((s) => html`<li class="kv"><div><strong>${s.name}</strong>${s.organisation ? html`<span class="muted small" style="display:block">${s.organisation}</span>` : ''}</div>
       <div class="kv-end"><span class="muted small">${fmtNum(s.attendances)} attendance${s.attendances === 1 ? '' : 's'} · ${fmtNum(s.sessions)} session${s.sessions === 1 ? '' : 's'}</span>
         ${any ? html`<span class="slim" role="img" aria-label="${s.attendances} attendances"><span style="width:${(100 * s.attendances) / max}%"></span></span>` : ''}</div></li>`)}</ul>
-      ${list.every((s) => !s.sessions) ? html`<p class="muted small" style="margin-top:12px">Attendance by site builds as sessions are logged in the register.</p>` : ''}`;
+      ${list.every((s) => !s.sessions) ? html`<p class="muted small" style="margin-top:12px">Attendance by site builds as partners upload their weekly figures.</p>` : ''}`;
   };
 
   const alertsPanel = () => {
@@ -445,7 +445,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     render(el, html`
       <div class="page-head"><div><span class="eyebrow">Dashboard</span><h1>${c.name}</h1>
         <p class="meta-line">${[sum.summary?.funder_name || c.funder, sum.summary?.programme_name || c.programme].filter(Boolean).join(' · ')}${c.start_date ? ` · ${fmtDate(c.start_date)} to ${fmtDate(c.end_date)}` : ''}</p>
-        <p>Are we on track? Progress against every target, from partner reports and the register.</p>
+        <p>Are we on track? Progress against every target, from weekly uploads and approved returns.</p>
         <p style="margin-top:8px">${liveMark()}</p></div>
         <div class="btns">${ctx.role !== 'youth_voice' && !editing ? html`<button class="btn secondary" id="x-commit">Export targets</button>
           <button class="btn secondary" id="x-quarters">Quarters</button>` : ''}
@@ -455,7 +455,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
         <span class="btns"><button class="linkbtn small" id="history">View history</button><button class="btn secondary" id="save">Save draft</button>
           <button class="btn" id="publish">${raw(icon('submitted', 16))}Publish</button><button class="btn secondary" id="done">Done</button></span></div>` : ''}
       ${timeline()}
-      ${!c.allow_real_records ? html`<p class="note" style="margin-top:24px">Demo mode: ${fromReports(p) ? 'figures come from partner reports; the register holds made-up records only.' : 'register figures come from made-up records.'}</p>` : ''}
+      ${c.is_demo ? html`<p class="note" style="margin-top:24px">A demo workspace: its figures are made up, for practice and training.</p>` : ''}
       ${ownTab ? html`<div class="tabs" role="tablist" style="margin-top:24px">
         <a role="tab" href="#/c/${c.id}/dashboard" aria-selected="${tab !== 'mine'}">Consortium</a>
         <a role="tab" href="#/c/${c.id}/dashboard/mine" aria-selected="${tab === 'mine'}">My organisation</a></div>` : ''}
@@ -507,7 +507,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
     const name = c.name.replace(/[^\w ]+/g, '');
     $('#x-commit', el)?.addEventListener('click', () => downloadCsv(`${name} targets.csv`, p.commitments.map((k) => ({
       Period: periodLabel(k.period === 'lifetime' ? 'lifetime' : k.year), Type: KIND[k.kind] || '', Section: k.section || '', Commitment: k.label, 'Tracked as': MEASURE_LABEL[k.measure],
-      'Actual from': k.source === 'reported' ? 'Partner reports' : k.source === 'records' ? 'Register' : '', 'Reported by': reportedBy(k),
+      'Actual from': k.source === 'reported' ? 'Partner reports' : '', 'Reported by': reportedBy(k),
       'Linked organisations': (k.links || []).map((id) => ctx.org(id)?.name).filter(Boolean).join('; '), Who: k.organisation || 'Whole consortium', Site: k.site || '',
       Target: k.target, 'Due by now': k.expected, Actual: k.actual, Rating: k.rag,
     }))));
