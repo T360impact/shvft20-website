@@ -6,6 +6,7 @@
 //   Set up a consortium:  from a won bid (it becomes the consortium, keeping
 //                         everything) or from scratch.
 import { db, html, raw, render, $, $$, must, act, toast, icon, formData, fmtDate } from '../lib.js';
+import { dbsFields, bindDbsFields, dbsValues } from './dbs.js';
 
 const steps = (n, all) => html`<ol class="wiz-steps" aria-label="Steps">${all.map((s, i) => html`<li class="${i < n ? 'done' : i === n ? 'current' : ''}">${s}</li>`)}</ol>`;
 const BID_STEPS = ['Details', 'Application form and guidance', 'Invite partners', 'Requirements from the documents'];
@@ -43,10 +44,12 @@ export default async function wizard(el, state, [kind, fromId], created) {
           ${demo}</div>
         <div class="fields"><label class="f">Value (£)<input type="number" name="value" min="0" step="1"></label>
           <label class="f">Starts<input type="date" name="start" required></label><label class="f">Ends<input type="date" name="end" required></label></div>
+        ${dbsFields({})}
         <div class="btns"><button class="btn">${raw(icon('governance', 16))}Set up the consortium</button><a class="btn secondary" href="#/">Cancel</a></div>
         <p class="small muted">Next: settings, partners and their roles, documents to read, targets and budget to confirm, then publish the Summary.</p></form></div>`);
     const sync = () => { const fromBid = $('[name=from]:checked', el)?.value === 'bid'; $('#from-bid', el).hidden = !fromBid; $('#from-scratch', el).hidden = fromBid; $('[name=name]', el).required = !fromBid; };
     $$('[name=from]', el).forEach((r) => r.addEventListener('change', sync)); sync();
+    bindDbsFields(el);
   }
   $('#wiz-form', el).addEventListener('submit', (e) => { e.preventDefault(); act(e.submitter, async () => {
     const f = formData(e.target);
@@ -55,6 +58,8 @@ export default async function wizard(el, state, [kind, fromId], created) {
     const id = must(await db.rpc('create_workspace', { p_stage: kind === 'bid' ? 'bid' : 'live', p_name: fromBid ? null : f.name, p_funder: f.funder || null, p_programme: f.programme || null,
       p_value: f.value ? Number(f.value) : null, p_deadline: f.deadline || null, p_start: f.start || null, p_end: f.end || null,
       p_funder_profile: fromBid ? null : f.funder_profile || null, p_from_bid: fromBid ? f.bid : null, p_is_demo: !!f.is_demo }));
+    // The DBS setting, once the workspace exists (it applies to everyone already in it).
+    if (kind !== 'bid' && f.dbs_required) must(await db.from('workspace_settings').update(dbsValues(f)).eq('consortium_id', id));
     toast(kind === 'bid' ? 'Bid workspace created. Next steps are on its checklist.' : 'Consortium set up. Next steps are on its checklist.');
     await created(id);
   }); });

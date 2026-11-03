@@ -26,6 +26,8 @@ export const PAGES = {
   profile: { label: 'Our profile', icon: 'partners', mod: 'governance', roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance', 'reporting', 'hub_worker', 'associate'] },
   organisations: { label: 'Organisations', icon: 'partners', mod: 'governance', roles: ['lead'] },
   compliance: { label: 'Compliance', icon: 'compliance', mod: 'compliance', roles: ['lead', 'accountable_body'] },
+  // The DBS register: everyone for the lead team, own people for an organisation's admin or safeguarding contact.
+  dbs: { label: 'DBS checks', icon: 'safeguarding', mod: 'compliance', roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'safeguarding'] },
   returns: { label: 'Returns', icon: 'returns', mod: 'compliance', roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
   risks: { label: 'Risks', icon: 'safeguarding', mod: 'compliance', roles: ['lead', 'accountable_body', 'partner_manager', 'hub_worker'] },
   team: { label: 'People', icon: 'people', mod: 'governance', roles: ['lead'] },
@@ -82,7 +84,7 @@ export function sidebar(ctx) {
   const groups = c.stage === 'live' ? [
     { key: 'overview', label: 'Overview', items: [['dashboard'], ['shared'], ['hub'], ['mine'], ['setup']] },
     { key: 'delivery', label: 'Delivery', items: [['programmes'], ['uploads'], ['reporting'], ['returns'], ['targets']] },
-    { key: 'partners', label: 'Partners', items: [['agreements'], ['organisations', 'Organisations and people'], ['compliance']] },
+    { key: 'partners', label: 'Partners', items: [['agreements'], ['organisations', 'Organisations and people'], ['compliance'], ['dbs']] },
     { key: 'risks', label: 'Risks', items: [['risks']] },
     { key: 'record', label: 'Bid record', items: [['bid']] },
   ] : [
@@ -102,7 +104,7 @@ export function sidebar(ctx) {
 // Pages a sidebar link leads to, and the tabs and links on those pages.
 // Used by the tests: every page someone could open before is still a
 // click or two away.
-export const LINKS = { compliance: ['profile'], organisations: ['profile'], shared: ['profile', 'hub'] };
+export const LINKS = { compliance: ['profile', 'dbs'], organisations: ['profile'], shared: ['profile', 'hub'] };
 export function reachable(ctx) {
   const seen = new Set();
   const visit = (k) => {

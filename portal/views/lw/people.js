@@ -14,17 +14,20 @@ const DBS = { not_started: 'Not started', applied: 'Applied', cleared: 'Cleared'
 export default async function people(ctx, el, refresh) {
   const c = ctx.consortium.id;
   const view = ui(ctx)._ppl || 'pipeline';
-  const [staff, recs, matrix, sup, settings] = await Promise.all([
+  const [staff, recs, matrix, sup, settings, gate] = await Promise.all([
     db.from('staff').select('*').eq('consortium_id', c).order('name').then(must),
     db.from('recruitment').select('*').eq('consortium_id', c).then(must),
     db.rpc('lw_training_matrix', { p_consortium: c }).then(must),
     db.from('supervision').select('*').eq('consortium_id', c).order('due_date').then(must),
     db.from('lw_settings').select('*').eq('consortium_id', c).maybeSingle().then(must),
+    // The database's rostering gate: a verified DBS on the portal satisfies the DBS step.
+    db.rpc('lw_staff_gate', { p_consortium: c }).then(must),
   ]);
   const rec = (id) => recs.find((r) => r.staff_id === id) || {};
   const missing = (id) => {
     const r = rec(id);
-    return [r.dbs_status !== 'cleared' ? 'DBS' : '', (r.references_received || 0) < 2 ? `${r.references_received || 0} of 2 references` : '',
+    const dbsGap = (gate[id] || []).find((m) => m.startsWith('DBS'));
+    return [dbsGap ? (dbsGap.includes('portal') ? 'DBS on the portal' : 'DBS') : '', (r.references_received || 0) < 2 ? `${r.references_received || 0} of 2 references` : '',
       !r.right_to_work_checked ? 'Right to work' : '', !r.induction_completed ? 'Induction' : ''].filter(Boolean);
   };
   const targets = settings?.recruitment_targets || {};
@@ -110,7 +113,8 @@ export default async function people(ctx, el, refresh) {
         <label class="f">Stage<select name="stage">${STAGES.map(([k, v]) => html`<option value="${k}" ${raw((r.stage || 'briefed') === k ? 'selected' : '')}>${v}</option>`)}</select></label>
         <fieldset><legend>DBS</legend><div class="fields"><label class="f">Status<select name="dbs">${Object.entries(DBS).map(([k, v]) => html`<option value="${k}" ${raw((r.dbs_status || 'not_started') === k ? 'selected' : '')}>${v}</option>`)}</select></label>
           <label class="f">Cleared on<input type="date" name="dbs_date" value="${r.dbs_cleared_date || ''}"></label></div>
-          <label class="check"><input type="checkbox" name="update" ${raw(r.dbs_update_service ? 'checked' : '')}> On the DBS update service</label></fieldset>
+          <label class="check"><input type="checkbox" name="update" ${raw(r.dbs_update_service ? 'checked' : '')}> On the DBS update service</label>
+          <p class="small muted">A DBS check verified on the portal counts here. Where the workspace holds delivery roles until verified, only that counts.</p></fieldset>
         <fieldset><legend>References received</legend><div class="seg">${[0, 1, 2].map((n) => html`<label class="seg-btn lw-radio"><input type="radio" name="refs" value="${n}" ${raw((r.references_received || 0) === n ? 'checked' : '')}>${n}</label>`)}</div></fieldset>
         <fieldset><legend>Right to work</legend><div class="fields"><label class="check"><input type="checkbox" name="rtw" ${raw(r.right_to_work_checked ? 'checked' : '')}> Checked</label>
           <label class="f">On<input type="date" name="rtw_date" value="${r.right_to_work_date || ''}"></label></div></fieldset>

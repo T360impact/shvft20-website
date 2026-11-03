@@ -26,6 +26,7 @@ import myOrg, { programme, master } from './views/mine.js';
 import programmes from './views/programmes.js';
 import setup from './views/setup.js';
 import wizard from './views/wizard.js';
+import dbs, { dbsBanner, myDbsCard } from './views/dbs.js';
 import { unreadCount, openNotifications, notifIcon } from './views/notifications.js';
 
 const app = $('#app');
@@ -54,7 +55,7 @@ const TAB_ORDER = ['mine', 'master', 'dashboard', 'reporting', 'uploads', 'retur
 // Which page each route shows. Who may open each, and how the sidebar
 // groups them, is in nav.js.
 const VIEWS = { master, programme, mine: myOrg, bid, dashboard, shared, setup, hub, agreements, targets, progress, programmes, uploads, reporting, profile,
-  organisations, compliance, returns, risks, team, lw: lead };
+  organisations, compliance, dbs, returns, risks, team, lw: lead };
 
 // A live workspace opens on each person's own tier: the master view for the
 // consortium lead, the programme for the lead organisation, their own
@@ -261,9 +262,11 @@ async function loadCtx(consortiumId) {
   const extraRoles = m ? must(await db.from('membership_roles').select('role').eq('membership_id', m.id)).map((r) => r.role) : [];
   // Lead Workspace: roles held on the lead team (none for most people), and
   // whether this person is on the staff list with their own shifts.
-  const [lwCtx, mine] = await Promise.all([
+  const [lwCtx, mine, dbsState] = await Promise.all([
     db.rpc('lw_context', { p_consortium: consortiumId }).then(({ data }) => data || { roles: [] }),
     db.rpc('lw_my_shifts', { p_consortium: consortiumId }).then(({ data }) => data),
+    // Whether this workspace needs a DBS check from this person, and where it stands.
+    db.rpc('dbs_member_state', { p_consortium: consortiumId }).then(({ data }) => data),
   ]);
   state.ctx = {
     consortium, orgs, allOrgs, sites, isAdmin,
@@ -273,6 +276,7 @@ async function loadCtx(consortiumId) {
     extraRoles,
     lw: lwCtx,
     staffSelf: !!mine?.staff,
+    dbs: dbsState,
     orgId: m?.organisation_id || null,
     orgName: m?.organisations?.name || '',
     seesAll: isAdmin || ['lead', 'accountable_body'].includes(m?.role),
@@ -357,6 +361,7 @@ function shell(ctx, active) {
       </aside>
       <div class="main-col">
         <header class="topbar"><a class="wordmark" href="#/">SHVFT<span class="two">2.0</span></a><span class="where">${c.name}</span></header>
+        ${dbsBanner(ctx)}
         <main id="main"></main>
       </div>
       <nav class="tabbar" aria-label="Portal shortcuts"><a href="#/" class="m-brand">${raw(icon('home', 20))}<span>All</span></a>${tabs.map((i) => link(i, true))}
@@ -420,12 +425,14 @@ async function account() {
         <form class="form" id="np"><fieldset><legend>Send me portal notices by email</legend><div class="checks">
           ${[['immediate', 'As they happen'], ['daily', 'A daily digest at 7am'], ['weekly', 'A weekly digest on Mondays'], ['off', 'Never (portal only)']].map(([v, t]) => html`<label class="check"><input type="radio" name="mode" value="${v}" ${(state.prefs?.email_mode || 'immediate') === v ? 'checked' : ''}> ${t}</label>`)}</div></fieldset>
           <p class="small muted">Returns due or sent back, payments, actions and risks assigned to you, documents expiring, and reminders from the consortium lead.</p></form></div>
+      <div class="panel" id="my-dbs"><p class="loading">Loading…</p></div>
       <div class="panel"><h2>Your name</h2>
         <form class="form" id="nm">
           <label class="f">Full name<input name="full_name" value="${state.profile.full_name || ''}" required></label>
           <button class="btn">Save</button>
         </form></div>
     </div>`);
+  myDbsCard($('#my-dbs'), state).catch((e) => render($('#my-dbs'), html`<h2>My DBS</h2><p class="muted small">${errorText(e)}</p>`));
   $('#pw').addEventListener('submit', (e) => {
     e.preventDefault();
     act(e.submitter, async () => { must(await db.auth.updateUser({ password: formData(e.target).password })); e.target.reset(); toast('Password changed.'); });

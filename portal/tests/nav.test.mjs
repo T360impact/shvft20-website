@@ -52,7 +52,7 @@ test('nobody gains a page they could not open before (apart from the new ones)',
     for (const [role, extra = [], o = {}] of PEOPLE) {
       const ctx = ctxFor(role, extra, stage, o);
       const before = new Set(oldVisible(ctx));
-      for (const key of reachable(ctx)) if (key !== 'lw' && !NEW.includes(key) && !(key === 'organisations' && stage === 'bid')) assert.ok(before.has(key), `${role} in ${stage} newly reaches "${key}"`);
+      for (const key of reachable(ctx)) if (key !== 'lw' && key !== 'dbs' && !NEW.includes(key) && !(key === 'organisations' && stage === 'bid')) assert.ok(before.has(key), `${role} in ${stage} newly reaches "${key}"`);
       for (const key of NEW) if (reachable(ctx).has(key)) assert.ok(role === 'lead' || o.isAdmin, `${role} must not reach ${key}`);
     }
   }
@@ -92,4 +92,12 @@ test('a partner never sees Start a bid or Set up a consortium', () => {
 test('pages that became tabs keep their own routes', () => {
   for (const key of ['master', 'progress', 'programme', 'profile', 'team']) assert.ok(PAGES[key], key);
   assert.ok(allowed('progress', ctxFor('partner_manager')) && allowed('team', ctxFor('lead')));
+});
+
+test('the DBS register: the lead team and organisation admins in a live workspace, never funders, youth voice, hub workers or associates', () => {
+  const yes = [['lead'], ['accountable_body'], ['partner_manager'], ['hub_worker', ['org_admin']], ['hub_worker', ['safeguarding']], ['platform_admin', [], { isAdmin: true, orgId: null }]];
+  const no = [['hub_worker'], ['hub_worker', ['reporting']], ['funder_observer'], ['youth_voice'], ['associate'], ['associate', ['org_admin']]];
+  for (const [role, extra = [], o = {}] of yes) assert.ok(reachable(ctxFor(role, extra, 'live', o)).has('dbs'), `${role}+${extra.join('+')} should reach the DBS register`);
+  for (const [role, extra = [], o = {}] of no) assert.ok(!allowed('dbs', ctxFor(role, extra, 'live', o)), `${role}+${extra.join('+')} must not open the DBS register`);
+  assert.ok(!allowed('dbs', ctxFor('lead', [], 'bid')), 'a bid workspace has no DBS register');
 });

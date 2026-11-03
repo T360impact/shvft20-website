@@ -1502,3 +1502,25 @@ ul.lw-nd { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1
 .ws-card-wrap.can-manage .ws-pills { padding-right: 44px; }
 .ws-manage { position: absolute; right: 10px; bottom: 10px; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text-2); cursor: pointer; }
 .ws-manage:hover, .ws-manage:focus-visible { color: var(--text); border-color: var(--navy); }
+
+/* DBS checks: count tiles, the My DBS card, the workspace notice */
+.dbs-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); }
+.dbs-tile { display: grid; gap: 2px; padding: var(--s3) var(--s4); border-radius: var(--radius-card); border: 1px solid var(--border); background: var(--surface); color: var(--text); text-decoration: none; }
+.dbs-tile b { font-size: 28px; line-height: 1.1; font-weight: 700; }
+.dbs-tile span { font-size: 13px; color: var(--text-2); }
+.dbs-tile.green b { color: var(--green-text); } .dbs-tile.amber b { color: var(--amber-text); } .dbs-tile.red b { color: var(--red-text); }
+.dbs-tile:hover, .dbs-tile:focus-visible { border-color: var(--navy); }
+.dbs-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: var(--s2) 0 var(--s3); }
+.dbs-dl { display: grid; grid-template-columns: max-content 1fr; gap: var(--s1) var(--s4); margin: 0 0 var(--s3); font-size: 14px; }
+.dbs-dl dt { color: var(--text-2); } .dbs-dl dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.dbs-ws { list-style: none; padding: 0; margin: 0 0 var(--s3); display: grid; gap: var(--s2); }
+.dbs-ws li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.dbs-ws li > span:first-child { font-weight: 600; }
+.dbs-banner { margin: var(--s3) var(--s5) 0; }
+.dbs-banner a { color: inherit; font-weight: 600; }
+.dbs-table td { vertical-align: top; }
+.dbs-set .fields { margin-top: var(--s3); }
+@media (max-width: 640px) {
+  .dbs-tiles { grid-template-columns: 1fr; }
+  .dbs-banner { margin: var(--s3) var(--s4) 0; }
+}

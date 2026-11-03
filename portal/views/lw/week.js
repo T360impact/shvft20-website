@@ -6,9 +6,11 @@ import { html, raw, render, $, $$, db, must, act, toast, icon, pill, openDrawer,
 import { hubName, isSenior, isWide, base, bindTasks, statusTag, dueTag, miniRing, ragTag, RHYTHM } from './common.js';
 
 export default async function week(ctx, el, refresh) {
-  const [w, wp] = await Promise.all([
+  const [w, wp, dbs] = await Promise.all([
     db.rpc('lw_this_week', { p_consortium: ctx.consortium.id }).then(must),
     db.rpc('lw_week_progress', { p_consortium: ctx.consortium.id }).then(must),
+    // DBS counts for the senior team, when the workspace requires checks.
+    isSenior(ctx) ? db.rpc('dbs_summary', { p_consortium: ctx.consortium.id }).then(({ data }) => (data?.required ? data : null)) : null,
   ]);
   const b = base(ctx);
   const overdueN = w.overdue.reduce((a, g) => a + g.tasks.length, 0);
@@ -75,6 +77,15 @@ export default async function week(ctx, el, refresh) {
       ${w.training.length ? html`<h3 class="small-head">Training</h3><ul class="lw-list">${w.training.map((t) => html`<li class="lw-row static"><span class="lw-row-main"><strong>${t.name}</strong><span class="muted small">${t.course}</span></span>
         <span class="lw-row-tags">${pill(t.state === 'expired' ? 'red' : 'amber', t.state === 'expired' ? `Expired ${fmtDate(t.expires)}` : `Expires ${fmtDate(t.expires)}`)}</span></li>`)}</ul>` : ''}
       ${w.supervision.length ? html`<h3 class="small-head">Supervision overdue</h3><ul class="lw-list">${w.supervision.map((s) => html`<li class="lw-row static"><span class="lw-row-main"><strong>${s.name}</strong></span><span class="lw-row-tags">${pill('red', `Due ${fmtDate(s.due_date)}`)}</span></li>`)}</ul>` : ''}` }));
+  if (dbs) {
+    const n = dbs.missing + dbs.due_soon + dbs.expired;
+    sections.push(sectionGroup({ title: 'DBS checks', meta: n ? [dbs.missing ? `${dbs.missing} missing` : '', dbs.due_soon ? `${dbs.due_soon} due soon` : '', dbs.expired ? `${dbs.expired} expired` : ''].filter(Boolean).join(' · ') : 'All verified',
+      aside: dbs.expired || dbs.missing ? pill('red', `${dbs.expired + dbs.missing}`, 'overdue') : dbs.due_soon ? pill('amber', `${dbs.due_soon}`, 'due') : pill('green', 'Clear', 'approved'),
+      body: html`<div class="dbs-tiles"><a class="dbs-tile ${dbs.missing ? 'red' : 'green'}" href="#/c/${ctx.consortium.id}/dbs"><b>${dbs.missing}</b><span>Missing${dbs.to_verify ? ` (${dbs.to_verify} to verify)` : ''}</span></a>
+        <a class="dbs-tile ${dbs.due_soon ? 'amber' : 'green'}" href="#/c/${ctx.consortium.id}/dbs"><b>${dbs.due_soon}</b><span>Due within 60 days</span></a>
+        <a class="dbs-tile ${dbs.expired ? 'red' : 'green'}" href="#/c/${ctx.consortium.id}/dbs"><b>${dbs.expired}</b><span>Expired</span></a></div>
+        ${dbs.blocked ? html`<p class="small warn-text" style="margin-top:8px">${dbs.blocked} delivery ${dbs.blocked === 1 ? 'role is' : 'roles are'} on hold until verified.</p>` : ''}` }));
+  }
   if (w.activity_plans.length) sections.push(sectionGroup({ title: 'Activity plans', meta: `${w.activity_plans.length} not published by the due date`, aside: pill('red', 'Overdue', 'overdue'),
     body: html`<ul class="lw-list">${w.activity_plans.map((p) => html`<li><a class="lw-row" href="${b}/operations/delivery"><span class="lw-row-main"><strong>${p.hub} · ${fmtMonth(p.month)}</strong>
       <span class="muted small">Due ${fmtDate(p.due_date)}</span></span><span class="lw-row-tags">${pill('red', 'Overdue', 'overdue')}${pill('grey', p.status.replace('_', ' '))}</span></a></li>`)}</ul>` }));

@@ -26,10 +26,12 @@ export default async function rota(ctx, el, refresh) {
     db.from('staff').select('id, name, role, hub_ids, status, is_bank').eq('consortium_id', c).neq('status', 'left').order('name').then(must),
   ]);
   const ids = staff.map((s) => s.id);
-  const recs = ids.length ? must(await db.from('recruitment').select('*').in('staff_id', ids)) : [];
+  const [recs, gate] = await Promise.all([ids.length ? db.from('recruitment').select('*').in('staff_id', ids).then(must) : [],
+    // The database's own gate: a verified DBS on the portal counts, and is required where the workspace holds delivery roles.
+    db.rpc('lw_staff_gate', { p_consortium: c }).then(must)]);
   const missing = (sid) => {
     const x = recs.find((q) => q.staff_id === sid);
-    return [!x || x.dbs_status !== 'cleared' ? 'DBS' : '', (x?.references_received || 0) < 2 ? `${x?.references_received || 0}/2 refs` : '',
+    return [(gate[sid] || []).some((m) => m.startsWith('DBS')) ? 'DBS' : '', (x?.references_received || 0) < 2 ? `${x?.references_received || 0}/2 refs` : '',
       !x?.right_to_work_checked ? 'right to work' : '', !x?.induction_completed ? 'induction' : ''].filter(Boolean);
   };
   const shifts = r.shifts;
@@ -91,7 +93,7 @@ export default async function rota(ctx, el, refresh) {
 
   const shiftForm = (s = {}) => html`<form class="form" id="s-form">
     <label class="f">Who<select name="staff_id" required><option value="">Choose</option>${staff.map((p) => { const m = missing(p.id); return html`<option value="${p.id}" ${raw(p.id === s.staff_id ? 'selected' : '')} ${raw(m.length ? 'disabled' : '')}>${p.name} · ${p.role}${p.is_bank ? ' · bank' : ''}${m.length ? ` (missing ${m.join(', ')})` : ''}</option>`; })}</select></label>
-    <p class="small muted">People can only be rostered once DBS, two references, right to work and induction are all done.</p>
+    <p class="small muted">People can only be rostered once DBS, two references, right to work and induction are all done. A verified DBS on the portal counts.</p>
     <div class="fields"><label class="f">Start<input type="time" name="start" required value="${hm(s.start_time) || '10:00'}"></label><label class="f">End<input type="time" name="end" required value="${hm(s.end_time) || '19:00'}"></label></div>
     <div class="fields"><label class="f">Break from<input type="time" name="bs" value="${hm(s.break_start)}"></label><label class="f">Break to<input type="time" name="be" value="${hm(s.break_end)}"></label></div>
     <label class="f">Role on shift<input name="role" maxlength="120" value="${s.role_on_shift || ''}" placeholder="For example Youth Coach"></label>

@@ -9,6 +9,7 @@
 //             health, settings, and "view as" (read only and logged).
 import { docPill } from './profile.js';
 import { loadGaps, gapList, bindGapList, canUpload } from './reporting.js';
+import { dbsSettings } from './dbs.js';
 import { db, html, raw, render, $, $$, must, act, toast, icon, pill, rag, statusPill, statCard, openDrawer, formData, fmtDate, fmtDateTime, fmtMonth, fmtMoney, fmtNum,
   today, emptyState, sectionGroup, segControl, bindSegments, headline, uploadFile, ROLE_LABEL, live, liveMark } from '../lib.js';
 
@@ -358,7 +359,7 @@ function settings(ctx, el, s, again) {
       <label class="check"><input type="checkbox" name="payment_in_arrears" ${s.payment_in_arrears ? 'checked' : ''}> Paid in arrears</label>
       <label class="check"><input type="checkbox" name="funder_can_see_finance" ${s.funder_can_see_finance ? 'checked' : ''}> The funder sees consortium finance totals</label>
       <label class="check"><input type="checkbox" name="funder_can_see_partner_detail" ${s.funder_can_see_partner_detail ? 'checked' : ''}> The funder sees each partner's detail</label></div></fieldset>
-    <div class="btns"><button class="btn">Save settings</button></div></form>`);
+    <div class="btns"><button class="btn">Save settings</button></div></form><div id="dbs-box"></div>`);
   $('#ws-form', el).addEventListener('submit', (e) => { e.preventDefault(); act(e.submitter, async () => {
     const f = formData(e.target);
     const byYear = Object.fromEntries([1, 2, 3].filter((y) => f[`min_${y}`] !== '').map((y) => [String(y), Number(f[`min_${y}`])]));
@@ -368,6 +369,7 @@ function settings(ctx, el, s, again) {
       targeted_minimum_by_year: byYear, payment_terms_days: Number(f.payment_terms_days), payment_in_arrears: !!f.payment_in_arrears,
       funder_can_see_finance: !!f.funder_can_see_finance, funder_can_see_partner_detail: !!f.funder_can_see_partner_detail }).eq('consortium_id', ctx.consortium.id));
     toast('Settings saved.'); again(); }); });
+  dbsSettings(ctx, $('#dbs-box', el));
   weeklySettings(ctx, el);
 }
 

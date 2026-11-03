@@ -4,15 +4,17 @@
 // types every organisation here must provide.
 import { db, html, render, $$, must, act, toast, pill, fmtDate, daysUntil, sectionGroup, statCard } from '../lib.js';
 import { ring } from './profile.js';
+import { dbsSummaryTile } from './dbs.js';
 
 const GROUPS = [['governance', 'Governance'], ['safeguarding', 'Safeguarding'], ['insurance', 'Insurance'], ['policies', 'Policies'], ['evidence', 'Evidence']];
 
 export default async function compliance(ctx, el) {
   const c = ctx.consortium;
-  const [rows, types, reqs] = await Promise.all([
+  const [rows, types, reqs, dbs] = await Promise.all([
     db.rpc('compliance_overview', { p_consortium: c.id }).then(must),
     db.from('document_types').select('*').eq('active', true).order('position').then(must),
     db.from('workspace_document_requirements').select('type_key').eq('consortium_id', c.id).then(must),
+    dbsSummaryTile(ctx),
   ]);
   const required = new Set(reqs.map((r) => r.type_key));
   const expiring = rows.reduce((n, r) => n + r.expiring, 0);
@@ -26,6 +28,13 @@ export default async function compliance(ctx, el) {
       ${statCard({ icon: 'overdue', value: rows.reduce((n, r) => n + r.missing, 0), label: 'Missing', trend: { dir: 'flat', tone: 'grey', text: 'required, missing or expired' } })}
       ${statCard({ icon: 'expiry', value: expiring, label: 'Expiring soon', trend: { dir: 'flat', tone: 'grey', text: 'in the next 60 days' } })}</div>
     <div class="dgrid">
+      ${dbs ? html`<section class="dcard full"><header class="dcard-head"><h2>DBS checks</h2><p>${dbs.verified + dbs.due_soon} of ${dbs.people} who need one hold a verified, in-date check.</p></header>
+        <div class="dbs-tiles">
+          <a class="dbs-tile ${dbs.missing ? 'red' : 'green'}" href="#/c/${c.id}/dbs"><b>${dbs.missing}</b><span>Missing${dbs.to_verify ? html` <span class="muted">(${dbs.to_verify} to verify)</span>` : ''}</span></a>
+          <a class="dbs-tile ${dbs.due_soon ? 'amber' : 'green'}" href="#/c/${c.id}/dbs"><b>${dbs.due_soon}</b><span>Due within 60 days</span></a>
+          <a class="dbs-tile ${dbs.expired ? 'red' : 'green'}" href="#/c/${c.id}/dbs"><b>${dbs.expired}</b><span>Expired</span></a></div>
+        <p class="small" style="margin-top:12px"><a href="#/c/${c.id}/dbs">Open the DBS register</a>${dbs.blocked ? html` · <span class="warn-text">${dbs.blocked} delivery ${dbs.blocked === 1 ? 'role' : 'roles'} on hold</span>` : ''}</p></section>`
+        : html`<section class="dcard full"><header class="dcard-head"><h2>DBS checks</h2><p>Not required in this workspace.${ctx.manages ? ' Turn it on under Dashboard, Settings.' : ''}</p></header></section>`}
       <section class="dcard full"><header class="dcard-head"><h2>Organisations</h2><p>Open one to review its documents.</p></header>
         <div class="table-wrap"><table><thead><tr><th>Organisation</th><th>Profile</th><th class="num">Approved</th><th class="num">Missing</th><th class="num">To review</th><th class="num">Expiring</th><th>Next expiry</th></tr></thead>
           <tbody>${rows.map((r) => html`<tr><td><a href="#/c/${c.id}/profile/${r.organisation_id}">${r.name}</a></td>

@@ -8,6 +8,7 @@
 // Invitations last 14 days and can be resent or cancelled; until the portal
 // sends email, the lead copies the link.
 import { db, html, raw, render, $, $$, formData, toast, act, must, icon, pill, fmtDate, fmtDateTime, sectionGroup, ROLE_LABEL } from '../lib.js';
+import { LEVEL } from './dbs.js';
 
 // The invite function returns its own error text; surface it.
 export async function adminCall(body) {
@@ -106,6 +107,7 @@ export default async function team(ctx, el, parts = []) {
           <div id="roles-box"></div>
           <div class="fields"><label class="f">Full name<input name="full_name" required maxlength="120"></label>
             <label class="f">Email<input type="email" name="email" required></label></div>
+          <div id="dbs-hint"></div>
           <label class="f">Job title <span class="muted small">(optional)</span><input name="job_title" maxlength="120"></label>
           <label class="f">A personal message <span class="muted small">(optional)</span><textarea name="message" rows="3" maxlength="1000"></textarea></label>
           <div class="btns"><button class="btn">${raw(icon('submitted', 16))}Send invitation</button></div>
@@ -244,6 +246,23 @@ export default async function team(ctx, el, parts = []) {
       if (e.key === 'ArrowUp') { e.preventDefault(); (i <= 0 ? q : all[i - 1]).focus(); } if (e.key === 'Escape') { list.hidden = true; q.focus(); } });
     q.addEventListener('blur', () => setTimeout(() => { if (!list.contains(document.activeElement)) list.hidden = true; }, 150));
     showChosen();
+
+    // DBS: whether these roles need a check here, and whether the person already holds one.
+    let hintTimer;
+    const dbsHint = () => { clearTimeout(hintTimer); hintTimer = setTimeout(async () => {
+      const ticked = $$('[name=roles]:checked', form).map((b) => b.value);
+      const email = $('[name=email]', form).value.trim();
+      const box = $('#dbs-hint', form);
+      if (!ticked.length) { render(box, ''); return; }
+      const { data: h } = await db.rpc('dbs_invite_check', { p_consortium: ctx.consortium.id, p_email: email, p_roles: ticked });
+      if (!h?.required) { render(box, ''); return; }
+      render(box, html`<div class="banner ${h.already ? 'ok' : 'info'}">${raw(icon('safeguarding', 18))}<span><strong>DBS required: ${LEVEL[h.level].toLowerCase()}.</strong>
+        ${h.already ? ` Already verified, due ${fmtDate(h.already.due)}. It carries over.`
+          : ` They'll be asked for it when they first sign in, with ${h.grace_days} days to provide it${h.block_delivery && ticked.includes('hub_worker') ? '. As a hub worker they can\'t be rostered until it\'s verified' : ''}.`}</span></div>`);
+    }, 300); };
+    form.addEventListener('change', (e) => { if (e.target.name === 'roles' || e.target.name === 'email') dbsHint(); });
+    $('[name=email]', form).addEventListener('blur', dbsHint);
+    dbsHint();
 
     form.addEventListener('submit', (e) => { e.preventDefault(); act(e.submitter, async () => {
       const f = formData(form);
