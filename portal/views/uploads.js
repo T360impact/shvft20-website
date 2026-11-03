@@ -6,7 +6,7 @@
 import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statCard, openDrawer, fmtDate, fmtDateTime, fmtMonth, fmtNum,
   sectionGroup, emptyState, uploadFile, liveMark, live } from '../lib.js';
 
-const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
+const XLSX_URL = '/portal/vendor/xlsx-0.20.3.mjs';
 let sheetjs;
 const loadXlsx = async () => (sheetjs ||= await import(XLSX_URL));
 

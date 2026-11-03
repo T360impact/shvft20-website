@@ -3,10 +3,11 @@
 // spreadsheet. The file itself never leaves the browser until its text has
 // passed the identifying-details checks here, in the extract-report function
 // and in the database.
-const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
+// Served from this site (vendor/README.md), not a CDN.
+const PDFJS = '/portal/vendor/pdf-3.11.174.min.js';
+const PDFJS_WORKER = '/portal/vendor/pdf.worker-3.11.174.min.js';
+const JSZIP = '/portal/vendor/jszip-3.10.1.min.js';
+const XLSX_URL = '/portal/vendor/xlsx-0.20.3.mjs';
 const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const SECTION_CHARS = 2500;
 
@@ -74,7 +75,7 @@ async function readDocx(buf) {
 async function readPdf(buf) {
   await loadScript(PDFJS);
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
-  const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+  const pdf = await window.pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise;
   const segs = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);

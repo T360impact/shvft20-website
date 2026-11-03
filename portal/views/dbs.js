@@ -23,7 +23,7 @@ const ROLES = { lead: 'Consortium lead', accountable_body: 'Lead organisation', 
   associate: 'Associate', funder_observer: 'Funder observer', youth_voice: 'Youth voice', org_admin: 'Org admin', finance: 'Finance',
   operations: 'Operations', reporting: 'Reporting', safeguarding: 'Safeguarding contact', bid_contributor: 'Bid contributor' };
 const DEFAULT_ROLES = Object.keys(ROLES).filter((r) => !['funder_observer', 'youth_voice'].includes(r));
-const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
+const XLSX_URL = '/portal/vendor/xlsx-0.20.3.mjs';
 const fileSafe = (s) => s.replace(/[^\w ()-]+/g, '').trim();
 
 // ------------------------------------------------------- workspace setting

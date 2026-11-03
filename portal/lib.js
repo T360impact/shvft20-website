@@ -1,6 +1,7 @@
 // Shared plumbing for the Consortium Portal: the database client, HTML
 // escaping, formatting, small UI helpers and CSV export.
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+// Served from this site (vendor/README.md), not a CDN: the page's Content Security Policy allows scripts from here only.
+import { createClient } from './vendor/supabase-js-2.45.4.mjs';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { icon } from './icons.js';
 

@@ -69,6 +69,8 @@ jobs:
           export const SUPABASE_KEY = 'sb_publishable_YEBBC-jA8eOTQIT1g3l0dg_fCWhZm7D';
           export const ENVIRONMENT = 'staging';
           JS
+          # The Content Security Policy names the project: staging's instead.
+          sed -i 's/wxwrnjoyerudbhigjxts/xsefiubsnfrtxlcbbtki/g' /tmp/site/portal/index.html
           printf 'User-agent: *\nDisallow: /\n' > /tmp/site/robots.txt
           for f in $(find /tmp/site -name '*.html'); do sed -i 's#<head>#<head><meta name="robots" content="noindex, nofollow">#' "$f"; done
       - name: Publish to the staging site

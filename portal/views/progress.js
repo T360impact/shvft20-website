@@ -8,7 +8,7 @@ import { chart, donut, hbars, lineChart } from '../charts.js';
 import { periodText, figureText } from './targets.js';
 
 // SheetJS, loaded only when someone downloads or uploads a spreadsheet.
-const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
+const XLSX_URL = '/portal/vendor/xlsx-0.20.3.mjs';
 let sheetjs;
 const loadXlsx = async () => (sheetjs ||= await import(XLSX_URL));
 
