@@ -4,6 +4,7 @@
 // then the funding breakdown with its limits. Used on the Targets and budget
 // pages; what each person sees is limited by the database.
 import { db, html, must, fmtMoney, fmtNum, fmtDateTime, pill, sectionGroup } from '../lib.js';
+import { sumAmounts, percentOf, withinLimit } from '../calc.js';
 
 const WORDS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 const monthYear = new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric' });
@@ -34,7 +35,7 @@ export async function loadBudget(ctx, orgId) {
   return { alloc: a, sections, notes, elements, amounts };
 }
 
-const sum = (rows) => rows.reduce((s, r) => s + Number(r.amount), 0);
+const sum = sumAmounts;
 
 // One Annex A style table: cost categories down the side, years across.
 function costTable(c, years, categories, rows, noteFor) {
@@ -65,9 +66,9 @@ function fundingTable(c, years, elements, amounts) {
   const grant = top.reduce((s, e) => s + tot(e), 0);
   const share = (e) => {
     const base = e.part_of ? tot(elements.find((p) => p.id === e.part_of)) : grant;
-    return base ? (100 * tot(e)) / base : 0;
+    return percentOf(tot(e), base);
   };
-  const within = (e) => (e.limit_kind === 'max' ? share(e) <= e.limit_pct : share(e) >= e.limit_pct);
+  const within = (e) => withinLimit(share(e), e);
   return html`<h3 style="margin-top:26px">Funding breakdown</h3>
     <div class="table-wrap" style="margin-top:10px"><table class="budget">
     <thead><tr><th>Funding element</th>${years.map((y) => html`<th class="num">${yearHeading(c, y).label}</th>`)}<th class="num">Total</th><th class="num">Share</th><th>Limit</th><th>Check</th></tr></thead>

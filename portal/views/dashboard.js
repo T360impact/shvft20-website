@@ -10,6 +10,7 @@
 // restored. Everyone else sees the published layout only.
 import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statusPill, fmtNum, fmtMoney, fmtDate, fmtDateTime, rag, fmtMonth, downloadCsv, statCard, openDrawer, headline as shortLabel, MEASURE_LABEL, live, liveMark } from '../lib.js';
 import { chart, lineChart, initials, ring } from '../charts.js';
+import { percentOf, meetsMinimum } from '../calc.js';
 
 const KIND = { output: 'Output', outcome: 'Outcome' };
 const SOURCE = { reported: 'From partner reports', weekly: 'From weekly uploads' };
@@ -42,7 +43,7 @@ export function headline(p) {
     const k = thisYear(m);
     if (!k || !k.source) return k ? { dir: 'flat', tone: 'grey', text: 'Nothing reported yet' } : null;
     if (!Number(k.actual)) return { dir: 'flat', tone: 'grey', text: `Year ${k.year} target ${fmtNum(k.target)}` };
-    const share = k.target ? Math.round((100 * k.actual) / k.target) : 0;
+    const share = Math.round(percentOf(k.actual, k.target));
     return { dir: { green: 'up', amber: 'flat', red: 'down' }[k.rag] || 'flat', tone: TONE[k.rag] || 'grey', chip: `${share}%`, text: `of the year ${k.year} target of ${fmtNum(k.target)}` };
   };
   const min = p.consortium?.targeted_share_target;
@@ -53,7 +54,7 @@ export function headline(p) {
     { key: 'sessions', icon: 'sessions', mod: 'delivery', value: fmtNum(figure(p, 'sessions') || 0), label: 'Sessions', trend: trend('sessions') },
     { key: 'targeted', icon: 'targets', mod: 'surveys', value: share == null ? '–' : `${fmtNum(share)}%`, label: 'Targeted share',
       trend: min == null ? null : share == null ? { dir: 'flat', tone: 'grey', text: `Funder's minimum ${fmtNum(min)}%` }
-        : share >= min ? { dir: 'up', tone: 'green', chip: 'On target', text: `At or above the ${fmtNum(min)}% minimum` } : { dir: 'down', tone: 'red', chip: 'Below', text: `Below the ${fmtNum(min)}% minimum` } },
+        : meetsMinimum(share, min) ? { dir: 'up', tone: 'green', chip: 'On target', text: `At or above the ${fmtNum(min)}% minimum` } : { dir: 'down', tone: 'red', chip: 'Below', text: `Below the ${fmtNum(min)}% minimum` } },
   ];
 }
 
@@ -127,7 +128,7 @@ export default async function dashboard(ctx, el, [tab] = [], opts = {}) {
   const whoOf = (k) => k.organisation || (k.links || []).map((id) => ctx.org(id)?.name).filter(Boolean).join(', ') || 'Whole consortium';
   const orgsOf = (k) => (k.organisation_id ? [k.organisation_id] : k.links || []);
   const periodLabel = (y) => (y === 'lifetime' ? 'Project lifetime' : `Year ${y}`);
-  const shareOf = (k) => (k.target ? (100 * k.actual) / k.target : 0);
+  const shareOf = (k) => percentOf(k.actual, k.target);
 
   // ------------------------------------------------------------ the parts
 

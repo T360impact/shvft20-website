@@ -1,6 +1,11 @@
 # Put one commit live on www.shvft20.org, by hand: Actions > Promote to
 # production > Run workflow. Refuses any commit that didn't pass every check
 # and reach staging first.
+#
+# It publishes the way staging does: the site is pushed to the gh-pages
+# branch, which GitHub Pages serves (Settings, Pages: "Deploy from a branch",
+# gh-pages, / (root)). GitHub's deploy-pages action hung twice on
+# 4 November 2026 without publishing; the branch method hasn't failed.
 name: Promote to production
 on:
   workflow_dispatch:
@@ -9,17 +14,15 @@ on:
         description: Commit to promote (leave empty for the latest on main)
         required: false
 permissions:
-  contents: read
+  contents: write
   actions: read
-  pages: write
-  id-token: write
 concurrency: { group: pages-production, cancel-in-progress: false }
 jobs:
   production:
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: production
+      url: https://www.shvft20.org/portal/
     steps:
       - name: Which commit
         id: pick
@@ -34,9 +37,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.pick.outputs.sha }}
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Build the site
+        run: mkdir -p /tmp/site && rsync -a --exclude .git --exclude .github --exclude node_modules --exclude CNAME ./ /tmp/site/
+      - name: Publish to www.shvft20.org
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: .
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: /tmp/site
+          cname: www.shvft20.org
+          full_commit_message: Production build of ${{ github.repository }}@${{ steps.pick.outputs.sha }}

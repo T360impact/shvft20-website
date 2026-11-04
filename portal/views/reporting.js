@@ -7,7 +7,7 @@
 // consortium lead sees a gap matrix of partners by requirements, queries any
 // confirmed value, chases, and edits the requirements.
 import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statCard, openDrawer, formData, fmtDate, fmtDateTime, fmtNum,
-  sectionGroup, emptyState, segControl, bindSegments, openFile, liveMark, live, daysUntil } from '../lib.js';
+  sectionGroup, emptyState, segControl, bindSegments, openFile, liveMark, live, daysUntil, uploadType } from '../lib.js';
 import { readReport, piiInSegments, looksWeekly, fileType } from '../extract.js';
 import { openUpload as openWeekly } from './uploads.js';
 
@@ -113,7 +113,7 @@ export function openReportUpload(ctx, preset = {}, done = () => {}) {
         }
         // The original is kept only now, after the checks, so the source link can open it.
         const path = `${data.folder}/${data.file_id}.${fileType(r.file.name) === 'xlsx' ? r.file.name.split('.').pop().toLowerCase() : fileType(r.file.name)}`;
-        must(await db.storage.from('documents').upload(path, r.file, { contentType: r.file.type || undefined }));
+        must(await db.storage.from('documents').upload(path, r.file, { contentType: uploadType('documents', r.file) }));
         must(await db.from('report_uploads').update({ storage_path: path }).eq('id', data.file_id));
         r.state = 'read';
         r.text = data.warning || `${data.proposals} figure${data.proposals === 1 ? '' : 's'} found${data.dropped ? `; ${data.dropped} left out because they weren't in the file as stated` : ''}.`;

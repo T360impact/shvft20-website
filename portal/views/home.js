@@ -10,6 +10,7 @@
 import { db, html, raw, render, $, $$, must, act, toast, icon, pill, duePill, statusPill, emptyState, openDrawer, fmtMonth, fmtDate, daysUntil, segControl, bindSegments, sectionGroup, ROLE_LABEL } from '../lib.js';
 import { ring } from './profile.js';
 import { adminCall } from './team.js';
+import { scoreBand } from '../calc.js';
 
 const MODULE = {
   bids: { label: 'Bids', icon: 'bids', mod: 'bids' },
@@ -23,7 +24,7 @@ const save = (v) => { try { localStorage.setItem(KEY, JSON.stringify({ ...rememb
 
 const status = (w) => {
   if (w.tab === 'closed') return w.archived ? pill('grey', 'Archived') : statusPill(w.stage);
-  if (w.stage === 'live') return w.score == null ? pill('grey', 'Not started') : w.score >= 95 ? pill('green', 'On track', 'approved') : w.score >= 80 ? pill('amber', 'Some concern') : pill('red', 'Behind', 'overdue');
+  if (w.stage === 'live') return { not_started: pill('grey', 'Not started'), on_track: pill('green', 'On track', 'approved'), concern: pill('amber', 'Some concern'), behind: pill('red', 'Behind', 'overdue') }[scoreBand(w.score)];
   return w.stage === 'submitted' ? pill('blue', 'Submitted', 'submitted') : pill('blue', 'In progress');
 };
 const countdown = (d) => { const n = daysUntil(d); return n == null ? '' : n < 0 ? pill('red', `${-n} day${n === -1 ? '' : 's'} ago`) : n === 0 ? pill('red', 'Today') : pill(n <= 7 ? 'amber' : 'grey', `${n} day${n === 1 ? '' : 's'} left`); };

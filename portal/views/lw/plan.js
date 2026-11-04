@@ -5,7 +5,7 @@
 // the date the portal read from the wording and who the owner matched.
 // A later version shows what changed against the plan that is live now.
 // Nothing goes live until the lead confirms.
-import { html, raw, render, $, $$, db, must, act, toast, icon, pill, openDrawer, fmtDate, fmtMonth, fmtDateTime, formData, emptyState, sectionGroup, segControl, bindSegments, statCard, statusPill } from '../../lib.js';
+import { html, raw, render, $, $$, db, must, act, toast, icon, pill, openDrawer, fmtDate, fmtMonth, fmtDateTime, formData, emptyState, sectionGroup, segControl, bindSegments, statCard, statusPill, uploadType } from '../../lib.js';
 import { base, ROLE, RHYTHM, personName, ownerSelect, isSenior } from './common.js';
 
 // Picked hub, date and view survive a live refresh.
@@ -45,8 +45,9 @@ export default async function plans(ctx, el, id, refresh) {
     act(e.submitter, async () => {
       const file = e.target.file.files[0];
       if (!/\.(docx|pdf)$/i.test(file.name)) throw new Error('Choose a Word (.docx) or PDF file.');
+      const contentType = uploadType('lead-workspace', file);
       const path = `${ctx.consortium.id}/plans/${crypto.randomUUID()}-${file.name.replace(/[^\w.-]+/g, '_').slice(-80)}`;
-      must(await db.storage.from('lead-workspace').upload(path, file, { contentType: file.type || undefined }));
+      must(await db.storage.from('lead-workspace').upload(path, file, { contentType }));
       const { data, error } = await db.functions.invoke('extract-plan', { body: { consortium_id: ctx.consortium.id, storage_path: path, file_name: file.name, title: file.name.replace(/\.[^.]+$/, ''), mime_type: file.type || null } });
       if (error) { let m = error.message; try { m = (await error.context.json()).error || m; } catch { /* keep */ } throw new Error(m); }
       toast('Reading the plan. This takes one to three minutes.');

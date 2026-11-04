@@ -4,8 +4,9 @@
 import { createClient } from './vendor/supabase-js-2.45.4.mjs';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { icon } from './icons.js';
+import { daysUntil, dueState, countdownTone, checkUpload } from './calc.js';
 
-export { icon };
+export { icon, daysUntil, checkUpload };
 
 export const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'shvft-portal-auth' },
@@ -189,10 +190,8 @@ export function headline(label, max = 8) {
 export const duePill = (d, status) => {
   if (!d) return '';
   if (status === 'approved') return pill('green', fmtDate(d), 'approved');
-  const n = daysUntil(d);
-  if (n < 0) return pill('red', `${-n} day${n === -1 ? '' : 's'} overdue`, 'overdue');
-  if (n <= 7) return pill('amber', n === 0 ? 'Due today' : `Due in ${n} day${n === 1 ? '' : 's'}`, 'due');
-  return pill('blue', `Due ${fmtDate(d)}`, 'due');
+  const { tone, text } = dueState(daysUntil(d));
+  return pill(tone, text || `Due ${fmtDate(d)}`, tone === 'red' ? 'overdue' : 'due');
 };
 
 // Days to a deadline as a chip with an alarm clock: amber under a week, red
@@ -200,7 +199,7 @@ export const duePill = (d, status) => {
 export const countdown = (d) => {
   if (!d) return '';
   const n = daysUntil(d);
-  const tone = n < 3 ? 'red' : n < 7 ? 'amber' : 'blue';
+  const tone = countdownTone(n);
   return html`<span class="pill tone-${tone} countdown">${raw(icon('expiry', 14))}${n < 0 ? 'Deadline passed' : n === 0 ? 'Deadline today' : `${n} day${n === 1 ? '' : 's'} to the deadline`}</span>`;
 };
 
@@ -230,14 +229,22 @@ export function openDrawer(title, body) {
   return d;
 }
 
-export const daysUntil = (d) => (d ? Math.round((+new Date(`${d}T12:00:00`) - +new Date(`${today()}T12:00:00`)) / 864e5) : null);
 
 // Upload a file to private storage under a folder, keeping a readable name.
+// The file's type and size are checked first (calc.js checkUpload).
 export async function uploadFile(bucket, folder, file) {
   const safe = file.name.replace(/[^\w.-]+/g, '_').slice(-80);
   const path = `${folder}/${crypto.randomUUID()}-${safe}`;
-  must(await db.storage.from(bucket).upload(path, file, { contentType: file.type || undefined }));
+  must(await db.storage.from(bucket).upload(path, file, { contentType: uploadType(bucket, file) }));
   return path;
+}
+
+// The content type to upload a file under; throws a readable message when
+// the bucket doesn't take that kind of file or it's too large.
+export function uploadType(bucket, file) {
+  const r = checkUpload(bucket, file);
+  if ('error' in r) throw new Error(r.error);
+  return r.contentType;
 }
 
 // Open a private file in a new tab. The tab opens during the click so

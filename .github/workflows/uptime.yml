@@ -1,0 +1,38 @@
+# Is the Consortium Portal up? Every 15 minutes: the page loads with its
+# scripts, and the database's sign-in service answers. A failed run is the
+# alert: GitHub emails whoever last changed this schedule (Settings,
+# Notifications, Actions: "Send notifications for failed workflows only").
+# GitHub pauses schedules in a public repository after 60 days without a
+# commit; the Actions tab shows a banner to turn it back on.
+name: Uptime
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency: { group: uptime, cancel-in-progress: true }
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: portal/config.js
+          sparse-checkout-cone-mode: false
+      - name: Portal page and its scripts
+        run: |
+          fetch() { curl -sS --retry 2 --retry-delay 20 --max-time 20 -o /tmp/body -w '%{http_code}' "$1"; }
+          code=$(fetch https://www.shvft20.org/portal/)
+          [ "$code" = 200 ] && grep -q 'Consortium Portal' /tmp/body || { echo "::error::The portal page returned $code"; exit 1; }
+          code=$(fetch https://www.shvft20.org/portal/app.js)
+          [ "$code" = 200 ] || { echo "::error::The portal's script returned $code"; exit 1; }
+          echo "Portal page and script: up"
+      - name: Database sign-in service
+        run: |
+          url=$(sed -n "s/^export const SUPABASE_URL = '\(.*\)';/\1/p" portal/config.js)
+          key=$(sed -n "s/^export const SUPABASE_KEY = '\(.*\)';/\1/p" portal/config.js)
+          code=$(curl -sS --retry 2 --retry-delay 20 --max-time 20 -o /tmp/body -w '%{http_code}' -H "apikey: $key" "$url/auth/v1/health")
+          [ "$code" = 200 ] || { echo "::error::The database's sign-in service at $url returned $code"; cat /tmp/body; exit 1; }
+          echo "Database sign-in service: up"
