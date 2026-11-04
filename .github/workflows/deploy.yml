@@ -50,7 +50,7 @@ jobs:
           ssh-key: ${{ secrets.PORTAL_DB_DEPLOY_KEY }}
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.0.0
       - name: Start a local Supabase with every migration applied
         run: supabase start -x studio,imgproxy,logflare,vector,supavisor,mailpit,edge-runtime
       - name: Compare with production's shape
