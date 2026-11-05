@@ -32,9 +32,9 @@ export async function mountViewer(el, bytes, opts = {}) {
   render(el, html`<div class="pv">
     <div class="pv-bar" role="toolbar" aria-label="Document controls">
       <button type="button" class="icon-btn" data-pv="thumbs" aria-label="Show pages" aria-pressed="false">${raw(icon('menu', 18))}</button>
-      <button type="button" class="icon-btn" data-pv="prev" aria-label="Previous page">${raw(icon('up', 18))}</button>
+      <button type="button" class="icon-btn" data-pv="prev" aria-label="Previous page">‹</button>
       <label class="pv-page"><input type="number" min="1" max="${n}" value="1" aria-label="Page"> <span>of ${n}</span></label>
-      <button type="button" class="icon-btn" data-pv="next" aria-label="Next page">${raw(icon('down', 18))}</button>
+      <button type="button" class="icon-btn" data-pv="next" aria-label="Next page">›</button>
       <span class="pv-sep"></span>
       <button type="button" class="icon-btn" data-pv="out" aria-label="Zoom out">−</button>
       <button type="button" class="linkbtn small" data-pv="fit">Fit</button>
@@ -61,7 +61,8 @@ export async function mountViewer(el, bytes, opts = {}) {
   const widthFor = async (i) => {
     const page = await pdf.getPage(i);
     const base = page.getViewport({ scale: 1 });
-    const s = scale || Math.max(0.4, (pagesEl.clientWidth - 24) / base.width);
+    // Room for the padding and a scrollbar that may appear once the pages are laid out.
+    const s = scale || Math.max(0.4, (pagesEl.clientWidth - 44) / base.width);
     if (!scale) fitScale = s;
     return { page, viewport: page.getViewport({ scale: s }) };
   };
@@ -110,10 +111,24 @@ export async function mountViewer(el, bytes, opts = {}) {
     }
   }, { root: pagesEl, threshold: [0, 0.5] });
   slots.forEach((s) => seen.observe(s));
+  // The same from scrolling, in case the observer is slow to report (a background tab).
+  let tick;
+  pagesEl.addEventListener('scroll', () => {
+    clearTimeout(tick);
+    tick = setTimeout(() => {
+      const v = pagesEl.getBoundingClientRect();
+      const shown = slots.filter(visible);
+      shown.forEach((x) => draw(Number(x.dataset.page)));
+      const mid = slots.find((x) => { const r = x.getBoundingClientRect(); return r.top <= v.top + v.height / 2 && r.bottom >= v.top + v.height / 2; });
+      if (mid) { current = Number(mid.dataset.page); pageInput.value = String(current); }
+      const last = slots[n - 1].getBoundingClientRect();
+      if (!ended && last.top < v.bottom - Math.min(last.height, v.height) / 2) { ended = true; opts.onReachEnd?.(); }
+    }, 120);
+  }, { passive: true });
   await layout();
   if (n === 1 && !ended) { ended = true; opts.onReachEnd?.(); }
 
-  const goTo = (i) => { const p = Math.min(n, Math.max(1, i)); slots[p - 1].scrollIntoView({ block: 'start' }); };
+  const goTo = (i) => { const p = Math.min(n, Math.max(1, i)); current = p; pageInput.value = String(p); slots[p - 1].scrollIntoView({ block: 'start' }); };
   const zoom = (f) => { scale = f ? Math.min(3, Math.max(0.4, (scale || fitScale) * f)) : 0; layout().then(() => goTo(current)); };
   el.addEventListener('click', (e) => {
     const t = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-pv],[data-go]'));
@@ -161,7 +176,13 @@ export async function mountViewer(el, bytes, opts = {}) {
     if (next) goTo(next);
   });
 
-  const onResize = () => { if (!scale) layout(); };
-  window.addEventListener('resize', onResize);
-  return { pages: n, goTo, destroy: () => { seen.disconnect(); window.removeEventListener('resize', onResize); pdf.destroy(); } };
+  // Fitting the width follows the space the pages have (window size, thumbnails shown or not).
+  let lastWidth = pagesEl.clientWidth; let timer;
+  const resized = new ResizeObserver(() => {
+    if (scale || Math.abs(pagesEl.clientWidth - lastWidth) < 8) return;
+    lastWidth = pagesEl.clientWidth;
+    clearTimeout(timer); timer = setTimeout(() => layout().then(() => goTo(current)), 150);
+  });
+  resized.observe(pagesEl);
+  return { pages: n, goTo, destroy: () => { seen.disconnect(); resized.disconnect(); pdf.destroy(); } };
 }

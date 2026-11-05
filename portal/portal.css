@@ -1562,7 +1562,7 @@ textarea.mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-siz
 .pv-thumb.hit { background: var(--amber-tint); }
 .pv-pages { flex: 1; overflow: auto; padding: var(--s3); display: grid; gap: var(--s3); justify-items: center; align-content: start; outline: none; }
 .pv-pages.placing .pv-sheet { cursor: crosshair; }
-.pv-sheet { position: relative; background: var(--qr-paper); box-shadow: 0 1px 3px rgba(17, 26, 44, .18); max-width: 100%; }
+.pv-sheet { position: relative; overflow: hidden; background: var(--qr-paper); box-shadow: 0 1px 3px rgba(17, 26, 44, .18); max-width: 100%; }
 .pv-sheet canvas { display: block; max-width: 100%; height: auto !important; }
 .pv-watermark { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-family: var(--display); font-size: clamp(48px, 14vw, 140px); color: var(--red); opacity: .12; transform: rotate(-35deg); text-transform: uppercase; letter-spacing: .08em; }
 .pv-mark { position: absolute; border: 2px dashed var(--blue); background: color-mix(in srgb, var(--blue-tint) 70%, transparent); color: var(--blue-text); font-size: 11px; padding: 2px 4px; pointer-events: none; overflow: hidden; }
