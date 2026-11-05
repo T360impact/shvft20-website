@@ -1,7 +1,8 @@
 // Shared calculations and upload checks. Run: node --test website/portal/tests/calc.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { daysUntil, dueState, countdownTone, sumAmounts, percentOf, meetsMinimum, withinLimit, scoreBand, checkUpload, UPLOAD_RULES } from '../calc.js';
+import { daysUntil, dueState, countdownTone, sumAmounts, percentOf, meetsMinimum, withinLimit, scoreBand, checkUpload, UPLOAD_RULES,
+  mergeTemplate, unfilledFields, filterAgreements, nextAgreementDate, signerTurn } from '../calc.js';
 
 test('days until a date, counted in whole days from today', () => {
   assert.equal(daysUntil('2026-11-10', '2026-11-04'), 6);
@@ -87,5 +88,31 @@ test('uploads: refused types, sizes and buckets', () => {
 });
 
 test('every upload rule matches a bucket the database knows', () => {
-  assert.deepEqual(Object.keys(UPLOAD_RULES).sort(), ['dbs', 'documents', 'lead-workspace', 'library']);
+  assert.deepEqual(Object.keys(UPLOAD_RULES).sort(), ['agreements', 'dbs', 'documents', 'lead-workspace', 'library']);
+});
+
+test('agreements: templates merge, and unfilled fields stay marked', () => {
+  const body = 'Between {{lead_organisation}} and {{ partner }} for {{allocation_total}}. {{unknown}}';
+  const out = mergeTemplate(body, { lead_organisation: 'Lead Ltd', partner: 'Partner A', allocation_total: '' });
+  assert.equal(out, 'Between Lead Ltd and Partner A for {{allocation_total}}. {{unknown}}');
+  assert.deepEqual(unfilledFields(out), ['allocation_total', 'unknown']);
+  assert.deepEqual(unfilledFields('Nothing left'), []);
+});
+
+test('agreements: the register filters by type, party and status', () => {
+  const rows = [{ type: 'sub_contract', parties: ['a'], status: 'completed' }, { type: 'sub_contract', parties: ['b'], status: 'completed' },
+    { type: 'partner_schedule', parties: ['a', 'lead'], status: 'out_for_signature' }];
+  assert.equal(filterAgreements(rows, {}).length, 3);
+  assert.equal(filterAgreements(rows, { type: 'sub_contract' }).length, 2);
+  assert.equal(filterAgreements(rows, { party: 'a' }).length, 2);
+  assert.equal(filterAgreements(rows, { party: 'a', status: 'completed' }).length, 1);
+});
+
+test('agreements: the next review or expiry date, and whose turn it is to sign', () => {
+  assert.deepEqual(nextAgreementDate({ review_date: '2027-06-01', expiry_date: '2027-03-31' }), { kind: 'expiry', date: '2027-03-31' });
+  assert.deepEqual(nextAgreementDate({ review_date: '2027-01-01', expiry_date: null }), { kind: 'review', date: '2027-01-01' });
+  assert.equal(nextAgreementDate({}), null);
+  const all = [{ sign_order: 1, status: 'signed' }, { sign_order: 2, status: 'sent' }, { sign_order: 2, status: 'sent' }, { sign_order: 3, status: 'waiting' }];
+  assert.equal(signerTurn(all[1], all), true);
+  assert.equal(signerTurn(all[3], all), false);
 });

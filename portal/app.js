@@ -6,6 +6,7 @@ import { PD_ROLES, PAGES, allowed, sidebar, tabsFor, PARENT, landing, isConvenor
 import homePage from './views/home.js';
 import hub from './views/hub.js';
 import agreements from './views/agreements.js';
+import signing from './views/esign.js';
 import uploads from './views/uploads.js';
 import profile from './views/profile.js';
 import compliance from './views/compliance.js';
@@ -54,7 +55,7 @@ const TAB_ORDER = ['mine', 'master', 'dashboard', 'reporting', 'uploads', 'retur
 
 // Which page each route shows. Who may open each, and how the sidebar
 // groups them, is in nav.js.
-const VIEWS = { master, programme, mine: myOrg, bid, dashboard, shared, setup, hub, agreements, targets, progress, programmes, uploads, reporting, profile,
+const VIEWS = { master, programme, mine: myOrg, bid, dashboard, shared, setup, hub, agreements, signing, targets, progress, programmes, uploads, reporting, profile,
   organisations, compliance, dbs, returns, risks, team, lw: lead };
 
 // A live workspace opens on each person's own tier: the master view for the

@@ -44,6 +44,7 @@ function partnerView(ctx, d) {
     <span class="muted small">${KIND[a.kind] || 'Action'}${a.mine ? ' · assigned to you' : ''}</span></span>
     <span class="lw-row-tags">${a.due ? (a.overdue ? pill('red', `Due ${fmtDate(a.due)}`, 'overdue') : html`<span class="small muted">Due ${fmtDate(a.due)}</span>`) : ''}
       ${a.source === 'return' ? html`<a class="btn secondary small" href="#/c/${c.id}/returns">Open</a>` : a.source === 'agreement' ? html`<a class="btn secondary small" href="#/c/${c.id}/agreements">Open</a>`
+        : a.source === 'signature' ? html`<a class="btn secondary small" href="#/c/${c.id}/signing/${a.id}">Open and sign</a>`
         : a.source === 'risk' ? html`<a class="btn secondary small" href="#/c/${c.id}/risks">Open</a>` : a.source === 'action' && !ro ? html`<button type="button" class="btn secondary small" data-done="${a.id}">Done</button>` : ''}</span></li>`;
   const groups = [['Overdue', d.actions.filter((a) => a.overdue)], ['Coming up', d.actions.filter((a) => !a.overdue && a.due)], ['No date', d.actions.filter((a) => !a.due)]].filter(([, x]) => x.length);
   return html`

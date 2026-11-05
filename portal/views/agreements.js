@@ -22,11 +22,14 @@ const sectionKey = (m) => `${m.section || 'Other'} ${m.kind === 'outcome' ? 'out
 
 export default async function agreements(ctx, el) {
   const c = ctx.consortium;
-  const [docs, schedules, commitments] = await Promise.all([
+  const [docs, schedules, commitments, esigned, toSign] = await Promise.all([
     db.from('documents').select('*').eq('consortium_id', c.id).order('created_at', { ascending: false }).then(must),
     ctx.role === 'funder_observer' ? [] : db.from('partner_schedules').select('*').eq('consortium_id', c.id).order('created_at').then(must),
     // Current versions only: a changed target keeps its old version in the record, not here.
     db.from('commitments').select('*').eq('consortium_id', c.id).is('superseded_by', null).is('retired_at', null).order('year').order('measure').then(must),
+    // Agreements signed in the portal (the Signing page), and any waiting for this person.
+    db.from('agreements').select('id, title, status, type').eq('consortium_id', c.id).then(must),
+    db.from('signature_requests').select('id, agreement_id').eq('consortium_id', c.id).eq('signer_profile_id', ctx.user.id).in('status', ['sent', 'viewed']).then(must),
   ]);
   const partners = ctx.orgs.filter((o) => ['delivery_partner', 'accountable_body', 'lead'].includes(o.kind));
   const name = ctx.profile.full_name || '';
@@ -83,6 +86,12 @@ export default async function agreements(ctx, el) {
       ${ctx.role !== 'funder_observer' ? statCard({ icon: 'submitted', value: mine, label: 'Waiting for you', trend: mine ? { dir: 'flat', tone: 'amber', text: 'schedules to sign' } : { dir: 'up', tone: 'green', text: 'nothing to sign' } }) : ''}</div>
 
     <div class="dgrid">
+      <section class="dcard full"><header class="dcard-head"><h2>Signed in the portal</h2><p>Agreements read on screen and signed electronically, with their register and certificates.</p></header>
+        ${toSign.length ? html`<div class="lead-banner"><span><strong>${toSign.length} agreement${toSign.length === 1 ? '' : 's'} to sign:</strong> ${esigned.filter((a) => toSign.some((r) => r.agreement_id === a.id)).map((a) => a.title).join(', ')}</span>
+          <a class="btn small" href="#/c/${c.id}/signing">Open</a></div>` : ''}
+        <p class="small">${esigned.filter((a) => a.status === 'completed').length} signed · ${esigned.filter((a) => ['out_for_signature', 'partially_signed'].includes(a.status)).length} out for signature · ${esigned.filter((a) => a.status === 'draft').length} draft</p>
+        <div class="btns" style="margin-top:12px"><a class="btn secondary" href="#/c/${c.id}/signing">${raw(icon('submitted', 16))}Go to Signing</a></div></section>
+
       <section class="dcard full"><header class="dcard-head"><h2>Commitments to the funder</h2><p>The targets the dashboard tracks. Year 1 runs from ${fmtDate(c.start_date)}.</p></header>
         ${commitments.length ? html`<div class="group-tools">${periods.length > 1 ? segControl('cm', [...periods.map((p) => [p, periodName(p)]), ['', 'All']], firstPeriod) : html`<span></span>`}
             <span class="muted small">${commitments.length} commitment${commitments.length === 1 ? '' : 's'}</span></div>

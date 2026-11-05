@@ -18,6 +18,8 @@ export const PAGES = {
   setup: { label: 'Set-up checklist', icon: 'requirements', mod: 'brand', roles: ['lead'] },
   hub: { label: 'Summary', icon: 'partners', mod: 'governance', roles: 'all' },
   agreements: { label: 'Agreements', icon: 'governance', mod: 'governance', roles: ['lead', 'accountable_body', 'partner_manager', 'funder_observer'] },
+  // Electronic signing: everyone, since anyone can be asked to sign or acknowledge a policy. Each sees only what row level security lets them.
+  signing: { label: 'Signing', icon: 'submitted', mod: 'governance', roles: 'all' },
   targets: { label: 'Targets and budget', icon: 'finance', mod: 'finance', roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'finance'] },
   progress: { label: 'Progress', icon: 'outcomes', mod: 'delivery', roles: ['lead', 'accountable_body', 'partner_manager', 'org_admin', 'reporting'] },
   programmes: { label: 'Programmes', icon: 'sessions', mod: 'delivery', roles: ['lead'] },
@@ -37,7 +39,7 @@ export const PAGES = {
 
 // A bid workspace has only the bid pages; a live consortium keeps its bid
 // as a record for the lead and accountable body.
-const BID_PAGES = ['bid', 'targets', 'hub', 'agreements', 'team', 'organisations', 'setup'];
+const BID_PAGES = ['bid', 'targets', 'hub', 'agreements', 'signing', 'team', 'organisations', 'setup'];
 
 export function allowed(key, ctx) {
   const v = PAGES[key];
@@ -84,11 +86,11 @@ export function sidebar(ctx) {
   const groups = c.stage === 'live' ? [
     { key: 'overview', label: 'Overview', items: [['dashboard'], ['shared'], ['hub'], ['mine'], ['setup']] },
     { key: 'delivery', label: 'Delivery', items: [['programmes'], ['uploads'], ['reporting'], ['returns'], ['targets']] },
-    { key: 'partners', label: 'Partners', items: [['agreements'], ['organisations', 'Organisations and people'], ['compliance'], ['dbs']] },
+    { key: 'partners', label: 'Partners', items: [['agreements'], ['signing'], ['organisations', 'Organisations and people'], ['compliance'], ['dbs']] },
     { key: 'risks', label: 'Risks', items: [['risks']] },
     { key: 'record', label: 'Bid record', items: [['bid']] },
   ] : [
-    { key: 'bid', label: 'Bid', items: [['bid', 'Overview'], ['hub', 'Summary'], ['targets', 'Requirements'], ['agreements', 'Documents'], ['organisations', 'Partners'], ['setup']] },
+    { key: 'bid', label: 'Bid', items: [['bid', 'Overview'], ['hub', 'Summary'], ['targets', 'Requirements'], ['agreements', 'Documents'], ['signing'], ['organisations', 'Partners'], ['setup']] },
   ];
   const out = groups.map((g) => ({ ...g, items: g.items.filter(([k]) => allowed(k, ctx) || (k === 'dashboard' && allowed('master', ctx))).map(([k, l]) => item(k, l)) })).filter((g) => g.items.length);
   // Converting a won bid is the lead's, from the bid itself.

@@ -60,6 +60,8 @@ export const UPLOAD_RULES = {
   documents: { max: 25 * MB, types: DOCUMENT_TYPES, label: 'PDF, Word, Excel, CSV, PowerPoint, OpenDocument, text or a photo' },
   'lead-workspace': { max: 25 * MB, types: DOCUMENT_TYPES, label: 'PDF, Word, Excel, CSV, PowerPoint, OpenDocument, text or a photo' },
   library: { max: 25 * MB, types: { ...DOCUMENT_TYPES, svg: 'image/svg+xml' }, label: 'PDF, Word, Excel, CSV, PowerPoint, OpenDocument, text or an image' },
+  // Agreements to sign: a PDF, or a Word file the server converts (migration 20261105100000).
+  agreements: { max: 25 * MB, types: { pdf: 'application/pdf', docx: DOCUMENT_TYPES.docx }, label: 'a PDF or a Word (.docx) file' },
   dbs: { max: 10 * MB, types: { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', heic: 'image/heic', webp: 'image/webp' }, label: 'PDF or a photo' },
 };
 
@@ -78,3 +80,29 @@ export function checkUpload(bucket, file) {
   if (file.size > rule.max) return { error: `${file.name} is larger than ${rule.max / MB}MB.` };
   return { contentType };
 }
+
+// ------------------------------------------------------------- agreements
+
+/** Fill a template's {{merge fields}}; fields with no value stay marked for the lead to fill.
+ * @param {string} body @param {Record<string, string | null | undefined>} fields */
+export const mergeTemplate = (body, fields) =>
+  String(body ?? '').replace(/\{\{\s*(\w+)\s*\}\}/g, (m, k) => (fields[k] != null && String(fields[k]).trim() !== '' ? String(fields[k]) : m));
+
+/** The merge fields still unfilled in a text. @param {string} text */
+export const unfilledFields = (text) => [...new Set([...String(text ?? '').matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((m) => m[1]))];
+
+/** The register's filters: type, a party organisation and status ('' for any).
+ * @param {Array<{ type: string, parties: string[], status: string }>} rows @param {{ type?: string, party?: string, status?: string }} f */
+export const filterAgreements = (rows, f) => rows.filter((a) => (!f.type || a.type === f.type)
+  && (!f.party || (a.parties || []).includes(f.party)) && (!f.status || a.status === f.status));
+
+/** The next date that matters on a signed agreement: its review or expiry, whichever comes first.
+ * @param {{ review_date?: string | null, expiry_date?: string | null }} a @returns {{ kind: 'review' | 'expiry', date: string } | null} */
+export function nextAgreementDate(a) {
+  const ds = [['review', a.review_date], ['expiry', a.expiry_date]].filter(([, d]) => d).sort((x, y) => String(x[1]).localeCompare(String(y[1])));
+  return ds.length ? { kind: /** @type {'review' | 'expiry'} */ (ds[0][0]), date: String(ds[0][1]) } : null;
+}
+
+/** Whether a signer's turn has come: everyone with a lower order number has signed.
+ * @param {{ sign_order: number }} r @param {Array<{ sign_order: number, status: string }>} all */
+export const signerTurn = (r, all) => all.every((o) => o.sign_order >= r.sign_order || o.status === 'signed');

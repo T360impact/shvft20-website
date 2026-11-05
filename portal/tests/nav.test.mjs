@@ -52,7 +52,8 @@ test('nobody gains a page they could not open before (apart from the new ones)',
     for (const [role, extra = [], o = {}] of PEOPLE) {
       const ctx = ctxFor(role, extra, stage, o);
       const before = new Set(oldVisible(ctx));
-      for (const key of reachable(ctx)) if (key !== 'lw' && key !== 'dbs' && !NEW.includes(key) && !(key === 'organisations' && stage === 'bid')) assert.ok(before.has(key), `${role} in ${stage} newly reaches "${key}"`);
+      // Signing (5 November 2026) is open to everyone: anyone can be asked to sign.
+      for (const key of reachable(ctx)) if (key !== 'lw' && key !== 'dbs' && key !== 'signing' && !NEW.includes(key) && !(key === 'organisations' && stage === 'bid')) assert.ok(before.has(key), `${role} in ${stage} newly reaches "${key}"`);
       for (const key of NEW) if (reachable(ctx).has(key)) assert.ok(role === 'lead' || o.isAdmin, `${role} must not reach ${key}`);
     }
   }
@@ -70,7 +71,7 @@ test('the sidebar is grouped, and merged pages are tabs', () => {
   const ab = ctxFor('accountable_body');
   assert.deepEqual(tabsFor('hub', ab).map((t) => t.key), ['hub', 'programme'], 'the programme sits in Summary');
   const bid = ctxFor('lead', [], 'bid');
-  assert.deepEqual(sidebar(bid)[0].items.map((i) => i.label), ['Overview', 'Summary', 'Requirements', 'Documents', 'Partners', 'Set-up checklist', 'Convert to consortium']);
+  assert.deepEqual(sidebar(bid)[0].items.map((i) => i.label), ['Overview', 'Summary', 'Requirements', 'Documents', 'Signing', 'Partners', 'Set-up checklist', 'Convert to consortium']);
 });
 
 test('a partner with one workspace lands inside it; leads and staff land on Home', () => {
