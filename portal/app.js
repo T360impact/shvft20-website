@@ -1,6 +1,7 @@
 // Consortium Portal: sign-in, two-step verification, the page shell and the
 // router. Each screen lives in views/ and receives a context describing the
 // consortium and the signed-in person's role in it.
+import { uatBanner } from './uat.js';
 import { db, html, render, raw, $, $$, formData, toast, errorText, act, must, icon, pill, statusPill } from './lib.js';
 import { PD_ROLES, PAGES, allowed, sidebar, tabsFor, PARENT, landing, isConvenor as convenorOf } from './nav.js';
 import homePage from './views/home.js';
@@ -250,6 +251,7 @@ async function boot(skipLink = false) {
     .select('id, role, onboarding, consortium_id, organisation_id, consortia(name, stage, bid_deadline), organisations(name)')
     .eq('user_id', session.user.id).eq('active', true));
   state.ready = true;
+  uatBanner(state);
   if (!location.hash.startsWith('#/')) location.hash = '#/';
   else route();
 }

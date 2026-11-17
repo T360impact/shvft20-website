@@ -244,9 +244,13 @@ async function detail(ctx, el, id, view = {}) {
       </aside>
     </div>`);
 
+  // Signing: the form works (Decline included) while the document is still loading.
+  let reached = !!mine?.reached_end_at;
+  const enableSign = () => { const b = $('#sign-btn', el); if (b) { b.disabled = !$('#sign-consent', el)?.checked; b.dataset.ready = '1'; } $('#sign-read', el)?.remove(); };
+  if (myTurn) bindSign(ctx, el, a, mine, () => again(), reached && enableSign);
+
   // The document.
   const viewEl = $('#ag-view', el);
-  let reached = !!mine?.reached_end_at;
   if (cur || a.completed_pdf_path) {
     try {
       const opened = must(await db.rpc('agreement_open', { p_agreement: a.id, p_kind: 'view', p_version: view.version || null }));
@@ -277,9 +281,6 @@ async function detail(ctx, el, id, view = {}) {
     }
   }
 
-  // Signing.
-  const enableSign = () => { const b = $('#sign-btn', el); if (b) { b.disabled = !$('#sign-consent', el)?.checked; b.dataset.ready = '1'; } $('#sign-read', el)?.remove(); };
-  if (myTurn) bindSign(ctx, el, a, mine, () => again(), reached && enableSign);
 
   // Everything else.
   $$('[data-version]', el).forEach((b) => b.addEventListener('click', () => again({ version: b.dataset.version })));

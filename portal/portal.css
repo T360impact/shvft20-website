@@ -1580,3 +1580,7 @@ textarea.mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-siz
   .ag-signer { grid-template-columns: 1fr 80px; }
   .ag-signer .f:first-child, .ag-signer .f:nth-child(2) { grid-column: 1 / -1; }
 }
+
+/* UAT mode (staging only, uat.js) */
+#uat-banner { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; justify-content: center;
+  padding: 6px var(--s4); background: var(--amber-tint); color: var(--amber-text); border-bottom: 1px solid var(--amber); font-size: 13px; }
