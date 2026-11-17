@@ -106,3 +106,25 @@ export function nextAgreementDate(a) {
 /** Whether a signer's turn has come: everyone with a lower order number has signed.
  * @param {{ sign_order: number }} r @param {Array<{ sign_order: number, status: string }>} all */
 export const signerTurn = (r, all) => all.every((o) => o.sign_order >= r.sign_order || o.status === 'signed');
+
+// ---------------------------------------------------- identifying details
+// A weekly upload holds totals only. A heading that names a person's details
+// ("Name", "DOB", "Postcode") or a cell that looks like an email address,
+// phone number, full postcode or date of birth turns the file away before it
+// leaves the browser; the database checks again.
+
+const PII_HEADING = /\b(name|names|first ?name|forename|surname|last ?name|full ?name|dob|date of birth|birth ?date|birthday|postcode|post code|address|e-?mail|phone|mobile|telephone|tel|nhs number|upn|member (code|id)|t360 id|person id)\b/i;
+// Names of places and things ("Site name", "Programme name") are fine.
+const THING_NAME = /\b(site|programme|program|organisation|organization|org|venue|hub|club|school|project|activity|session|partner|provider|team|area|ward|borough|outcome|measure|file|sheet|funder|course)[ _-]*names?\b/gi;
+/** Whether a column heading would identify young people. @param {string} h */
+export const piiHeading = (h) => PII_HEADING.test(String(h).replace(/[_-]+/g, ' ').replace(THING_NAME, ' '));
+/** What a cell looks like, if it identifies someone: null when it doesn't. @param {unknown} t */
+export const piiCell = (t) => {
+  const s = String(t ?? '');
+  if (!s.trim()) return null;
+  if (/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(s)) return 'an email address';
+  if (/(\+44|0)7\d{9}|(\+44|0)[1-3]\d{8,9}/.test(s.replace(/[\s().-]/g, ''))) return 'a phone number';
+  if (/(^|[^A-Z0-9])[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][ABD-HJLNP-UW-Z]{2}([^A-Z0-9]|$)/.test(s.toUpperCase())) return 'a full postcode';
+  if (/\b(dob|d\.o\.b|date of birth|born on)\b/i.test(s)) return 'a date of birth';
+  return null;
+};

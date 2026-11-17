@@ -5,6 +5,7 @@
 // contact details or full postcodes is turned away before anything is kept.
 import { db, html, raw, render, $, $$, must, act, toast, icon, pill, statCard, openDrawer, fmtDate, fmtDateTime, fmtMonth, fmtNum,
   sectionGroup, emptyState, uploadFile, liveMark, live } from '../lib.js';
+import { piiHeading, piiCell } from '../calc.js';
 
 const XLSX_URL = '/portal/vendor/xlsx-0.20.3.mjs';
 let sheetjs;
@@ -22,19 +23,6 @@ const ST = { confirmed: ['green', 'Confirmed'], validated: ['blue', 'Checked, no
 
 // The same checks the database runs, so a file is turned away before it
 // leaves the browser. Names are checked again on the server.
-const PII_HEADING = /\b(name|names|first ?name|forename|surname|last ?name|full ?name|dob|date of birth|birth ?date|birthday|postcode|post code|address|e-?mail|phone|mobile|telephone|tel|nhs number|upn|member (code|id)|t360 id|person id)\b/i;
-// Names of places and things ("Site name", "Programme name") are fine.
-const THING_NAME = /\b(site|programme|program|organisation|organization|org|venue|hub|club|school|project|activity|session|partner|provider|team|area|ward|borough|outcome|measure|file|sheet|funder|course)[ _-]*names?\b/gi;
-const piiHeading = (h) => PII_HEADING.test(String(h).replace(/[_-]+/g, ' ').replace(THING_NAME, ' '));
-const piiCell = (t) => {
-  const s = String(t ?? '');
-  if (!s.trim()) return null;
-  if (/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(s)) return 'an email address';
-  if (/(\+44|0)7\d{9}|(\+44|0)[1-3]\d{8,9}/.test(s.replace(/[\s().-]/g, ''))) return 'a phone number';
-  if (/(^|[^A-Z0-9])[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][ABD-HJLNP-UW-Z]{2}([^A-Z0-9]|$)/.test(s.toUpperCase())) return 'a full postcode';
-  if (/\b(dob|d\.o\.b|date of birth|born on)\b/i.test(s)) return 'a date of birth';
-  return null;
-};
 const norm = (h) => String(h ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const toDate = (v) => {

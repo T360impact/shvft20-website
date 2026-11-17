@@ -102,3 +102,44 @@ test('the DBS register: the lead team and organisation admins in a live workspac
   for (const [role, extra = [], o = {}] of no) assert.ok(!allowed('dbs', ctxFor(role, extra, 'live', o)), `${role}+${extra.join('+')} must not open the DBS register`);
   assert.ok(!allowed('dbs', ctxFor('lead', [], 'bid')), 'a bid workspace has no DBS register');
 });
+
+// Every test persona's sidebar in a live workspace (the personas of the
+// database repository's test suite, tests/lib/personas.mjs). A change here is
+// a change to what someone can open: update it on purpose.
+const PERSONA_SIDEBARS = {
+  lead: [['Overview', ['Dashboard', 'Summary', 'Set-up checklist']], ['Delivery', ['Programmes', 'Weekly figures', 'Reporting', 'Returns', 'Targets and budget']],
+    ['Partners', ['Agreements', 'Signing', 'Organisations and people', 'Compliance', 'DBS checks']], ['Risks', ['Risks']], ['Lead workspace', ['This week', 'Operations', 'Consortium', 'To do']]],
+  foundation: [['Overview', ['Dashboard', 'Summary', 'My organisation']], ['Delivery', ['Weekly figures', 'Reporting', 'Returns', 'Targets and budget']],
+    ['Partners', ['Agreements', 'Signing', 'Compliance', 'DBS checks']], ['Risks', ['Risks']]],
+  partner_a_sole: [['Overview', ['Dashboard', 'Summary', 'My organisation']], ['Delivery', ['Weekly figures', 'Reporting', 'Returns', 'Targets and budget']],
+    ['Partners', ['Agreements', 'Signing', 'DBS checks']], ['Risks', ['Risks']]],
+  partner_b_report: [['Overview', ['Dashboard', 'Summary', 'My organisation']], ['Delivery', ['Weekly figures', 'Reporting', 'Returns', 'Targets and budget']],
+    ['Partners', ['Agreements', 'Signing', 'DBS checks']], ['Risks', ['Risks']]],
+  partner_b_finance: [['Overview', ['Dashboard', 'Summary', 'My organisation']], ['Delivery', ['Weekly figures', 'Reporting', 'Returns', 'Targets and budget']],
+    ['Partners', ['Agreements', 'Signing', 'DBS checks']], ['Risks', ['Risks']]],
+  hub_worker: [['Overview', ['Dashboard', 'Summary', 'My organisation']], ['Partners', ['Signing']], ['Risks', ['Risks']]],
+  hub_lead_1: [['Overview', ['Dashboard', 'Summary', 'My organisation']], ['Partners', ['Signing']], ['Risks', ['Risks']], ['Lead workspace', ['This week', 'Operations', 'Consortium', 'To do']]],
+  hub_staff_2: [['Overview', ['Dashboard', 'Summary', 'My organisation']], ['Partners', ['Signing']], ['Risks', ['Risks']], ['Lead workspace', ['This week', 'Operations', 'Consortium', 'To do']]],
+  funder: [['Overview', ['Dashboard', 'Summary']], ['Delivery', ['Returns']], ['Partners', ['Agreements', 'Signing']]],
+  youth_voice: [['Overview', ['Dashboard', 'Summary']], ['Partners', ['Signing']]],
+  associate: [['Overview', ['Shared with us', 'Summary']], ['Partners', ['Signing']]],
+};
+const PERSONA_CTX = { lead: ['lead', [], ['lead']], foundation: ['accountable_body', []], partner_a_sole: ['partner_manager', ['org_admin', 'finance', 'reporting']],
+  partner_b_report: ['partner_manager', ['reporting']], partner_b_finance: ['partner_manager', ['finance']], hub_worker: ['hub_worker', []],
+  hub_lead_1: ['hub_worker', [], ['hub_lead']], hub_staff_2: ['hub_worker', [], ['hub_staff']], funder: ['funder_observer', []], youth_voice: ['youth_voice', []], associate: ['associate', []] };
+
+for (const [key, want] of Object.entries(PERSONA_SIDEBARS)) {
+  test(`U-NAV-${key}: the sidebar for ${key} matches the permissions matrix`, () => {
+    const [role, extra, lw = []] = PERSONA_CTX[key];
+    const ctx = { consortium: { id: 'c1', stage: 'live', bid_deadline: null }, role, extraRoles: extra, orgId: 'org1', isAdmin: false,
+      seesAll: ['lead', 'accountable_body'].includes(role), manages: role === 'lead', lw: { roles: lw } };
+    assert.deepEqual(sidebar(ctx).map((g) => [g.label, g.items.map((i) => i.label)]), want);
+  });
+}
+
+test('U-NAV-money: nobody without the lead, accountable body, finance or org admin role is offered a money page', () => {
+  for (const key of ['hub_worker', 'hub_lead_1', 'hub_staff_2', 'youth_voice', 'associate', 'funder']) {
+    const labels = PERSONA_SIDEBARS[key].flatMap(([, items]) => items);
+    assert.ok(!labels.includes('Targets and budget'), key);
+  }
+});
